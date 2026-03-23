@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  address     String?
+  taxId       String?  // NPWP
+  phone       String?
+  email       String?
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  templates   Template[]
+  employees   Employee[]
+  payslips    Payslip[]
+}
+
+model Employee {
+  id              String    @id @default(cuid())
+  companyId       String
+  employeeId      String    // Employee ID number
+  name            String
+  email           String?
+  department      String?
+  position        String?
+  npwp            String?   // Tax ID
+  bankAccount     String?
+  bankName        String?
+  baseSalary      Float
+  hourlyRate      Float?
+  pph21Status     String    @default("TK/0") // TK/0, K/0, etc.
+  isActive        Boolean   @default(true)
+  joinedAt        DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  company         Company   @relation(fields: [companyId], references: [id])
+  payslips        Payslip[]
+  
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model Template {
+  id              String    @id @default(cuid())
+  companyId       String
+  name            String
+  type            String    @default("custom") // preset, custom
+  isDefault       Boolean   @default(false)
+  layout          Json      // { orientation, pageSize, columns }
+  theme           Json      // { primaryColor, secondaryColor, fontFamily, fontSize }
+  sections        Json      // { companyHeader, employeeInfo, earnings, ... }
+  header          Json      // { showLogo, logoUrl, companyName, ... }
+  customFields    Json?     // Array of custom field definitions
+  customCss       String?
+  language        String    @default("id") // id, en
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  company         Company   @relation(fields: [companyId], references: [id])
+  payslips        Payslip[]
+  
+  @@index([companyId])
+}
+
+model Payslip {
+  id                  String    @id @default(cuid())
+  companyId           String
+  employeeId          String
+  templateId          String
+  periodType          String    // weekly, monthly, quarterly, semi-annual, annual
+  startDate           DateTime
+  endDate             DateTime
+  
+  // Earnings
+  basePay             Float
+  overtimeHours       Float?
+  overtimePay         Float     @default(0)
+  bonus               Float     @default(0)
+  thr                 Float     @default(0) // Holiday bonus
+  allowances          Json      // [{ name, amount }, ...]
+  
+  // Deductions
+  pph21               Float     @default(0)
+  bpjsKesehatan       Float     @default(0)
+  bpjsKetenagakerjaan Float     @default(0)
+  otherDeductions     Json      // [{ name, amount }, ...]
+  
+  // Totals
+  grossPay            Float
+  totalDeductions     Float
+  netPay              Float
+  
+  // YTD (Year to Date)
+  ytdGross            Float     @default(0)
+  ytdPph21            Float     @default(0)
+  
+  // Metadata
+  notes               String?
+  generatedAt         DateTime  @default(now())
+  pdfUrl              String?
+  
+  company             Company   @relation(fields: [companyId], references: [id])
+  employee            Employee  @relation(fields: [employeeId], references: [id])
+  template            Template  @relation(fields: [templateId], references: [id])
+  
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([periodType])
+  @@index([startDate])
+}
