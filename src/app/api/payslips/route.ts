@@ -1,6 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { calculatePayslip, getPeriodMonths } from '@/lib/calculations/payslip'
+import { apiOk, apiError } from '@/lib/api/respond'
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const employeeId = searchParams.get('employeeId') ?? undefined
+    const year = searchParams.get('year') ? Number(searchParams.get('year')) : undefined
+    const page = Math.max(1, Number(searchParams.get('page') ?? '1'))
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') ?? '20')))
+    const skip = (page - 1) * limit
+
+    const where = {
+      ...(employeeId ? { employeeId } : {}),
+      ...(year
+        ? {
+            startDate: {
+              gte: new Date(year, 0, 1),
+              lt: new Date(year + 1, 0, 1),
+            },
+          }
+        : {}),
+    }
+
+    const [payslips, total] = await Promise.all([
+      prisma.payslip.findMany({
+        where,
+        orderBy: { generatedAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          employeeId: true,
+          templateId: true,
+          periodType: true,
+          startDate: true,
+          endDate: true,
+          grossPay: true,
+          netPay: true,
+          generatedAt: true,
+          employee: { select: { id: true, name: true, employeeId: true } },
+        },
+      }),
+      prisma.payslip.count({ where }),
+    ])
+
+    return apiOk({ payslips, total, page, limit })
+  } catch (error) {
+    console.error('Error fetching payslips:', error)
+    return apiError('Gagal memuat data slip gaji')
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,11 +117,11 @@ export async function POST(request: NextRequest) {
         overtimePay: calculations.grossPay - (data.basePay || Number(employee.baseSalary)) - (data.bonus || 0) - (data.thr || 0) - (data.allowances?.reduce((a: number, al: any) => a + (al.amount || 0), 0) || 0),
         bonus: data.bonus || 0,
         thr: data.thr || 0,
-        allowances: data.allowances || [],
+        allowances: JSON.stringify(data.allowances || []),
         pph21: calculations.pph21,
         bpjsKesehatan: calculations.bpjsKesehatan,
         bpjsKetenagakerjaan: calculations.bpjsKetenagakerjaan,
-        otherDeductions: data.otherDeductions || [],
+        otherDeductions: JSON.stringify(data.otherDeductions || []),
         grossPay: calculations.grossPay,
         totalDeductions: calculations.totalDeductions,
         netPay: calculations.netPay,
