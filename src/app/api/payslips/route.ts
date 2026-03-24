@@ -26,9 +26,32 @@ export async function POST(request: NextRequest) {
       bonus: data.bonus,
       thr: data.thr,
       allowances: data.allowances,
+      otherDeductions: data.otherDeductions,
       pph21Status: employee.pph21Status,
       monthCount,
     })
+
+    // Calculate YTD (Year to Date) from previous payslips this year
+    const startDate = new Date(data.startDate)
+    const year = startDate.getFullYear()
+    const startOfYear = new Date(year, 0, 1) // January 1st
+
+    const previousYtd = await prisma.payslip.aggregate({
+      where: {
+        employeeId: data.employeeId,
+        startDate: {
+          gte: startOfYear,
+          lt: startDate,
+        },
+      },
+      _sum: {
+        ytdGross: true,
+        ytdPph21: true,
+      },
+    })
+
+    const previousYtdGross = Number(previousYtd._sum.ytdGross) || 0
+    const previousYtdPph21 = Number(previousYtd._sum.ytdPph21) || 0
 
     const payslip = await prisma.payslip.create({
       data: {
@@ -51,8 +74,8 @@ export async function POST(request: NextRequest) {
         grossPay: calculations.grossPay,
         totalDeductions: calculations.totalDeductions,
         netPay: calculations.netPay,
-        ytdGross: calculations.grossPay,
-        ytdPph21: calculations.pph21,
+        ytdGross: previousYtdGross + calculations.grossPay,
+        ytdPph21: previousYtdPph21 + calculations.pph21,
         notes: data.notes,
       },
     })

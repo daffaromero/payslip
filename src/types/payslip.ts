@@ -57,6 +57,7 @@ export interface PayslipCalculationInput {
   bonus?: number
   thr?: number
   allowances?: Allowance[]
+  otherDeductions?: Deduction[]
   pph21Status: string
   isThr?: boolean
   monthCount?: number // for multi-month

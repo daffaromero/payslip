@@ -1,6 +1,17 @@
 import puppeteer from 'puppeteer'
 import { PayslipData, Employee, Template, Company } from '@/types'
 
+export const escapeHtml = (str: string | null | undefined): string => {
+  if (!str) return ''
+  return str.replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c] || c))
+}
+
 export interface GeneratePdfOptions {
   payslip: PayslipData
   employee: Employee
@@ -219,27 +230,27 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       <div class="info-grid">
         <div class="info-row">
           <span class="info-label">${t('Nama', 'Name')}:</span>
-          <span class="info-value">${employee.name}</span>
+          <span class="info-value">${escapeHtml(employee.name)}</span>
         </div>
         <div class="info-row">
           <span class="info-label">${t('ID Karyawan', 'Employee ID')}:</span>
-          <span class="info-value">${employee.employeeId}</span>
+          <span class="info-value">${escapeHtml(employee.employeeId)}</span>
         </div>
         <div class="info-row">
           <span class="info-label">${t('Departemen', 'Department')}:</span>
-          <span class="info-value">${employee.department || '-'}</span>
+          <span class="info-value">${escapeHtml(employee.department) || '-'}</span>
         </div>
         <div class="info-row">
           <span class="info-label">${t('Jabatan', 'Position')}:</span>
-          <span class="info-value">${employee.position || '-'}</span>
+          <span class="info-value">${escapeHtml(employee.position) || '-'}</span>
         </div>
         <div class="info-row">
           <span class="info-label">${t('NPWP', 'Tax ID')}:</span>
-          <span class="info-value">${employee.npwp || '-'}</span>
+          <span class="info-value">${escapeHtml(employee.npwp) || '-'}</span>
         </div>
         <div class="info-row">
           <span class="info-label">${t('Status PTKP', 'Tax Status')}:</span>
-          <span class="info-value">${employee.pph21Status}</span>
+          <span class="info-value">${escapeHtml(employee.pph21Status)}</span>
         </div>
       </div>
     </div>
@@ -282,7 +293,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
           ` : ''}
           ${payslip.allowances?.map(a => `
           <tr>
-            <td>${a.name}</td>
+            <td>${escapeHtml(a.name)}</td>
             <td class="amount">${formatCurrency(a.amount)}</td>
           </tr>
           `).join('') || ''}
@@ -318,7 +329,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
           ` : ''}
           ${payslip.otherDeductions?.map(d => `
           <tr>
-            <td>${d.name}</td>
+            <td>${escapeHtml(d.name)}</td>
             <td class="amount">${formatCurrency(d.amount)}</td>
           </tr>
           `).join('') || ''}
@@ -340,7 +351,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
     ${template.sections.bankDetails && employee.bankAccount ? `
     <div class="section" style="margin-top: 20px; font-size: 12px; color: #666;">
       <strong>${t('Informasi Bank', 'Bank Information')}:</strong><br>
-      ${employee.bankName || ''} - ${employee.bankAccount}
+      ${escapeHtml(employee.bankName) || ''} - ${escapeHtml(employee.bankAccount)}
     </div>
     ` : ''}
     

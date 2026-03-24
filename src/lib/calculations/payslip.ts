@@ -22,8 +22,8 @@ export function calculatePayslip(
     bonus = 0,
     thr = 0,
     allowances = [],
+    otherDeductions = [],
     pph21Status,
-    isThr = false,
     monthCount = 1,
   } = input
 
@@ -49,18 +49,14 @@ export function calculatePayslip(
     calculateBpjsKetenagakerjaan(baseSalary).jht.employee +
     calculateBpjsKetenagakerjaan(baseSalary).jp.employee
 
-  // Calculate PPh 21
-  let pph21 = 0
-  if (isThr) {
-    // THR uses different calculation (gross-up method or separate calculation)
-    // For simplicity, calculate on total including THR
-    pph21 = calculatePph21ForPeriod(grossPay, pph21Status, monthCount)
-  } else {
-    pph21 = calculatePph21ForPeriod(grossPay, pph21Status, monthCount)
-  }
+  // Calculate PPh 21 (uses grossPay which includes all earnings)
+  const pph21 = calculatePph21ForPeriod(grossPay, pph21Status, monthCount)
+
+  // Calculate other deductions total
+  const otherDeductionsTotal = otherDeductions.reduce((sum, d) => sum + d.amount, 0)
 
   // Total deductions
-  const totalDeductions = pph21 + bpjsKesehatan + bpjsKetenagakerjaan
+  const totalDeductions = pph21 + bpjsKesehatan + bpjsKetenagakerjaan + otherDeductionsTotal
 
   // Net pay
   const netPay = grossPay - totalDeductions
@@ -70,7 +66,7 @@ export function calculatePayslip(
     pph21,
     bpjsKesehatan,
     bpjsKetenagakerjaan,
-    otherDeductions: [],
+    otherDeductions,
     totalDeductions,
     netPay,
   }

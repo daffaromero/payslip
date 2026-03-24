@@ -28,11 +28,13 @@ export function mapRowToEmployee(
         transformedValue = mapping.transform(value)
       } else if (mapping.employeeField === 'baseSalary') {
         // Ensure salary is number
-        transformedValue = typeof value === 'string' 
+        const parsed = typeof value === 'string' 
           ? parseFloat(value.replace(/[^\d.-]/g, ''))
           : Number(value)
+        transformedValue = isNaN(parsed) ? 0 : parsed
       } else if (['overtimeHours', 'hourlyRate'].includes(mapping.employeeField)) {
-        transformedValue = Number(value)
+        const parsed = Number(value)
+        transformedValue = isNaN(parsed) ? 0 : parsed
       }
       
       (result as Record<string, typeof transformedValue>)[mapping.employeeField] = transformedValue
