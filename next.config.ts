@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['puppeteer'],
@@ -11,7 +12,7 @@ const nextConfig: NextConfig = {
     ],
   },
   turbopack: {
-    root: '/Users/daffa.romeromekari.com/Codebase/personal/payslip',
+    root: path.resolve(__dirname),
   },
 };
 
