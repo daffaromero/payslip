@@ -6,11 +6,13 @@ export type PeriodType = 'weekly' | 'monthly' | 'quarterly' | 'semi-annual' | 'a
 export interface Company {
   id: string
   name: string
-  address?: string
-  taxId?: string
-  phone?: string
-  email?: string
-  logoUrl?: string
+  address: string | null
+  taxId: string | null
+  phone: string | null
+  email: string | null
+  logoUrl: string | null
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface Employee {
@@ -18,17 +20,19 @@ export interface Employee {
   companyId: string
   employeeId: string
   name: string
-  email?: string
-  department?: string
-  position?: string
-  npwp?: string
-  bankAccount?: string
-  bankName?: string
+  email: string | null
+  department: string | null
+  position: string | null
+  npwp: string | null
+  bankAccount: string | null
+  bankName: string | null
   baseSalary: number
-  hourlyRate?: number
+  hourlyRate: number | null
   pph21Status: Pph21Status
   isActive: boolean
   joinedAt: Date
+  createdAt: Date
+  updatedAt: Date
 }
 
 export type Pph21Status = 

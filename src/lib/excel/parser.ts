@@ -29,11 +29,11 @@ export function parseExcelFile(buffer: Buffer): ExcelParseResult {
   }
   
   const headers = rawData[0] as string[]
-  const rows = rawData.slice(1).map((row: unknown[]) => {
-    const obj: ParsedExcelRow = {}
+  const rows = (rawData.slice(1) as unknown[][]).map((row) => {
+    const obj: ParsedExcelRow = {} as ParsedExcelRow
     headers.forEach((header, index) => {
       const value = row[index]
-      obj[header] = value !== undefined ? value : null
+      ;(obj as Record<string, unknown>)[header] = value !== undefined ? value : null
     })
     return obj
   })

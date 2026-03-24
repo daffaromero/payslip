@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseExcelFile, autoMapColumns } from '@/lib/excel/parser'
 import { generateImportPreview } from '@/lib/excel/mapper'
+import type { Pph21Status } from '@/types'
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function PUT(request: NextRequest) {
         employeeField: employeeField as string,
       })),
       defaultValues: {
-        pph21Status: 'TK/0',
+        pph21Status: 'TK/0' as Pph21Status,
         isActive: true,
       },
     }

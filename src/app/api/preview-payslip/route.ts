@@ -65,9 +65,12 @@ export async function POST(request: NextRequest) {
 
     const html = generatePayslipHTML({
       payslip: payslipData as any,
-      employee,
+      employee: {
+        ...employee,
+        pph21Status: employee.pph21Status as any,
+      },
       template: template as any,
-      company: company || { id: '', name: 'PT Contoh Indonesia' },
+      company: company || { id: '', name: 'PT Contoh Indonesia', address: null, taxId: null, phone: null, email: null, logoUrl: null, createdAt: new Date(), updatedAt: new Date() },
     })
 
     return NextResponse.json({ success: true, html })

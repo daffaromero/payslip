@@ -2,15 +2,13 @@ import { config } from 'dotenv'
 import { resolve } from 'path'
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSql } from '@prisma/adapter-libsql'
-import { createClient } from '@libsql/client'
 
 config({ path: resolve(__dirname, '../.env') })
 
 const databaseUrl = process.env.DATABASE_URL || 'file:./dev.db'
 console.log('Using database URL:', databaseUrl)
 
-const client = createClient({ url: databaseUrl })
-const adapter = new PrismaLibSql(client)
+const adapter = new PrismaLibSql({ url: databaseUrl })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
