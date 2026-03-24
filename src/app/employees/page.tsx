@@ -58,10 +58,12 @@ export default function EmployeesPage() {
             <Upload className="mr-2 h-5 w-5" />
             Import
           </Button>
-          <Button onClick={() => alert('Fitur tambah karyawan akan ditambahkan')}>
-            <Plus className="mr-2 h-5 w-5" />
-            Tambah
-          </Button>
+          <Link href="/employees/new">
+            <Button>
+              <Plus className="mr-2 h-5 w-5" />
+              Tambah
+            </Button>
+          </Link>
         </div>
       </div>
 
