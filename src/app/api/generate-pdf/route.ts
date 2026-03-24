@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generatePayslipPDF } from '@/lib/pdf/generator'
 import { prisma } from '@/lib/db'
+import { deserializeTemplate, RawTemplate } from '@/lib/api/template-serializer'
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,11 +45,11 @@ export async function POST(request: NextRequest) {
         overtimePay: Number(payslip.overtimePay),
         bonus: Number(payslip.bonus),
         thr: Number(payslip.thr),
-        allowances: payslip.allowances as any,
+        allowances: JSON.parse(payslip.allowances as string),
         pph21: Number(payslip.pph21),
         bpjsKesehatan: Number(payslip.bpjsKesehatan),
         bpjsKetenagakerjaan: Number(payslip.bpjsKetenagakerjaan),
-        otherDeductions: payslip.otherDeductions as any,
+        otherDeductions: JSON.parse(payslip.otherDeductions as string),
         grossPay: Number(payslip.grossPay),
         totalDeductions: Number(payslip.totalDeductions),
         netPay: Number(payslip.netPay),
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
         createdAt: payslip.employee.createdAt,
         updatedAt: payslip.employee.updatedAt,
       },
-      template: payslip.template as any,
+      template: deserializeTemplate(payslip.template as unknown as RawTemplate) as any,
       company: {
         id: payslip.company.id,
         name: payslip.company.name,
