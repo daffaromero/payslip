@@ -4,30 +4,42 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
+  --background-rgb: 255, 255, 255;
+  --background-start-rgb: 245, 245, 245;
   --background-end-rgb: 255, 255, 255;
 }
 
+/* Force light mode - disable dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --foreground-rgb: 0, 0, 0;
+    --background-rgb: 255, 255, 255;
+    --background-start-rgb: 245, 245, 245;
+    --background-end-rgb: 255, 255, 255;
   }
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background-color: rgb(var(--background-rgb));
+  min-height: 100vh;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Ensure form inputs are visible */
+input, select, textarea {
+  background-color: white;
+  color: black;
+  border: 1px solid #ccc;
+}
+
+/* Ensure cards have white background */
+[data-slot="card"] {
+  background-color: white;
+  border: 1px solid #e5e7eb;
 }
