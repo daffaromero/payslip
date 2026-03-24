@@ -1,22 +1,27 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
+import type { Metadata } from 'next'
+import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
+import './globals.css'
+import { Sidebar } from '@/components/layout/sidebar'
+import { TopBar } from '@/components/layout/topbar'
 
 export const metadata: Metadata = {
-  title: "Payslip Generator",
-  description: "Generate payslips for Indonesian companies",
-};
+  title: 'Payslip — Payroll Management',
+  description: 'Payroll management for Indonesian companies',
+}
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className="light">
-      <body className={`${inter.className} bg-white text-black`}>{children}</body>
+    <html lang="id" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="font-sans antialiased">
+        <div className="flex min-h-screen bg-[--bg-app]">
+          <Sidebar />
+          <main className="flex flex-col flex-1 min-h-screen" style={{ paddingLeft: 'var(--sidebar-width)' }}>
+            <TopBar />
+            <div className="flex-1">{children}</div>
+          </main>
+        </div>
+      </body>
     </html>
-  );
+  )
 }
