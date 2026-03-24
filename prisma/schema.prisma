@@ -1,10 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  engineType = "binary"
 }
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model Company {
@@ -54,11 +54,11 @@ model Template {
   name            String
   type            String    @default("custom") // preset, custom
   isDefault       Boolean   @default(false)
-  layout          Json      // { orientation, pageSize, columns }
-  theme           Json      // { primaryColor, secondaryColor, fontFamily, fontSize }
-  sections        Json      // { companyHeader, employeeInfo, earnings, ... }
-  header          Json      // { showLogo, logoUrl, companyName, ... }
-  customFields    Json?     // Array of custom field definitions
+  layout          String    // JSON string: { orientation, pageSize, columns }
+  theme           String    // JSON string: { primaryColor, secondaryColor, fontFamily, fontSize }
+  sections        String    // JSON string: { companyHeader, employeeInfo, earnings, ... }
+  header          String    // JSON string: { showLogo, logoUrl, companyName, ... }
+  customFields    String?   // JSON string: Array of custom field definitions
   customCss       String?
   language        String    @default("id") // id, en
   createdAt       DateTime  @default(now())
@@ -85,13 +85,13 @@ model Payslip {
   overtimePay         Float     @default(0)
   bonus               Float     @default(0)
   thr                 Float     @default(0) // Holiday bonus
-  allowances          Json      // [{ name, amount }, ...]
+  allowances          String    // JSON string: [{ name, amount }, ...]
   
   // Deductions
   pph21               Float     @default(0)
   bpjsKesehatan       Float     @default(0)
   bpjsKetenagakerjaan Float     @default(0)
-  otherDeductions     Json      // [{ name, amount }, ...]
+  otherDeductions     String    // JSON string: [{ name, amount }, ...]
   
   // Totals
   grossPay            Float
