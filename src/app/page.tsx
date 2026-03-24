@@ -1,102 +1,125 @@
 import { prisma } from '@/lib/db'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Plus, FileText, Users } from 'lucide-react'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import { Users, FileText, TrendingUp, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { formatCurrency } from '@/lib/utils'
+import { PageHeader } from '@/components/layout/page-header'
 
 export default async function DashboardPage() {
-  const totalEmployees = await prisma.employee.count({
-    where: { isActive: true },
-  })
+  const [totalEmployees, totalPayslips, recentPayslips, thisMonthPayslips] = await Promise.all([
+    prisma.employee.count({ where: { isActive: true } }),
+    prisma.payslip.count(),
+    prisma.payslip.findMany({
+      take: 8,
+      orderBy: { generatedAt: 'desc' },
+      include: { employee: { select: { name: true, employeeId: true } } },
+    }),
+    prisma.payslip.count({
+      where: { generatedAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } },
+    }),
+  ])
 
-  const totalPayslips = await prisma.payslip.count()
-
-  const recentPayslips = await prisma.payslip.findMany({
-    take: 5,
-    orderBy: { generatedAt: 'desc' },
-    include: {
-      employee: true,
-    },
-  })
+  const stats = [
+    { label: 'Karyawan Aktif',   value: totalEmployees,    icon: Users,      href: '/employees', color: '#0066ff', bg: '#eff6ff' },
+    { label: 'Total Slip Gaji',  value: totalPayslips,     icon: FileText,   href: '/payslips',  color: '#7c3aed', bg: '#f5f3ff' },
+    { label: 'Slip Bulan Ini',   value: thisMonthPayslips, icon: TrendingUp, href: null,         color: '#059669', bg: '#ecfdf5' },
+  ]
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Kelola slip gaji dan data karyawan
-          </p>
-        </div>
-        <Link href="/generate">
-          <Button size="lg">
-            <Plus className="mr-2 h-5 w-5" />
-            Buat Slip Gaji
-          </Button>
+    <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
+      <PageHeader title="Dashboard" subtitle="Ringkasan aktivitas payroll perusahaan">
+        <Link href="/generate" className="btn btn-primary">
+          <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
         </Link>
-      </div>
+      </PageHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Karyawan Aktif
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalEmployees}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Slip Gaji
-            </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalPayslips}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Slip Gaji Terbaru</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentPayslips.length === 0 ? (
-            <p className="text-center py-8 text-gray-500">
-              Belum ada slip gaji yang dibuat
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {recentPayslips.map((payslip) => (
-                <div
-                  key={payslip.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">{payslip.employee.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {payslip.startDate.toLocaleDateString('id-ID')} -{' '}
-                      {payslip.endDate.toLocaleDateString('id-ID')}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      {formatCurrency(Number(payslip.netPay))}
-                    </p>
-                  </div>
-                </div>
-              ))}
+      <div className="p-8">
+        {/* Stats row */}
+        <div className="mb-6 grid grid-cols-3 gap-4">
+          {stats.map(({ label, value, icon: Icon, href, color, bg }) => (
+            <div key={label} className="card p-5">
+              <div
+                className="mb-4 flex items-center justify-center rounded-xl"
+                style={{ background: bg, width: 40, height: 40 }}
+              >
+                <Icon style={{ color, width: 18, height: 18 }} />
+              </div>
+              <p className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+              <p className="mt-1.5 font-semibold" style={{ color: 'var(--text-primary)', fontSize: 28, letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {value}
+              </p>
+              {href && (
+                <Link href={href} className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color }}>
+                  Lihat semua →
+                </Link>
+              )}
             </div>
+          ))}
+        </div>
+
+        {/* Recent payslips */}
+        <div className="card overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
+            <p className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>Slip Gaji Terbaru</p>
+            <Link href="/payslips" className="text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color: 'var(--accent)' }}>
+              Lihat semua
+            </Link>
+          </div>
+
+          {recentPayslips.length === 0 ? (
+            <div className="flex flex-col items-center py-16 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
+                <FileText className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
+              </div>
+              <p className="mt-4 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>Belum ada slip gaji</p>
+              <p className="mt-1 text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Generate slip gaji pertama untuk mulai</p>
+              <Link href="/generate" className="btn btn-secondary btn-sm mt-4">
+                <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
+              </Link>
+            </div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Karyawan</th>
+                  <th>Periode</th>
+                  <th>Tipe</th>
+                  <th style={{ textAlign: 'right' }}>Gaji Bersih</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentPayslips.map(p => (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="avatar avatar-sm avatar-blue">
+                          {p.employee.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{p.employee.name}</p>
+                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{p.employee.employeeId}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {formatDate(p.startDate)} — {formatDate(p.endDate)}
+                    </td>
+                    <td>
+                      <span className="badge badge-gray">
+                        {p.periodType === 'monthly' ? 'Bulanan' : p.periodType === 'weekly' ? 'Mingguan' : p.periodType === 'quarterly' ? '3 Bulanan' : p.periodType}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCurrency(Number(p.netPay))}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

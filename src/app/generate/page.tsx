@@ -1,8 +1,15 @@
 import { prisma } from '@/lib/db'
 import { PayslipGeneratorForm } from './form'
 import { Employee } from '@/types'
+import { PageHeader } from '@/components/layout/page-header'
 
-export default async function GeneratePage() {
+export default async function GeneratePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ employeeId?: string }>
+}) {
+  const { employeeId } = await searchParams
+
   const employeesRaw = await prisma.employee.findMany({
     where: { isActive: true },
     orderBy: { name: 'asc' },
@@ -10,7 +17,7 @@ export default async function GeneratePage() {
 
   const employees = employeesRaw.map(e => ({
     ...e,
-    pph21Status: e.pph21Status as Employee['pph21Status']
+    pph21Status: e.pph21Status as Employee['pph21Status'],
   }))
 
   const templatesRaw = await prisma.template.findMany({
@@ -18,12 +25,15 @@ export default async function GeneratePage() {
   })
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">Buat Slip Gaji</h1>
-      <PayslipGeneratorForm 
-        employees={employees as Employee[]} 
-        templates={templatesRaw as any[]} 
-      />
+    <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
+      <PageHeader title="Buat Slip Gaji" subtitle="Isi informasi di bawah untuk membuat slip gaji karyawan" />
+      <div className="p-8">
+        <PayslipGeneratorForm
+          employees={employees as Employee[]}
+          templates={templatesRaw as unknown as import('@/types').Template[]}
+          defaultEmployeeId={employeeId}
+        />
+      </div>
     </div>
   )
 }

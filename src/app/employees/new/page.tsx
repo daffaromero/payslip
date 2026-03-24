@@ -2,211 +2,137 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
 
-const PPH21_OPTIONS = [
-  'TK/0', 'TK/1', 'TK/2', 'TK/3',
-  'K/0', 'K/1', 'K/2', 'K/3',
-  'K/I/0', 'K/I/1', 'K/I/2', 'K/I/3'
-]
+const PPH21 = ['TK/0','TK/1','TK/2','TK/3','K/0','K/1','K/2','K/3','K/I/0','K/I/1','K/I/2','K/I/3']
+
+function F({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>
+        {label}{required && <span style={{ color: 'var(--danger)' }}> *</span>}
+      </label>
+      {children}
+      {hint && <p className="mt-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{hint}</p>}
+    </div>
+  )
+}
 
 export default function NewEmployeePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  
-  const [formData, setFormData] = useState({
-    employeeId: '',
-    name: '',
-    email: '',
-    department: '',
-    position: '',
-    npwp: '',
-    bankAccount: '',
-    bankName: '',
-    baseSalary: 0,
-    hourlyRate: 0,
-    pph21Status: 'TK/0'
+  const [form, setForm] = useState({
+    employeeId: '', name: '', email: '', department: '', position: '',
+    npwp: '', bankAccount: '', bankName: '', baseSalary: '', hourlyRate: '', pph21Status: 'TK/0',
   })
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setLoading(true); setError('')
     try {
-      const response = await fetch('/api/employees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const res = await fetch('/api/employees', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null, email: form.email || null, department: form.department || null, position: form.position || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
       })
-      
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Gagal menambahkan karyawan')
-      }
-      
+      if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan')
       router.push('/employees')
-      router.refresh()
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Terjadi kesalahan') }
+    finally { setLoading(false) }
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-2xl">
-      <div className="mb-6">
-        <Link href="/employees">
-          <Button variant="ghost">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
-          </Button>
-        </Link>
+    <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
+      <PageHeader
+        title="Tambah Karyawan Baru"
+        subtitle="Isi informasi karyawan yang akan ditambahkan ke sistem"
+        back={{ href: '/employees', label: 'Kembali ke Karyawan' }}
+      />
+
+      <div className="p-8">
+      <form onSubmit={submit}>
+        <div className="grid grid-cols-3 gap-5">
+          {/* Left */}
+          <div className="col-span-2 space-y-4">
+            <div className="card p-6">
+              <p className="section-label mb-5">Identitas</p>
+              <div className="grid grid-cols-2 gap-4">
+                <F label="ID Karyawan" required>
+                  <input required className="input" placeholder="EMP001" value={form.employeeId} onChange={e => set('employeeId', e.target.value)} />
+                </F>
+                <F label="Nama Lengkap" required>
+                  <input required className="input" placeholder="Budi Santoso" value={form.name} onChange={e => set('name', e.target.value)} />
+                </F>
+                <F label="Email">
+                  <input type="email" className="input" placeholder="budi@company.com" value={form.email} onChange={e => set('email', e.target.value)} />
+                </F>
+                <F label="NPWP">
+                  <input className="input" placeholder="09.123.456.7-123.000" value={form.npwp} onChange={e => set('npwp', e.target.value)} />
+                </F>
+                <F label="Departemen">
+                  <input className="input" placeholder="Engineering, Finance..." value={form.department} onChange={e => set('department', e.target.value)} />
+                </F>
+                <F label="Jabatan">
+                  <input className="input" placeholder="Manager, Staff..." value={form.position} onChange={e => set('position', e.target.value)} />
+                </F>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <p className="section-label mb-5">Bank</p>
+              <div className="grid grid-cols-2 gap-4">
+                <F label="Nama Bank">
+                  <input className="input" placeholder="BCA, Mandiri, BNI..." value={form.bankName} onChange={e => set('bankName', e.target.value)} />
+                </F>
+                <F label="Nomor Rekening">
+                  <input className="input" placeholder="1234567890" value={form.bankAccount} onChange={e => set('bankAccount', e.target.value)} />
+                </F>
+              </div>
+            </div>
+          </div>
+
+          {/* Right */}
+          <div className="space-y-4">
+            <div className="card p-6">
+              <p className="section-label mb-5">Kompensasi & Pajak</p>
+              <div className="space-y-4">
+                <F label="Gaji Pokok" required>
+                  <div className="input-prefix">
+                    <span className="prefix">Rp</span>
+                    <input required type="number" className="input" placeholder="8.000.000" value={form.baseSalary} onChange={e => set('baseSalary', e.target.value)} />
+                  </div>
+                </F>
+                <F label="Tarif Lembur / Jam" hint="Opsional, untuk kalkulasi lembur">
+                  <div className="input-prefix">
+                    <span className="prefix">Rp</span>
+                    <input type="number" className="input" placeholder="50.000" value={form.hourlyRate} onChange={e => set('hourlyRate', e.target.value)} />
+                  </div>
+                </F>
+                <F label="Status PTKP" required hint="TK = Tidak Kawin, K = Kawin, angka = jumlah tanggungan">
+                  <select className="input" value={form.pph21Status} onChange={e => set('pph21Status', e.target.value)}>
+                    {PPH21.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </F>
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-lg px-4 py-3 text-[13px]" style={{ background: 'var(--danger-light)', color: 'var(--danger)', border: '1px solid #fecaca' }}>
+                {error}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading ? 'Menyimpan...' : 'Simpan Karyawan'}
+            </button>
+            <Link href="/employees" className="btn btn-secondary btn-lg w-full">Batal</Link>
+          </div>
+        </div>
+      </form>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Tambah Karyawan Baru</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>ID Karyawan *</Label>
-                <Input 
-                  required
-                  value={formData.employeeId}
-                  onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
-                  placeholder="EMP001"
-                />
-              </div>
-              <div>
-                <Label>Nama Lengkap *</Label>
-                <Input 
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Nama Karyawan"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Departemen</Label>
-                <Input 
-                  value={formData.department}
-                  onChange={(e) => setFormData({...formData, department: e.target.value})}
-                  placeholder="IT, HR, dll"
-                />
-              </div>
-              <div>
-                <Label>Jabatan</Label>
-                <Input 
-                  value={formData.position}
-                  onChange={(e) => setFormData({...formData, position: e.target.value})}
-                  placeholder="Manager, Staff, dll"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label>Email</Label>
-              <Input 
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                placeholder="email@company.com"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>NPWP</Label>
-                <Input 
-                  value={formData.npwp}
-                  onChange={(e) => setFormData({...formData, npwp: e.target.value})}
-                  placeholder="09.123.456.7-123.000"
-                />
-              </div>
-              <div>
-                <Label>Status PTKP *</Label>
-                <select 
-                  className="w-full border rounded px-3 py-2"
-                  value={formData.pph21Status}
-                  onChange={(e) => setFormData({...formData, pph21Status: e.target.value})}
-                >
-                  {PPH21_OPTIONS.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Nama Bank</Label>
-                <Input 
-                  value={formData.bankName}
-                  onChange={(e) => setFormData({...formData, bankName: e.target.value})}
-                  placeholder="BCA, Mandiri, dll"
-                />
-              </div>
-              <div>
-                <Label>No. Rekening</Label>
-                <Input 
-                  value={formData.bankAccount}
-                  onChange={(e) => setFormData({...formData, bankAccount: e.target.value})}
-                  placeholder="1234567890"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Gaji Pokok *</Label>
-                <Input 
-                  type="number"
-                  required
-                  value={formData.baseSalary || ''}
-                  onChange={(e) => setFormData({...formData, baseSalary: Number(e.target.value)})}
-                  placeholder="10000000"
-                />
-              </div>
-              <div>
-                <Label>Tarif Lembur per Jam</Label>
-                <Input 
-                  type="number"
-                  value={formData.hourlyRate || ''}
-                  onChange={(e) => setFormData({...formData, hourlyRate: Number(e.target.value)})}
-                  placeholder="50000"
-                />
-              </div>
-            </div>
-            
-            <div className="pt-4">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Menyimpan...' : 'Simpan Karyawan'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
     </div>
   )
 }

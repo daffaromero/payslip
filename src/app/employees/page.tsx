@@ -1,133 +1,156 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { ImportDialog } from '@/components/employees/import-dialog'
-import { Upload, Plus, Search, User, Pencil, Trash2 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { Plus, Search, Users, Pencil, Trash2, FileText } from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
 
 interface Employee {
-  id: string
-  employeeId: string
-  name: string
-  email: string | null
-  department: string | null
-  position: string | null
-  baseSalary: number
+  id: string; employeeId: string; name: string; email: string | null
+  department: string | null; position: string | null; baseSalary: number; pph21Status: string
 }
 
 export default function EmployeesPage() {
-  const [importOpen, setImportOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchEmployees()
+  const load = useCallback(async () => {
+    const res = await fetch('/api/employees')
+    if (res.ok) setEmployees((await res.json()).employees ?? [])
+    setLoading(false)
   }, [])
+  useEffect(() => { load() }, [load])
 
-  const fetchEmployees = async () => {
-    try {
-      const response = await fetch('/api/employees')
-      if (response.ok) {
-        const data = await response.json()
-        setEmployees(data.employees || [])
-      }
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setLoading(false)
-    }
+  const del = async (id: string, name: string) => {
+    if (!confirm(`Hapus karyawan "${name}"?`)) return
+    setDeletingId(id)
+    const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' })
+    if (res.ok) setEmployees(p => p.filter(e => e.id !== id))
+    setDeletingId(null)
   }
 
-  const filteredEmployees = employees.filter(
-    (e) =>
-      e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (e.department && e.department.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
+  const filtered = employees.filter(e => {
+    const s = q.toLowerCase()
+    return e.name.toLowerCase().includes(s) || e.employeeId.toLowerCase().includes(s) || (e.department?.toLowerCase().includes(s) ?? false)
+  })
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Data Karyawan</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="mr-2 h-5 w-5" />
-            Import
-          </Button>
-          <Link href="/employees/new">
-            <Button>
-              <Plus className="mr-2 h-5 w-5" />
-              Tambah
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
+      <PageHeader title="Karyawan" subtitle={loading ? '' : `${employees.length} karyawan aktif`}>
+        <Link href="/employees/new" className="btn btn-primary">
+          <Plus className="h-3.5 w-3.5" /> Tambah Karyawan
+        </Link>
+      </PageHeader>
 
-      <Card>
-        <CardHeader>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Cari karyawan..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+      <div className="p-8">
+        <div className="card overflow-hidden">
+          {/* Search toolbar */}
+          <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
+              <input
+                type="text" placeholder="Cari nama, ID, departemen..."
+                value={q} onChange={e => setQ(e.target.value)}
+                className="input" style={{ paddingLeft: '32px' }}
+              />
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
+
           {loading ? (
-            <p className="text-center py-8 text-gray-500">Memuat...</p>
-          ) : filteredEmployees.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <User className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>Belum ada karyawan. Tambahkan karyawan pertama.</p>
+            <div className="flex items-center justify-center py-20">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--accent)] border-t-transparent" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center py-20 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
+                <Users className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
+              </div>
+              <p className="mt-4 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                {q ? 'Tidak ada hasil' : 'Belum ada karyawan'}
+              </p>
+              <p className="mt-1 text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+                {q ? 'Coba kata kunci lain' : 'Tambah karyawan untuk mulai'}
+              </p>
+              {!q && (
+                <Link href="/employees/new" className="btn btn-secondary btn-sm mt-4">
+                  <Plus className="h-3.5 w-3.5" /> Tambah Karyawan
+                </Link>
+              )}
             </div>
           ) : (
-            <div className="divide-y">
-              {filteredEmployees.map((employee) => (
-                <div
-                  key={employee.id}
-                  className="flex items-center justify-between py-4 hover:bg-gray-50 px-2 rounded"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{employee.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {employee.employeeId} • {employee.department || '-'} • {employee.position || '-'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="font-medium">{formatCurrency(employee.baseSalary)}</p>
-                      <p className="text-sm text-gray-500">Gaji Pokok</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Karyawan</th>
+                  <th>Departemen / Jabatan</th>
+                  <th>Status PTKP</th>
+                  <th style={{ textAlign: 'right' }}>Gaji Pokok</th>
+                  <th style={{ width: '100px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(e => (
+                  <tr key={e.id} className="group">
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="avatar avatar-md avatar-blue">{e.name.charAt(0).toUpperCase()}</div>
+                        <div>
+                          <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{e.name}</p>
+                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                            {e.employeeId}{e.email ? ` · ${e.email}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <p className="text-[13px]" style={{ color: 'var(--text-primary)' }}>{e.department || '—'}</p>
+                      {e.position && <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{e.position}</p>}
+                    </td>
+                    <td>
+                      <span className="badge badge-blue">{e.pph21Status}</span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCurrency(Number(e.baseSalary))}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link href={`/employees/${e.id}/edit`} className="btn btn-ghost btn-icon btn-sm" title="Edit">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Link>
+                        <Link href={`/generate?employeeId=${e.id}`} className="btn btn-ghost btn-icon btn-sm" title="Buat Slip Gaji">
+                          <FileText className="h-3.5 w-3.5" />
+                        </Link>
+                        <button
+                          onClick={() => del(e.id, e.name)}
+                          disabled={deletingId === e.id}
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ color: 'var(--text-tertiary)' }}
+                          title="Hapus"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {filtered.length > 0 && (
+            <div className="px-5 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+              <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+                {filtered.length} dari {employees.length} karyawan
+              </p>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+        </div>
+      </div>
     </div>
   )
 }
