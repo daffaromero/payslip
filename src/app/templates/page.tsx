@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/db'
 import { deserializeTemplate } from '@/lib/api/template-serializer'
 import { FileText, Star, Layout, Eye } from 'lucide-react'

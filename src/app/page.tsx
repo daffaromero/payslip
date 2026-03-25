@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Users, FileText, TrendingUp, Plus } from 'lucide-react'
