@@ -3,18 +3,22 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
+# Copy schema before npm ci so the prisma postinstall hook can find it
 COPY package*.json ./
+COPY prisma ./prisma
+
+RUN apt-get update && apt-get install -y openssl --no-install-recommends && rm -rf /var/lib/apt/lists/*
 RUN npm ci
 
 COPY . .
-RUN npx prisma generate
 RUN npm run build
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
 FROM node:20-slim AS runner
 
-# Chromium + fonts for Puppeteer
+# Chromium + fonts + OpenSSL for Puppeteer and Prisma
 RUN apt-get update && apt-get install -y \
+  openssl \
   chromium \
   fonts-liberation \
   libatk-bridge2.0-0 \
