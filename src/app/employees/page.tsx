@@ -68,14 +68,14 @@ export default function EmployeesPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
                 <Users className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
               </div>
-              <p className="mt-4 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)', marginTop: 16 }}>
                 {q ? 'Tidak ada hasil' : 'Belum ada karyawan'}
               </p>
-              <p className="mt-1 text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-[12px]" style={{ color: 'var(--text-tertiary)', marginTop: 4 }}>
                 {q ? 'Coba kata kunci lain' : 'Tambah karyawan untuk mulai'}
               </p>
               {!q && (
-                <Link href="/employees/new" className="btn btn-secondary btn-sm mt-4">
+                <Link href="/employees/new" className="btn btn-secondary btn-sm" style={{ marginTop: 16 }}>
                   <Plus className="h-3.5 w-3.5" /> Tambah Karyawan
                 </Link>
               )}
@@ -99,7 +99,7 @@ export default function EmployeesPage() {
                         <div className="avatar avatar-md avatar-blue">{e.name.charAt(0).toUpperCase()}</div>
                         <div>
                           <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{e.name}</p>
-                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>
                             {e.employeeId}{e.email ? ` · ${e.email}` : ''}
                           </p>
                         </div>
@@ -107,7 +107,7 @@ export default function EmployeesPage() {
                     </td>
                     <td>
                       <p className="text-[13px]" style={{ color: 'var(--text-primary)' }}>{e.department || '—'}</p>
-                      {e.position && <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{e.position}</p>}
+                      {e.position && <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>{e.position}</p>}
                     </td>
                     <td>
                       <span className="badge badge-blue">{e.pph21Status}</span>
@@ -143,7 +143,7 @@ export default function EmployeesPage() {
           )}
 
           {filtered.length > 0 && (
-            <div className="px-5 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+            <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)' }}>
               <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
                 {filtered.length} dari {employees.length} karyawan
               </p>

@@ -73,9 +73,9 @@ export default function PayslipsPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
                 <FileText className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
               </div>
-              <p className="mt-4 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>Belum ada slip gaji</p>
-              <p className="mt-1 text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Generate slip gaji pertama untuk mulai</p>
-              <Link href="/generate" className="btn btn-secondary btn-sm mt-4">
+              <p className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)', marginTop: 16 }}>Belum ada slip gaji</p>
+              <p className="text-[12px]" style={{ color: 'var(--text-tertiary)', marginTop: 4 }}>Generate slip gaji pertama untuk mulai</p>
+              <Link href="/generate" className="btn btn-secondary btn-sm" style={{ marginTop: 16 }}>
                 <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
               </Link>
             </div>
@@ -99,7 +99,7 @@ export default function PayslipsPage() {
                         <div className="avatar avatar-sm avatar-blue">{p.employee.name.charAt(0).toUpperCase()}</div>
                         <div>
                           <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{p.employee.name}</p>
-                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{p.employee.employeeId}</p>
+                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>{p.employee.employeeId}</p>
                         </div>
                       </div>
                     </td>
@@ -107,7 +107,7 @@ export default function PayslipsPage() {
                       <p className="text-[13px]" style={{ color: 'var(--text-primary)' }}>
                         {formatDate(p.startDate)} — {formatDate(p.endDate)}
                       </p>
-                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{formatDate(p.generatedAt)}</p>
+                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>{formatDate(p.generatedAt)}</p>
                     </td>
                     <td><span className="badge badge-gray">{PERIOD[p.periodType] ?? p.periodType}</span></td>
                     <td style={{ textAlign: 'right' }}>
@@ -145,7 +145,7 @@ export default function PayslipsPage() {
             </table>
           )}
           {payslips.length > 0 && (
-            <div className="px-5 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+            <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)' }}>
               <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
                 Menampilkan {payslips.length} dari {total} slip gaji
               </p>

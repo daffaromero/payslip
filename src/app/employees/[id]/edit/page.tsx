@@ -11,11 +11,11 @@ const PPH21 = ['TK/0','TK/1','TK/2','TK/3','K/0','K/1','K/2','K/3','K/I/0','K/I/
 function F({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>
+      <label className="block text-[13px] font-medium" style={{ color: 'var(--text-primary)', marginBottom: 6 }}>
         {label}{required && <span style={{ color: 'var(--danger)' }}> *</span>}
       </label>
       {children}
-      {hint && <p className="mt-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{hint}</p>}
+      {hint && <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 4 }}>{hint}</p>}
     </div>
   )
 }
@@ -73,9 +73,9 @@ export default function EditEmployeePage() {
       <div className="p-8">
       <form onSubmit={submit}>
         <div className="grid grid-cols-3 gap-5" style={{ gap: 20 }}>
-          <div className="col-span-2 space-y-4">
+          <div className="col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="card p-6">
-              <p className="section-label mb-5">Identitas</p>
+              <p className="section-label" style={{ marginBottom: 20 }}>Identitas</p>
               <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
                 <F label="ID Karyawan" required><input required className="input" value={form.employeeId} onChange={e => set('employeeId', e.target.value)} /></F>
                 <F label="Nama Lengkap" required><input required className="input" value={form.name} onChange={e => set('name', e.target.value)} /></F>
@@ -86,17 +86,17 @@ export default function EditEmployeePage() {
               </div>
             </div>
             <div className="card p-6">
-              <p className="section-label mb-5">Bank</p>
+              <p className="section-label" style={{ marginBottom: 20 }}>Bank</p>
               <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
                 <F label="Nama Bank"><input className="input" value={form.bankName} onChange={e => set('bankName', e.target.value)} /></F>
                 <F label="Nomor Rekening"><input className="input" value={form.bankAccount} onChange={e => set('bankAccount', e.target.value)} /></F>
               </div>
             </div>
           </div>
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="card p-6">
-              <p className="section-label mb-5">Kompensasi & Pajak</p>
-              <div className="space-y-4">
+              <p className="section-label" style={{ marginBottom: 20 }}>Kompensasi & Pajak</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <F label="Gaji Pokok" required>
                   <div className="input-prefix"><span className="prefix">Rp</span><input required type="number" className="input" value={form.baseSalary} onChange={e => set('baseSalary', e.target.value)} /></div>
                 </F>

@@ -19,8 +19,8 @@ export default async function TemplatesPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
               <Layout className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
             </div>
-            <p className="mt-4 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>Belum ada template</p>
-            <p className="mt-1 text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)', marginTop: 16 }}>Belum ada template</p>
+            <p className="text-[12px]" style={{ color: 'var(--text-tertiary)', marginTop: 4 }}>
               Jalankan <code className="rounded px-1 py-0.5 text-[11px]" style={{ background: 'var(--bg-hover)', fontFamily: 'var(--font-mono)' }}>npm run db:seed</code> untuk menambahkan template awal
             </p>
           </div>
@@ -29,14 +29,14 @@ export default async function TemplatesPage() {
             {templates.map(t => (
               <div key={t.id} className="card p-5">
                 {/* Icon */}
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg" style={{ background: 'var(--accent-light)' }}>
+                <div className="flex items-center justify-center rounded-lg" style={{ background: 'var(--accent-light)', width: 40, height: 40, marginBottom: 16 }}>
                   <FileText className="h-5 w-5" style={{ color: 'var(--accent)' }} />
                 </div>
 
                 <div className="flex items-start justify-between gap-2 mb-3" style={{ gap: 8 }}>
                   <div className="min-w-0">
                     <h3 className="truncate text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>{t.name}</h3>
-                    <p className="mt-0.5 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                    <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>
                       {t.type === 'preset' ? 'Preset' : 'Custom'} · {t.layout.orientation === 'portrait' ? 'Portrait' : 'Landscape'} · {t.layout.pageSize}
                     </p>
                   </div>

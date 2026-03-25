@@ -34,21 +34,21 @@ export default async function DashboardPage() {
 
       <div className="p-8">
         {/* Stats row */}
-        <div className="mb-6 grid grid-cols-3 gap-4" style={{ gap: 16 }}>
+        <div className="grid grid-cols-3 gap-4" style={{ gap: 16, marginBottom: 24 }}>
           {stats.map(({ label, value, icon: Icon, href, color, bg }) => (
             <div key={label} className="card p-5">
               <div
-                className="mb-4 flex items-center justify-center rounded-xl"
-                style={{ background: bg, width: 40, height: 40 }}
+                className="flex items-center justify-center rounded-xl"
+                style={{ background: bg, width: 40, height: 40, marginBottom: 16, flexShrink: 0 }}
               >
                 <Icon style={{ color, width: 18, height: 18 }} />
               </div>
               <p className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
-              <p className="mt-1.5 font-semibold" style={{ color: 'var(--text-primary)', fontSize: 28, letterSpacing: '-0.03em', lineHeight: 1 }}>
+              <p className="font-semibold" style={{ color: 'var(--text-primary)', fontSize: 28, letterSpacing: '-0.03em', lineHeight: 1, marginTop: 6 }}>
                 {value}
               </p>
               {href && (
-                <Link href={href} className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color }}>
+                <Link href={href} className="inline-flex items-center text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color, marginTop: 12, gap: 4 }}>
                   Lihat semua →
                 </Link>
               )}
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
 
         {/* Recent payslips */}
         <div className="card overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between" style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
             <p className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>Slip Gaji Terbaru</p>
             <Link href="/payslips" className="text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color: 'var(--accent)' }}>
               Lihat semua
@@ -70,9 +70,9 @@ export default async function DashboardPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
                 <FileText className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
               </div>
-              <p className="mt-4 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>Belum ada slip gaji</p>
-              <p className="mt-1 text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Generate slip gaji pertama untuk mulai</p>
-              <Link href="/generate" className="btn btn-secondary btn-sm mt-4">
+              <p className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)', marginTop: 16 }}>Belum ada slip gaji</p>
+              <p className="text-[12px]" style={{ color: 'var(--text-tertiary)', marginTop: 4 }}>Generate slip gaji pertama untuk mulai</p>
+              <Link href="/generate" className="btn btn-secondary btn-sm" style={{ marginTop: 16 }}>
                 <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
               </Link>
             </div>
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
                         </div>
                         <div>
                           <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{p.employee.name}</p>
-                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{p.employee.employeeId}</p>
+                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>{p.employee.employeeId}</p>
                         </div>
                       </div>
                     </td>
