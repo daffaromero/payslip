@@ -13,7 +13,7 @@ export default async function TemplatesPage() {
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
       <PageHeader title="Template" subtitle={`${templates.length} template tersedia`} />
 
-      <div className="p-8">
+      <div style={{ padding: 32 }}>
         {templates.length === 0 ? (
           <div className="card flex flex-col items-center py-20 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
@@ -27,7 +27,7 @@ export default async function TemplatesPage() {
         ) : (
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {templates.map(t => (
-              <div key={t.id} className="card p-5">
+              <div key={t.id} className="card" style={{ padding: 20 }}>
                 {/* Icon */}
                 <div className="flex items-center justify-center rounded-lg" style={{ background: 'var(--accent-light)', width: 40, height: 40, marginBottom: 16 }}>
                   <FileText className="h-5 w-5" style={{ color: 'var(--accent)' }} />

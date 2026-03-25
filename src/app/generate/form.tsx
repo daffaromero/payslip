@@ -114,7 +114,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         )}
 
         {/* Setup */}
-        <div className="card p-5">
+        <div className="card" style={{ padding: 20 }}>
           <p className="section-label" style={{ marginBottom: 20 }}>Informasi Dasar</p>
           <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
             <F label="Karyawan *">
@@ -146,7 +146,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         </div>
 
         {/* Earnings */}
-        <div className="card p-5">
+        <div className="card" style={{ padding: 20 }}>
           <p className="section-label" style={{ marginBottom: 20 }}>Penerimaan</p>
           <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
             <F label="Gaji Pokok">
@@ -188,7 +188,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         </div>
 
         {/* Deductions */}
-        <div className="card p-5">
+        <div className="card" style={{ padding: 20 }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
             <p className="section-label">Potongan Tambahan</p>
             <button type="button" onClick={() => setDeductions(p => [...p, { name: '', amount: 0 }])} className="btn btn-ghost btn-sm" style={{ color: 'var(--accent)' }}>
@@ -210,7 +210,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
           )}
         </div>
 
-        <div className="card p-5">
+        <div className="card" style={{ padding: 20 }}>
           <F label="Catatan">
             <textarea className="input" style={{ height: 'auto', paddingTop: '8px', paddingBottom: '8px', resize: 'none', lineHeight: '1.5' }} rows={3} placeholder="Catatan opsional untuk slip gaji ini..." value={notes} onChange={e => setNotes(e.target.value)} />
           </F>
@@ -225,7 +225,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
       {/* Sidebar — live preview */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 24, alignSelf: 'start' }}>
         {emp && (
-          <div className="card p-5">
+          <div className="card" style={{ padding: 20 }}>
             <p className="section-label" style={{ marginBottom: 16 }}>Karyawan</p>
             <div className="flex items-center gap-3" style={{ gap: 12 }}>
               <div className="avatar avatar-md avatar-blue">{emp.name.charAt(0).toUpperCase()}</div>
@@ -237,7 +237,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
           </div>
         )}
 
-        <div className="card p-5">
+        <div className="card" style={{ padding: 20 }}>
           <p className="section-label" style={{ marginBottom: 16 }}>Kalkulasi</p>
           {calc ? (
             <div>

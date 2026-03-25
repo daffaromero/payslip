@@ -32,11 +32,11 @@ export default async function DashboardPage() {
         </Link>
       </PageHeader>
 
-      <div className="p-8">
+      <div style={{ padding: 32 }}>
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4" style={{ gap: 16, marginBottom: 24 }}>
+        <div className="grid grid-cols-3" style={{ gap: 16, marginBottom: 24 }}>
           {stats.map(({ label, value, icon: Icon, href, color, bg }) => (
-            <div key={label} className="card p-5">
+            <div key={label} className="card" style={{ padding: 20 }}>
               <div
                 className="flex items-center justify-center rounded-xl"
                 style={{ background: bg, width: 40, height: 40, marginBottom: 16, flexShrink: 0 }}

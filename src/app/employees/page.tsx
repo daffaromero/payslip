@@ -45,7 +45,7 @@ export default function EmployeesPage() {
         </Link>
       </PageHeader>
 
-      <div className="p-8">
+      <div style={{ padding: 32 }}>
         <div className="card overflow-hidden">
           {/* Search toolbar */}
           <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)', gap: 12 }}>

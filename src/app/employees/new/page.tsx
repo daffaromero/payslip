@@ -51,12 +51,12 @@ export default function NewEmployeePage() {
         back={{ href: '/employees', label: 'Kembali ke Karyawan' }}
       />
 
-      <div className="p-8">
+      <div style={{ padding: 32 }}>
       <form onSubmit={submit}>
         <div className="grid grid-cols-3 gap-5" style={{ gap: 20 }}>
           {/* Left */}
           <div className="col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card p-6">
+            <div className="card" style={{ padding: 24 }}>
               <p className="section-label" style={{ marginBottom: 20 }}>Identitas</p>
               <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
                 <F label="ID Karyawan" required>
@@ -80,7 +80,7 @@ export default function NewEmployeePage() {
               </div>
             </div>
 
-            <div className="card p-6">
+            <div className="card" style={{ padding: 24 }}>
               <p className="section-label" style={{ marginBottom: 20 }}>Bank</p>
               <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
                 <F label="Nama Bank">
@@ -95,7 +95,7 @@ export default function NewEmployeePage() {
 
           {/* Right */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card p-6">
+            <div className="card" style={{ padding: 24 }}>
               <p className="section-label" style={{ marginBottom: 20 }}>Kompensasi & Pajak</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <F label="Gaji Pokok" required>

@@ -62,7 +62,7 @@ export default function PayslipsPage() {
         </Link>
       </PageHeader>
 
-      <div className="p-8">
+      <div style={{ padding: 32 }}>
         <div className="card overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-20">
