@@ -45,16 +45,16 @@ export default function EmployeesPage() {
         </Link>
       </PageHeader>
 
-      <div style={{ padding: 32 }}>
+      <div style={{ padding: 12 }}>
         <div className="card overflow-hidden">
           {/* Search toolbar */}
-          <div className="flex items-center" style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', gap: 12 }}>
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid var(--border)', gap: 12 }}>
+            <div style={{ position: 'relative', flex: 1, maxWidth: 384 }}>
+              <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text-tertiary)' }} />
               <input
                 type="text" placeholder="Cari nama, ID, departemen..."
                 value={q} onChange={e => setQ(e.target.value)}
-                className="input" style={{ paddingLeft: '32px' }}
+                className="input" style={{ paddingLeft: 36 }}
               />
             </div>
           </div>
@@ -98,22 +98,22 @@ export default function EmployeesPage() {
                       <div className="flex items-center gap-3" style={{ gap: 12 }}>
                         <div className="avatar avatar-md avatar-blue">{e.name.charAt(0).toUpperCase()}</div>
                         <div>
-                          <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{e.name}</p>
-                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>
+                          <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{e.name}</p>
+                          <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>
                             {e.employeeId}{e.email ? ` · ${e.email}` : ''}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <p className="text-[13px]" style={{ color: 'var(--text-primary)' }}>{e.department || '—'}</p>
-                      {e.position && <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>{e.position}</p>}
+                      <p style={{ fontSize: 15, color: 'var(--text-primary)' }}>{e.department || '—'}</p>
+                      {e.position && <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>{e.position}</p>}
                     </td>
                     <td>
                       <span className="badge badge-blue">{e.pph21Status}</span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <span className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
                         {formatCurrency(Number(e.baseSalary))}
                       </span>
                     </td>

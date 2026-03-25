@@ -27,7 +27,7 @@ export default async function GeneratePage({
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
       <PageHeader title="Buat Slip Gaji" subtitle="Isi informasi di bawah untuk membuat slip gaji karyawan" />
-      <div style={{ padding: 32 }}>
+      <div style={{ padding: 12 }}>
         <PayslipGeneratorForm
           employees={employees as Employee[]}
           templates={templatesRaw as unknown as import('@/types').Template[]}

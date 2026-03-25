@@ -62,7 +62,7 @@ export default function PayslipsPage() {
         </Link>
       </PageHeader>
 
-      <div style={{ padding: 32 }}>
+      <div style={{ padding: 12 }}>
         <div className="card overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center" style={{ padding: '80px 0' }}>
@@ -98,25 +98,25 @@ export default function PayslipsPage() {
                       <div className="flex items-center gap-3" style={{ gap: 12 }}>
                         <div className="avatar avatar-sm avatar-blue">{p.employee.name.charAt(0).toUpperCase()}</div>
                         <div>
-                          <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{p.employee.name}</p>
-                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>{p.employee.employeeId}</p>
+                          <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{p.employee.name}</p>
+                          <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>{p.employee.employeeId}</p>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <p className="text-[13px]" style={{ color: 'var(--text-primary)' }}>
+                      <p style={{ fontSize: 15, color: 'var(--text-primary)' }}>
                         {formatDate(p.startDate)} — {formatDate(p.endDate)}
                       </p>
-                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>{formatDate(p.generatedAt)}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>{formatDate(p.generatedAt)}</p>
                     </td>
                     <td><span className="badge badge-gray">{PERIOD[p.periodType] ?? p.periodType}</span></td>
                     <td style={{ textAlign: 'right' }}>
-                      <span className="text-[13px]" style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ fontSize: 15, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
                         {formatCurrency(Number(p.grossPay))}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <span className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
                         {formatCurrency(Number(p.netPay))}
                       </span>
                     </td>

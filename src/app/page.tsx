@@ -32,26 +32,28 @@ export default async function DashboardPage() {
         </Link>
       </PageHeader>
 
-      <div style={{ padding: 32 }}>
+      <div style={{ padding: 12 }}>
         {/* Stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
           {stats.map(({ label, value, icon: Icon, href, color, bg }) => (
-            <div key={label} className="card" style={{ padding: 20 }}>
+            <div key={label} className="card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
               <div
                 className="flex items-center justify-center rounded-xl"
-                style={{ background: bg, width: 40, height: 40, marginBottom: 16, flexShrink: 0 }}
+                style={{ background: bg, width: 52, height: 52, flexShrink: 0 }}
               >
-                <Icon style={{ color, width: 18, height: 18 }} />
+                <Icon style={{ color, width: 24, height: 24 }} />
               </div>
-              <p className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
-              <p className="font-semibold" style={{ color: 'var(--text-primary)', fontSize: 28, letterSpacing: '-0.03em', lineHeight: 1, marginTop: 6 }}>
-                {value}
-              </p>
-              {href && (
-                <Link href={href} className="inline-flex items-center text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color, marginTop: 12, gap: 4 }}>
-                  Lihat semua →
-                </Link>
-              )}
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{label}</p>
+                <p style={{ color: 'var(--text-primary)', fontSize: 30, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1, marginTop: 4 }}>
+                  {value}
+                </p>
+                {href && (
+                  <Link href={href} className="inline-flex items-center font-medium transition-opacity hover:opacity-70" style={{ color, marginTop: 8, fontSize: 13, gap: 4 }}>
+                    Lihat semua →
+                  </Link>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -95,8 +97,8 @@ export default async function DashboardPage() {
                           {p.employee.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{p.employee.name}</p>
-                          <p className="text-[11px]" style={{ color: 'var(--text-tertiary)', marginTop: 2 }}>{p.employee.employeeId}</p>
+                          <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{p.employee.name}</p>
+                          <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>{p.employee.employeeId}</p>
                         </div>
                       </div>
                     </td>
@@ -104,12 +106,12 @@ export default async function DashboardPage() {
                       {formatDate(p.startDate)} — {formatDate(p.endDate)}
                     </td>
                     <td>
-                      <span className="badge badge-gray">
+                      <span className="badge badge-gray" style={{ fontSize: 13, fontWeight: 500 }}>
                         {p.periodType === 'monthly' ? 'Bulanan' : p.periodType === 'weekly' ? 'Mingguan' : p.periodType === 'quarterly' ? '3 Bulanan' : p.periodType}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <span className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
                         {formatCurrency(Number(p.netPay))}
                       </span>
                     </td>

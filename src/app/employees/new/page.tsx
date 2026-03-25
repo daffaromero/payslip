@@ -51,7 +51,7 @@ export default function NewEmployeePage() {
         back={{ href: '/employees', label: 'Kembali ke Karyawan' }}
       />
 
-      <div style={{ padding: 32 }}>
+      <div style={{ padding: 12 }}>
       <form onSubmit={submit}>
         <div className="grid grid-cols-3 gap-5" style={{ gap: 20 }}>
           {/* Left */}

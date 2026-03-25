@@ -70,7 +70,7 @@ export default function EditEmployeePage() {
         back={{ href: '/employees', label: 'Kembali ke Karyawan' }}
       />
 
-      <div style={{ padding: 32 }}>
+      <div style={{ padding: 12 }}>
       <form onSubmit={submit}>
         <div className="grid grid-cols-3 gap-5" style={{ gap: 20 }}>
           <div className="col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
