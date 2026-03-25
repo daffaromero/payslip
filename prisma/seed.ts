@@ -2,7 +2,7 @@ import { config } from 'dotenv'
 import { resolve } from 'path'
 import { PrismaClient } from '@prisma/client'
 
-config({ path: resolve(__dirname, '../.env') })
+config({ path: resolve(__dirname, '../.env'), override: false })
 console.log('Using database URL:', process.env.DATABASE_URL || 'file:./dev.db')
 
 const prisma = new PrismaClient()
