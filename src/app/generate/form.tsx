@@ -92,7 +92,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   }
 
   return (
-    <div className="grid gap-6" style={{ gridTemplateColumns: '1fr 320px' }}>
+    <div className="grid gap-6" style={{ gridTemplateColumns: '1fr 320px', gap: 24 }}>
       {/* Form */}
       <div className="min-w-0 space-y-4">
         {/* Alerts */}
@@ -116,7 +116,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         {/* Setup */}
         <div className="card p-5">
           <p className="section-label mb-5">Informasi Dasar</p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
             <F label="Karyawan *">
               <select className="input" value={employeeId} onChange={e => setEmployeeId(e.target.value)}>
                 <option value="">Pilih karyawan...</option>
@@ -138,7 +138,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
                 <option value="annual">Tahunan</option>
               </select>
             </F>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3" style={{ gap: 12 }}>
               <F label="Mulai"><input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} /></F>
               <F label="Selesai"><input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} /></F>
             </div>
@@ -148,7 +148,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         {/* Earnings */}
         <div className="card p-5">
           <p className="section-label mb-5">Penerimaan</p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
             <F label="Gaji Pokok">
               <div className="input-prefix"><span className="prefix">Rp</span><input type="number" className="input" value={basePay} onChange={e => setBasePay(Number(e.target.value))} /></div>
             </F>
@@ -177,7 +177,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
             {allowances.length === 0 && <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Tidak ada tunjangan tambahan</p>}
             <div className="space-y-2">
               {allowances.map((a, i) => (
-                <div key={i} className="flex gap-2 items-center">
+                <div key={i} className="flex gap-2 items-center" style={{ gap: 8 }}>
                   <input className="input flex-1" placeholder="Nama tunjangan" value={a.name} onChange={e => { const u=[...allowances]; u[i]={...u[i],name:e.target.value}; setAllowances(u) }} />
                   <div className="input-prefix flex-1"><span className="prefix">Rp</span><input type="number" className="input" value={a.amount} onChange={e => { const u=[...allowances]; u[i]={...u[i],amount:Number(e.target.value)}; setAllowances(u) }} /></div>
                   <button type="button" onClick={() => setAllowances(allowances.filter((_,j)=>j!==i))} className="btn btn-ghost btn-icon btn-sm flex-shrink-0" style={{ color: 'var(--danger)' }}><X className="h-3.5 w-3.5" /></button>
@@ -200,7 +200,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
           ) : (
             <div className="space-y-2">
               {deductions.map((d, i) => (
-                <div key={i} className="flex gap-2 items-center">
+                <div key={i} className="flex gap-2 items-center" style={{ gap: 8 }}>
                   <input className="input flex-1" placeholder="Nama potongan" value={d.name} onChange={e => { const u=[...deductions]; u[i]={...u[i],name:e.target.value}; setDeductions(u) }} />
                   <div className="input-prefix flex-1"><span className="prefix">Rp</span><input type="number" className="input" value={d.amount} onChange={e => { const u=[...deductions]; u[i]={...u[i],amount:Number(e.target.value)}; setDeductions(u) }} /></div>
                   <button type="button" onClick={() => setDeductions(deductions.filter((_,j)=>j!==i))} className="btn btn-ghost btn-icon btn-sm flex-shrink-0" style={{ color: 'var(--danger)' }}><X className="h-3.5 w-3.5" /></button>
@@ -227,7 +227,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         {emp && (
           <div className="card p-5">
             <p className="section-label mb-4">Karyawan</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" style={{ gap: 12 }}>
               <div className="avatar avatar-md avatar-blue">{emp.name.charAt(0).toUpperCase()}</div>
               <div>
                 <p className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>{emp.name}</p>

@@ -34,7 +34,7 @@ export default async function DashboardPage() {
 
       <div className="p-8">
         {/* Stats row */}
-        <div className="mb-6 grid grid-cols-3 gap-4">
+        <div className="mb-6 grid grid-cols-3 gap-4" style={{ gap: 16 }}>
           {stats.map(({ label, value, icon: Icon, href, color, bg }) => (
             <div key={label} className="card p-5">
               <div
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
                 {recentPayslips.map(p => (
                   <tr key={p.id}>
                     <td>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3" style={{ gap: 12 }}>
                         <div className="avatar avatar-sm avatar-blue">
                           {p.employee.name.charAt(0).toUpperCase()}
                         </div>

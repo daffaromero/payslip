@@ -48,7 +48,7 @@ export default function EmployeesPage() {
       <div className="p-8">
         <div className="card overflow-hidden">
           {/* Search toolbar */}
-          <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)', gap: 12 }}>
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
               <input
@@ -95,7 +95,7 @@ export default function EmployeesPage() {
                 {filtered.map(e => (
                   <tr key={e.id} className="group">
                     <td>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3" style={{ gap: 12 }}>
                         <div className="avatar avatar-md avatar-blue">{e.name.charAt(0).toUpperCase()}</div>
                         <div>
                           <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{e.name}</p>
@@ -118,7 +118,7 @@ export default function EmployeesPage() {
                       </span>
                     </td>
                     <td>
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: 4 }}>
                         <Link href={`/employees/${e.id}/edit`} className="btn btn-ghost btn-icon btn-sm" title="Edit">
                           <Pencil className="h-3.5 w-3.5" />
                         </Link>

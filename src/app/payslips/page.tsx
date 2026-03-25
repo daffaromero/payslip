@@ -95,7 +95,7 @@ export default function PayslipsPage() {
                 {payslips.map(p => (
                   <tr key={p.id} className="group">
                     <td>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3" style={{ gap: 12 }}>
                         <div className="avatar avatar-sm avatar-blue">{p.employee.name.charAt(0).toUpperCase()}</div>
                         <div>
                           <p className="text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{p.employee.name}</p>
@@ -121,7 +121,7 @@ export default function PayslipsPage() {
                       </span>
                     </td>
                     <td>
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: 4 }}>
                         <button
                           onClick={() => download(p.id, p.employee.name, p.startDate.slice(0, 10))}
                           disabled={downloadingId === p.id}

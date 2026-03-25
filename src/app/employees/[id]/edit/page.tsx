@@ -72,11 +72,11 @@ export default function EditEmployeePage() {
 
       <div className="p-8">
       <form onSubmit={submit}>
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-3 gap-5" style={{ gap: 20 }}>
           <div className="col-span-2 space-y-4">
             <div className="card p-6">
               <p className="section-label mb-5">Identitas</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
                 <F label="ID Karyawan" required><input required className="input" value={form.employeeId} onChange={e => set('employeeId', e.target.value)} /></F>
                 <F label="Nama Lengkap" required><input required className="input" value={form.name} onChange={e => set('name', e.target.value)} /></F>
                 <F label="Email"><input type="email" className="input" value={form.email} onChange={e => set('email', e.target.value)} /></F>
@@ -87,7 +87,7 @@ export default function EditEmployeePage() {
             </div>
             <div className="card p-6">
               <p className="section-label mb-5">Bank</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4" style={{ gap: 16 }}>
                 <F label="Nama Bank"><input className="input" value={form.bankName} onChange={e => set('bankName', e.target.value)} /></F>
                 <F label="Nomor Rekening"><input className="input" value={form.bankAccount} onChange={e => set('bankAccount', e.target.value)} /></F>
               </div>
