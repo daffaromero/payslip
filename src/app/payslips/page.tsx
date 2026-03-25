@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, FileText, Trash2, Download, Loader2 } from 'lucide-react'
+import { Plus, FileText, Trash2, Download, Loader2, Mail } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 
 interface Payslip {
@@ -22,6 +22,8 @@ export default function PayslipsPage() {
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [emailingId, setEmailingId] = useState<string | null>(null)
+  const [emailResult, setEmailResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -37,6 +39,18 @@ export default function PayslipsPage() {
     const res = await fetch(`/api/payslips/${id}`, { method: 'DELETE' })
     if (res.ok) setPayslips(p => p.filter(x => x.id !== id))
     setDeletingId(null)
+  }
+
+  const sendEmail = async (id: string) => {
+    setEmailingId(id)
+    setEmailResult(null)
+    try {
+      const res = await fetch(`/api/payslips/${id}/send-email`, { method: 'POST' })
+      const data = await res.json()
+      setEmailResult({ id, ok: res.ok, msg: res.ok ? data.message : (data.error || 'Gagal mengirim email') })
+    } finally {
+      setEmailingId(null)
+    }
   }
 
   const download = async (id: string, name: string, date: string) => {
@@ -56,6 +70,22 @@ export default function PayslipsPage() {
 
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
+      {emailResult && (
+        <div
+          style={{
+            position: 'fixed', bottom: 24, right: 24, zIndex: 50,
+            padding: '12px 16px', borderRadius: 8, maxWidth: 360,
+            background: emailResult.ok ? '#f0fdf4' : '#fef2f2',
+            border: `1px solid ${emailResult.ok ? '#bbf7d0' : '#fecaca'}`,
+            color: emailResult.ok ? '#15803d' : '#b91c1c',
+            fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+          }}
+        >
+          <span>{emailResult.msg}</span>
+          <button onClick={() => setEmailResult(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', lineHeight: 1, padding: 0, flexShrink: 0 }}>✕</button>
+        </div>
+      )}
       <PageHeader title="Slip Gaji" subtitle={loading ? '' : `${total} slip gaji tersimpan`}>
         <Link href="/generate" className="btn btn-primary">
           <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
@@ -123,11 +153,18 @@ export default function PayslipsPage() {
                     <td>
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: 4 }}>
                         <button
+                          onClick={() => sendEmail(p.id)}
+                          disabled={emailingId === p.id}
+                          className="btn btn-ghost btn-icon btn-sm" title="Kirim ke Email"
+                        >
+                          {emailingId === p.id ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Mail style={{ width: 14, height: 14 }} />}
+                        </button>
+                        <button
                           onClick={() => download(p.id, p.employee.name, p.startDate.slice(0, 10))}
                           disabled={downloadingId === p.id}
                           className="btn btn-ghost btn-icon btn-sm" title="Download PDF"
                         >
-                          {downloadingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                          {downloadingId === p.id ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Download style={{ width: 14, height: 14 }} />}
                         </button>
                         <button
                           onClick={() => del(p.id)}
@@ -135,7 +172,7 @@ export default function PayslipsPage() {
                           className="btn btn-ghost btn-icon btn-sm" title="Hapus"
                           style={{ color: 'var(--text-tertiary)' }}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 style={{ width: 14, height: 14 }} />
                         </button>
                       </div>
                     </td>

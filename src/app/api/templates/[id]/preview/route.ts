@@ -74,12 +74,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     if (!raw) return NextResponse.json({ error: 'Template not found' }, { status: 404 })
 
     const template = deserializeTemplate(raw)
-    const html = generatePayslipHTML({
-      payslip: SAMPLE_PAYSLIP,
-      employee: SAMPLE_EMPLOYEE,
-      template,
-      company: SAMPLE_COMPANY,
-    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const html = generatePayslipHTML({ payslip: SAMPLE_PAYSLIP as any, employee: SAMPLE_EMPLOYEE as any, template: template as any, company: SAMPLE_COMPANY as any })
 
     return new Response(html, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
