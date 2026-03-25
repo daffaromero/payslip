@@ -1,22 +1,4 @@
-import nodemailer from 'nodemailer'
-
-function createTransport() {
-  const host = process.env.SMTP_HOST
-  const port = parseInt(process.env.SMTP_PORT || '587', 10)
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-
-  if (!host || !user || !pass) {
-    throw new Error('Email not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS in your .env file.')
-  }
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  })
-}
+import { Resend } from 'resend'
 
 export interface SendPayslipOptions {
   to: string
@@ -28,10 +10,13 @@ export interface SendPayslipOptions {
 }
 
 export async function sendPayslipEmail(opts: SendPayslipOptions) {
-  const transport = createTransport()
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) throw new Error('Email not configured. Set RESEND_API_KEY in your environment.')
 
-  await transport.sendMail({
+  const resend = new Resend(apiKey)
+  const from = process.env.RESEND_FROM || 'onboarding@resend.dev'
+
+  const { error } = await resend.emails.send({
     from,
     to: opts.to,
     subject: `Slip Gaji ${opts.periodLabel} — ${opts.companyName}`,
@@ -58,9 +43,10 @@ export async function sendPayslipEmail(opts: SendPayslipOptions) {
     attachments: [
       {
         filename: opts.filename,
-        content: opts.pdfBuffer,
-        contentType: 'application/pdf',
+        content: opts.pdfBuffer.toString('base64'),
       },
     ],
   })
+
+  if (error) throw new Error(error.message)
 }
