@@ -25,7 +25,7 @@ export default function NewEmployeePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    employeeId: '', name: '', email: '', department: '', position: '',
+    employeeId: '', name: '', email: '', whatsappNumber: '', department: '', position: '',
     npwp: '', bankAccount: '', bankName: '', baseSalary: '', hourlyRate: '', pph21Status: 'TK/0',
   })
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
@@ -35,7 +35,7 @@ export default function NewEmployeePage() {
     try {
       const res = await fetch('/api/employees', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null, email: form.email || null, department: form.department || null, position: form.position || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
+        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null, email: form.email || null, whatsappNumber: form.whatsappNumber || null, department: form.department || null, position: form.position || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
       })
       if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan')
       router.push('/employees')
@@ -67,6 +67,9 @@ export default function NewEmployeePage() {
                 </F>
                 <F label="Email">
                   <input type="email" className="input" placeholder="budi@company.com" value={form.email} onChange={e => set('email', e.target.value)} />
+                </F>
+                <F label="WhatsApp" hint="Format: 628xxx (tanpa +)">
+                  <input className="input" placeholder="628123456789" value={form.whatsappNumber} onChange={e => set('whatsappNumber', e.target.value)} />
                 </F>
                 <F label="NPWP">
                   <input className="input" placeholder="09.123.456.7-123.000" value={form.npwp} onChange={e => set('npwp', e.target.value)} />

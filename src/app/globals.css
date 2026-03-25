@@ -281,6 +281,12 @@
   .avatar-blue { background: #dbeafe; color: #1d4ed8; }
 }
 
+/* ─── Animations ─── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ─── Shadcn override ─── */
 [data-slot="card"] {
   background: var(--bg-surface) !important;

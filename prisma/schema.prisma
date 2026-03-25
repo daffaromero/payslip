@@ -28,6 +28,7 @@ model Employee {
   employeeId      String    // Employee ID number
   name            String
   email           String?
+  whatsappNumber  String?   // e.g. 628123456789 (country code, no +)
   department      String?
   position        String?
   npwp            String?   // Tax ID

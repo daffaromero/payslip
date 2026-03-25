@@ -27,7 +27,7 @@ export default function EditEmployeePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    employeeId: '', name: '', email: '', department: '', position: '',
+    employeeId: '', name: '', email: '', whatsappNumber: '', department: '', position: '',
     npwp: '', bankAccount: '', bankName: '', baseSalary: '', hourlyRate: '', pph21Status: 'TK/0',
   })
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
@@ -36,9 +36,10 @@ export default function EditEmployeePage() {
     fetch(`/api/employees/${id}`)
       .then(r => r.json())
       .then(({ employee: e }) => setForm({
-        employeeId: e.employeeId, name: e.name, email: e.email ?? '', department: e.department ?? '',
-        position: e.position ?? '', npwp: e.npwp ?? '', bankAccount: e.bankAccount ?? '',
-        bankName: e.bankName ?? '', baseSalary: String(e.baseSalary), hourlyRate: e.hourlyRate ? String(e.hourlyRate) : '', pph21Status: e.pph21Status,
+        employeeId: e.employeeId, name: e.name, email: e.email ?? '', whatsappNumber: e.whatsappNumber ?? '',
+        department: e.department ?? '', position: e.position ?? '', npwp: e.npwp ?? '',
+        bankAccount: e.bankAccount ?? '', bankName: e.bankName ?? '',
+        baseSalary: String(e.baseSalary), hourlyRate: e.hourlyRate ? String(e.hourlyRate) : '', pph21Status: e.pph21Status,
       }))
       .finally(() => setLoading(false))
   }, [id])
@@ -48,7 +49,7 @@ export default function EditEmployeePage() {
     try {
       const res = await fetch(`/api/employees/${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null, email: form.email || null, department: form.department || null, position: form.position || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
+        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null, email: form.email || null, whatsappNumber: form.whatsappNumber || null, department: form.department || null, position: form.position || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
       })
       if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan')
       router.push('/employees')
@@ -80,6 +81,7 @@ export default function EditEmployeePage() {
                 <F label="ID Karyawan" required><input required className="input" value={form.employeeId} onChange={e => set('employeeId', e.target.value)} /></F>
                 <F label="Nama Lengkap" required><input required className="input" value={form.name} onChange={e => set('name', e.target.value)} /></F>
                 <F label="Email"><input type="email" className="input" value={form.email} onChange={e => set('email', e.target.value)} /></F>
+                <F label="WhatsApp" hint="Format: 628xxx (tanpa +)"><input className="input" placeholder="628123456789" value={form.whatsappNumber} onChange={e => set('whatsappNumber', e.target.value)} /></F>
                 <F label="NPWP"><input className="input" value={form.npwp} onChange={e => set('npwp', e.target.value)} /></F>
                 <F label="Departemen"><input className="input" value={form.department} onChange={e => set('department', e.target.value)} /></F>
                 <F label="Jabatan"><input className="input" value={form.position} onChange={e => set('position', e.target.value)} /></F>

@@ -47,4 +47,7 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 
+# whatsapp session (credentials — never commit)
+/whatsapp-session/
+
 /lib/generated/prisma

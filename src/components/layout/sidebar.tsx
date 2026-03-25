@@ -2,14 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, FileText, Settings, Receipt } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings } from 'lucide-react'
 
 const nav = [
   { href: '/',           label: 'Dashboard',      icon: LayoutDashboard },
   { href: '/employees',  label: 'Karyawan',        icon: Users           },
   { href: '/payslips',   label: 'Slip Gaji',       icon: Receipt         },
   { href: '/generate',   label: 'Buat Slip Gaji',  icon: FileText        },
-  { href: '/templates',  label: 'Template',        icon: Settings        },
+  { href: '/templates',  label: 'Template',        icon: PanelTop        },
+  { href: '/settings',   label: 'Pengaturan',      icon: Settings        },
 ]
 
 export function Sidebar() {

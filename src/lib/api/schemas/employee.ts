@@ -10,6 +10,7 @@ export const EmployeeSchema = z.object({
   employeeId: z.string().min(1),
   name: z.string().min(1),
   email: z.string().email().nullable().optional(),
+  whatsappNumber: z.string().nullable().optional(),
   department: z.string().nullable().optional(),
   position: z.string().nullable().optional(),
   npwp: z.string().nullable().optional(),

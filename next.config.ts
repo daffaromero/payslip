@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['puppeteer'],
+  serverExternalPackages: ['puppeteer', '@whiskeysockets/baileys', '@hapi/boom', 'pino'],
   images: {
     remotePatterns: [
       {
