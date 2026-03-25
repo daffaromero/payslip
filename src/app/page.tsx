@@ -34,7 +34,7 @@ export default async function DashboardPage() {
 
       <div style={{ padding: 32 }}>
         {/* Stats row */}
-        <div className="grid grid-cols-3" style={{ gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
           {stats.map(({ label, value, icon: Icon, href, color, bg }) => (
             <div key={label} className="card" style={{ padding: 20 }}>
               <div
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
           </div>
 
           {recentPayslips.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-center">
+            <div className="flex flex-col items-center text-center" style={{ padding: '64px 0' }}>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
                 <FileText className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
               </div>

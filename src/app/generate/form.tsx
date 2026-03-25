@@ -97,12 +97,12 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Alerts */}
         {error && (
-          <div className="flex items-start gap-3 rounded-lg px-4 py-3 text-[13px]" style={{ background: 'var(--danger-light)', color: 'var(--danger)', border: '1px solid #fecaca' }}>
+          <div className="flex items-start rounded-lg text-[13px]" style={{ padding: '12px 16px', gap: 12, background: 'var(--danger-light)', color: 'var(--danger)', border: '1px solid #fecaca' }}>
             {error}
           </div>
         )}
         {success && (
-          <div className="flex items-center justify-between rounded-lg px-4 py-3 text-[13px]" style={{ background: 'var(--success-light)', border: '1px solid #bbf7d0' }}>
+          <div className="flex items-center justify-between rounded-lg text-[13px]" style={{ padding: '12px 16px', background: 'var(--success-light)', border: '1px solid #bbf7d0' }}>
             <span className="flex items-center gap-2 font-medium" style={{ color: 'var(--success)' }}>
               <CheckCircle2 className="h-4 w-4" /> {success}
             </span>
@@ -285,7 +285,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center py-8 text-center">
+            <div className="flex flex-col items-center text-center" style={{ padding: '32px 0' }}>
               <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Pilih karyawan untuk melihat kalkulasi</p>
             </div>
           )}

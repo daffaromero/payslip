@@ -15,7 +15,7 @@ export default async function TemplatesPage() {
 
       <div style={{ padding: 32 }}>
         {templates.length === 0 ? (
-          <div className="card flex flex-col items-center py-20 text-center">
+          <div className="card flex flex-col items-center text-center" style={{ padding: '80px 20px' }}>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
               <Layout className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
             </div>

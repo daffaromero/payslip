@@ -119,7 +119,7 @@ export default function NewEmployeePage() {
             </div>
 
             {error && (
-              <div className="rounded-lg px-4 py-3 text-[13px]" style={{ background: 'var(--danger-light)', color: 'var(--danger)', border: '1px solid #fecaca' }}>
+              <div className="rounded-lg text-[13px]" style={{ padding: '12px 16px', background: 'var(--danger-light)', color: 'var(--danger)', border: '1px solid #fecaca' }}>
                 {error}
               </div>
             )}

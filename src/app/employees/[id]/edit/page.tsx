@@ -110,7 +110,7 @@ export default function EditEmployeePage() {
                 </F>
               </div>
             </div>
-            {error && <div className="rounded-lg px-4 py-3 text-[13px]" style={{ background: 'var(--danger-light)', color: 'var(--danger)', border: '1px solid #fecaca' }}>{error}</div>}
+            {error && <div className="rounded-lg text-[13px]" style={{ padding: '12px 16px', background: 'var(--danger-light)', color: 'var(--danger)', border: '1px solid #fecaca' }}>{error}</div>}
             <button type="submit" disabled={saving} className="btn btn-primary btn-lg w-full">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}{saving ? 'Menyimpan...' : 'Simpan Perubahan'}
             </button>

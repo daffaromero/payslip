@@ -65,11 +65,11 @@ export default function PayslipsPage() {
       <div style={{ padding: 32 }}>
         <div className="card overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center" style={{ padding: '80px 0' }}>
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--accent)] border-t-transparent" />
             </div>
           ) : payslips.length === 0 ? (
-            <div className="flex flex-col items-center py-20 text-center">
+            <div className="flex flex-col items-center text-center" style={{ padding: '80px 0' }}>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
                 <FileText className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
               </div>

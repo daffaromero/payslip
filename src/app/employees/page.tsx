@@ -48,7 +48,7 @@ export default function EmployeesPage() {
       <div style={{ padding: 32 }}>
         <div className="card overflow-hidden">
           {/* Search toolbar */}
-          <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border)', gap: 12 }}>
+          <div className="flex items-center" style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', gap: 12 }}>
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
               <input
@@ -60,11 +60,11 @@ export default function EmployeesPage() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center" style={{ padding: '80px 0' }}>
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--accent)] border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center py-20 text-center">
+            <div className="flex flex-col items-center text-center" style={{ padding: '80px 0' }}>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--bg-subtle)' }}>
                 <Users className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
               </div>
