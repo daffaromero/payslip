@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings, LogOut } from 'lucide-react'
 
 const nav = [
   { href: '/',           label: 'Dashboard',      icon: LayoutDashboard },
@@ -17,7 +18,13 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [companyName, setCompanyName] = useState('Memuat...')
+
+  const logout = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+  }, [router])
 
   useEffect(() => {
     fetch('/api/company')
@@ -93,10 +100,17 @@ export function Sidebar() {
         borderTop: '1px solid var(--border)',
         flexShrink: 0,
       }}>
-        <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {companyName}
-        </p>
-        <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '2px 0 0' }}>v0.1.0</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {companyName}
+            </p>
+            <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '2px 0 0' }}>v0.1.0</p>
+          </div>
+          <button onClick={logout} title="Keluar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', padding: 4, display: 'flex', flexShrink: 0 }}>
+            <LogOut style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
       </div>
     </aside>
   )
