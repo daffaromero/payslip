@@ -98,7 +98,7 @@ export default function EmployeesPage() {
                       <div className="flex items-center gap-3" style={{ gap: 12 }}>
                         <div className="avatar avatar-md avatar-blue">{e.name.charAt(0).toUpperCase()}</div>
                         <div>
-                          <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{e.name}</p>
+                          <Link href={`/employees/${e.id}`} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{e.name}</Link>
                           <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>
                             {e.employeeId}{e.email ? ` · ${e.email}` : ''}
                           </p>
