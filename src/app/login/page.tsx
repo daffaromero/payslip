@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { FileText, Loader2, Eye, EyeOff } from 'lucide-react'
 
 const SPIN = { animation: 'spin 1s linear infinite' } as const
 
 function LoginForm() {
-  const router = useRouter()
   const params = useSearchParams()
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -22,8 +21,7 @@ function LoginForm() {
       body: JSON.stringify({ password }),
     })
     if (res.ok) {
-      router.push(params.get('from') || '/')
-      router.refresh()
+      window.location.href = params.get('from') || '/'
     } else {
       const d = await res.json()
       setError(d.error || 'Login gagal')

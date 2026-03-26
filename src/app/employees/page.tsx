@@ -61,7 +61,7 @@ export default function EmployeesPage() {
 
           {loading ? (
             <div className="flex items-center justify-center" style={{ padding: '80px 0' }}>
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--accent)] border-t-transparent" />
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-(--accent) border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center text-center" style={{ padding: '80px 0' }}>

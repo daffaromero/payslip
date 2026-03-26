@@ -59,7 +59,7 @@ export default function EditEmployeePage() {
 
   if (loading) return (
     <div className="flex items-center justify-center" style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
-      <div className="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--accent)] border-t-transparent" />
+      <div className="h-5 w-5 animate-spin rounded-full border-2 border-(--accent) border-t-transparent" />
     </div>
   )
 
