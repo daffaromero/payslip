@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings } from 'lucide-react'
 
 const nav = [
@@ -9,12 +10,21 @@ const nav = [
   { href: '/employees',  label: 'Karyawan',        icon: Users           },
   { href: '/payslips',   label: 'Slip Gaji',       icon: Receipt         },
   { href: '/generate',   label: 'Buat Slip Gaji',  icon: FileText        },
+  { href: '/generate/bulk', label: 'Generate Massal', icon: Users           },
   { href: '/templates',  label: 'Template',        icon: PanelTop        },
   { href: '/settings',   label: 'Pengaturan',      icon: Settings        },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [companyName, setCompanyName] = useState('Memuat...')
+
+  useEffect(() => {
+    fetch('/api/company')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.company?.name) setCompanyName(d.company.name) })
+      .catch(() => setCompanyName('Payslip'))
+  }, [])
 
   return (
     <aside style={{
@@ -84,7 +94,7 @@ export function Sidebar() {
         flexShrink: 0,
       }}>
         <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          PT Contoh Indonesia
+          {companyName}
         </p>
         <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '2px 0 0' }}>v0.1.0</p>
       </div>
