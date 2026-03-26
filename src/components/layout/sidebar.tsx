@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation'
 import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings, LogOut } from 'lucide-react'
 
 const nav = [
-  { href: '/',           label: 'Dashboard',      icon: LayoutDashboard },
-  { href: '/employees',  label: 'Karyawan',        icon: Users           },
-  { href: '/payslips',   label: 'Slip Gaji',       icon: Receipt         },
-  { href: '/generate',   label: 'Buat Slip Gaji',  icon: FileText        },
-  { href: '/generate/bulk', label: 'Generate Massal', icon: Users           },
-  { href: '/templates',  label: 'Template',        icon: PanelTop        },
-  { href: '/settings',   label: 'Pengaturan',      icon: Settings        },
+  { href: '/',              label: 'Dashboard',      icon: LayoutDashboard, exact: true  },
+  { href: '/employees',     label: 'Karyawan',        icon: Users                        },
+  { href: '/payslips',      label: 'Slip Gaji',       icon: Receipt                      },
+  { href: '/generate',      label: 'Buat Slip Gaji',  icon: FileText,        exact: true  },
+  { href: '/generate/bulk', label: 'Generate Massal', icon: Users                        },
+  { href: '/templates',     label: 'Template',        icon: PanelTop                     },
+  { href: '/settings',      label: 'Pengaturan',      icon: Settings                     },
 ]
 
 export function Sidebar() {
@@ -86,8 +86,8 @@ export function Sidebar() {
         gap: 2,
         overflowY: 'auto',
       }}>
-        {nav.map(({ href, label, icon: Icon }) => {
-          const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
+        {nav.map(({ href, label, icon: Icon, exact }) => {
+          const active = exact ? pathname === href : pathname.startsWith(href)
           return (
             <NavItem key={href} href={href} label={label} icon={Icon} active={active} />
           )
