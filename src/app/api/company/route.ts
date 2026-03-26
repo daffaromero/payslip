@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest) {
     if (company) {
       company = await prisma.company.update({ where: { id: company.id }, data: parsed.data })
     } else {
-      company = await prisma.company.create({ data: { name: parsed.data.name, ...parsed.data } })
+      company = await prisma.company.create({ data: parsed.data as Parameters<typeof prisma.company.create>[0]['data'] })
     }
     return apiOk({ company })
   } catch (e) {
