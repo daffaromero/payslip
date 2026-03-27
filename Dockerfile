@@ -43,7 +43,9 @@ ENV NODE_ENV=production \
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 --ingroup nodejs nextjs \
   && printf '#!/bin/sh\nexit 0\n' > /usr/bin/chrome_crashpad_handler \
-  && chmod +x /usr/bin/chrome_crashpad_handler
+  && chmod +x /usr/bin/chrome_crashpad_handler \
+  && printf '#!/bin/sh\nexit 0\n' > /usr/lib/chromium/chrome_crashpad_handler \
+  && chmod +x /usr/lib/chromium/chrome_crashpad_handler
 
 COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nextjs:nodejs /app/next.config.ts ./
