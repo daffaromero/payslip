@@ -39,8 +39,25 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   const [allowances, setAllowances] = useState<{ name: string; amount: number }[]>([])
   const [deductions, setDeductions] = useState<{ name: string; amount: number }[]>([])
   const [notes, setNotes] = useState('')
+  const [prorateEnabled, setProrateEnabled] = useState(false)
+  const [prorateType, setProrateType] = useState<'join' | 'resign'>('join')
+  const [prorateDate, setProrateDate] = useState('')
 
   const emp = employees.find(e => e.id === employeeId)
+
+  // Prorate factor: days worked / total days in period
+  const prorateFactor = (() => {
+    if (!prorateEnabled || !prorateDate || !startDate || !endDate) return null
+    const s = new Date(startDate)
+    const e = new Date(endDate)
+    const d = new Date(prorateDate)
+    const totalDays = Math.round((e.getTime() - s.getTime()) / 86400000) + 1
+    const workedDays = prorateType === 'join'
+      ? Math.max(0, Math.round((e.getTime() - d.getTime()) / 86400000) + 1)
+      : Math.max(0, Math.round((d.getTime() - s.getTime()) / 86400000) + 1)
+    if (totalDays <= 0) return null
+    return Math.min(1, workedDays / totalDays)
+  })()
 
   useEffect(() => {
     const now = new Date()
@@ -55,8 +72,20 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   }, [periodType])
 
   useEffect(() => {
-    if (emp) { setBasePay(Number(emp.baseSalary) || 0); setHourlyRate(Number(emp.hourlyRate) || 0) }
+    if (emp) {
+      const full = Number(emp.baseSalary) || 0
+      setBasePay(prorateFactor !== null ? Math.round(full * prorateFactor) : full)
+      setHourlyRate(Number(emp.hourlyRate) || 0)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId, emp])
+
+  // Re-apply prorate whenever factor changes
+  useEffect(() => {
+    if (!emp) return
+    const full = Number(emp.baseSalary) || 0
+    setBasePay(prorateFactor !== null ? Math.round(full * prorateFactor) : full)
+  }, [prorateFactor, emp])
 
   const calc = emp ? calculatePayslip({ baseSalary: basePay, overtimeHours, hourlyRate, bonus, thr, allowances, otherDeductions: deductions, pph21Status: emp.pph21Status || 'TK/0', monthCount: periodType === 'quarterly' ? 3 : periodType === 'semi-annual' ? 6 : periodType === 'annual' ? 12 : 1 }) : null
 
@@ -182,6 +211,63 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Prorate */}
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p className="section-label">Prorate</p>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>Karyawan bergabung atau keluar di tengah periode</p>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <div
+                onClick={() => { setProrateEnabled(v => !v); if (prorateEnabled && emp) setBasePay(Number(emp.baseSalary) || 0) }}
+                style={{
+                  width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer',
+                  background: prorateEnabled ? 'var(--accent)' : 'var(--border)',
+                  transition: 'background 150ms',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 2, left: prorateEnabled ? 18 : 2,
+                  width: 16, height: 16, borderRadius: 8, background: '#fff',
+                  transition: 'left 150ms', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }} />
+              </div>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Aktifkan prorate</span>
+            </label>
+          </div>
+
+          {prorateEnabled && (
+            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <F label="Tipe">
+                <select className="input" value={prorateType} onChange={e => setProrateType(e.target.value as 'join' | 'resign')}>
+                  <option value="join">Bergabung (mulai kerja)</option>
+                  <option value="resign">Keluar (hari terakhir)</option>
+                </select>
+              </F>
+              <F label={prorateType === 'join' ? 'Tanggal Bergabung' : 'Tanggal Terakhir Kerja'}>
+                <input type="date" className="input" value={prorateDate} onChange={e => setProrateDate(e.target.value)}
+                  min={startDate} max={endDate} />
+              </F>
+              {prorateFactor !== null && (
+                <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                  <div style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    Faktor prorate: <strong style={{ color: 'var(--text-primary)' }}>{(prorateFactor * 100).toFixed(1)}%</strong>
+                  </div>
+                  {emp && (
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                      Gaji pokok: <span style={{ textDecoration: 'line-through', color: 'var(--text-tertiary)', marginRight: 6 }}>
+                        {formatCurrency(Number(emp.baseSalary))}
+                      </span>
+                      <strong style={{ color: 'var(--accent)' }}>{formatCurrency(basePay)}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Deductions */}

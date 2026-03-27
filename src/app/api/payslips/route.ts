@@ -8,19 +8,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const employeeId = searchParams.get('employeeId') ?? undefined
     const year = searchParams.get('year') ? Number(searchParams.get('year')) : undefined
+    const month = searchParams.get('month') ? Number(searchParams.get('month')) : undefined
     const page = Math.max(1, Number(searchParams.get('page') ?? '1'))
     const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') ?? '20')))
     const skip = (page - 1) * limit
 
     const where = {
       ...(employeeId ? { employeeId } : {}),
-      ...(year
-        ? {
-            startDate: {
-              gte: new Date(year, 0, 1),
-              lt: new Date(year + 1, 0, 1),
-            },
-          }
+      ...(year && month
+        ? { startDate: { gte: new Date(year, month - 1, 1), lt: new Date(year, month, 1) } }
+        : year
+        ? { startDate: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } }
         : {}),
     }
 
