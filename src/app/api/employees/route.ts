@@ -1,42 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
+import { apiError } from '@/lib/api/respond'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const employees = await prisma.employee.findMany({
-      where: { isActive: true },
+      where: { companyId: cid, isActive: true },
       orderBy: { name: 'asc' },
-      include: { company: true }
     })
     return NextResponse.json({ employees })
   } catch (error) {
     console.error('Error fetching employees:', error)
-    return NextResponse.json(
-      { error: 'Gagal memuat data karyawan' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Gagal memuat data karyawan' }, { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
-    const data = await request.json()
-    
-    // Get first company or create default
-    let company = await prisma.company.findFirst()
-    if (!company) {
-      company = await prisma.company.create({
-        data: {
-          name: 'PT Contoh Indonesia',
-          address: 'Jl. Sudirman No. 1, Jakarta',
-          taxId: '09.123.456.7-123.000'
-        }
-      })
-    }
-    
+    const data = await req.json()
     const employee = await prisma.employee.create({
       data: {
-        companyId: company.id,
+        companyId: cid,
         employeeId: data.employeeId,
         name: data.name,
         email: data.email || null,
@@ -48,16 +39,12 @@ export async function POST(request: NextRequest) {
         baseSalary: data.baseSalary,
         hourlyRate: data.hourlyRate || null,
         pph21Status: data.pph21Status || 'TK/0',
-        isActive: true
-      }
+        isActive: true,
+      },
     })
-    
     return NextResponse.json({ employee }, { status: 201 })
   } catch (error) {
     console.error('Error creating employee:', error)
-    return NextResponse.json(
-      { error: 'Gagal membuat karyawan' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Gagal membuat karyawan' }, { status: 500 })
   }
 }

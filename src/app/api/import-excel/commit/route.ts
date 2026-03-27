@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
 import { generateImportPreview } from '@/lib/excel/mapper'
 import { apiOk, apiError } from '@/lib/api/respond'
 import { parseData, z } from '@/lib/api/validate'
@@ -8,16 +9,17 @@ import type { Pph21Status } from '@/types'
 const CommitSchema = z.object({
   rows: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.null()]))),
   mappings: z.record(z.string(), z.string()),
-  defaultValues: z
-    .object({
-      pph21Status: z.string().optional(),
-      department: z.string().optional(),
-    })
-    .optional(),
+  defaultValues: z.object({
+    pph21Status: z.string().optional(),
+    department: z.string().optional(),
+  }).optional(),
   skipInvalid: z.boolean().default(false),
 })
 
 export async function POST(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const body = await req.json()
     const parsed = parseData(CommitSchema, body)
@@ -26,10 +28,7 @@ export async function POST(req: NextRequest) {
     const { rows, mappings, defaultValues, skipInvalid } = parsed.data
 
     const config = {
-      mappings: Object.entries(mappings).map(([excelColumn, employeeField]) => ({
-        excelColumn,
-        employeeField: employeeField as string,
-      })),
+      mappings: Object.entries(mappings).map(([excelColumn, employeeField]) => ({ excelColumn, employeeField: employeeField as string })),
       defaultValues: {
         pph21Status: (defaultValues?.pph21Status ?? 'TK/0') as Pph21Status,
         isActive: true,
@@ -41,31 +40,16 @@ export async function POST(req: NextRequest) {
 
     const invalid = preview.filter(p => !p.valid)
     if (invalid.length > 0 && !skipInvalid) {
-      return apiError(
-        `${invalid.length} baris tidak valid. Perbaiki data atau gunakan skipInvalid: true`,
-        422
-      )
+      return apiError(`${invalid.length} baris tidak valid. Perbaiki data atau gunakan skipInvalid: true`, 422)
     }
 
     const validRows = preview.filter(p => p.valid).map(p => p.data)
-
-    // Get or create default company
-    let company = await prisma.company.findFirst()
-    if (!company) {
-      company = await prisma.company.create({
-        data: {
-          name: 'PT Contoh Indonesia',
-          address: 'Jl. Sudirman No. 1, Jakarta',
-          taxId: '09.123.456.7-123.000',
-        },
-      })
-    }
 
     const created = await prisma.$transaction(
       validRows.map(row =>
         prisma.employee.create({
           data: {
-            companyId: company.id,
+            companyId: cid,
             employeeId: String(row.employeeId ?? ''),
             name: String(row.name ?? ''),
             email: row.email ? String(row.email) : null,
@@ -83,20 +67,9 @@ export async function POST(req: NextRequest) {
       )
     )
 
-    const errors = invalid.map((p, i) => ({
-      row: preview.indexOf(p),
-      errors: p.errors,
-    }))
+    const errors = invalid.map(p => ({ row: preview.indexOf(p), errors: p.errors }))
 
-    return apiOk(
-      {
-        success: true,
-        created: created.length,
-        skipped: invalid.length,
-        errors: skipInvalid ? errors : [],
-      },
-      201
-    )
+    return apiOk({ success: true, created: created.length, skipped: invalid.length, errors: skipInvalid ? errors : [] }, 201)
   } catch (error) {
     console.error('Import commit error:', error)
     return apiError('Gagal menyimpan data karyawan')

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
 import { calculatePayslip, getPeriodMonths } from '@/lib/calculations/payslip'
 import { apiOk, apiError } from '@/lib/api/respond'
 import { parseData } from '@/lib/api/validate'
@@ -7,28 +8,19 @@ import { PayslipPatchSchema } from '@/lib/api/schemas/payslip'
 
 type Params = { params: Promise<{ id: string }> }
 
-function deserializePayslip(payslip: {
-  allowances: string
-  otherDeductions: string
-  [key: string]: unknown
-}) {
-  return {
-    ...payslip,
-    allowances: JSON.parse(payslip.allowances),
-    otherDeductions: JSON.parse(payslip.otherDeductions),
-  }
+function deserializePayslip(payslip: { allowances: string; otherDeductions: string; [key: string]: unknown }) {
+  return { ...payslip, allowances: JSON.parse(payslip.allowances), otherDeductions: JSON.parse(payslip.otherDeductions) }
 }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const { id } = await params
-    const payslip = await prisma.payslip.findUnique({
-      where: { id },
-      include: {
-        employee: true,
-        template: true,
-        company: true,
-      },
+    const payslip = await prisma.payslip.findFirst({
+      where: { id, companyId: cid },
+      include: { employee: true, template: true, company: true },
     })
     if (!payslip) return apiError('Slip gaji tidak ditemukan', 404)
     return apiOk({ payslip: deserializePayslip(payslip as Parameters<typeof deserializePayslip>[0]) })
@@ -39,10 +31,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const { id } = await params
 
-    const existing = await prisma.payslip.findUnique({ where: { id } })
+    const existing = await prisma.payslip.findFirst({ where: { id, companyId: cid } })
     if (!existing) return apiError('Slip gaji tidak ditemukan', 404)
 
     const body = await req.json()
@@ -51,19 +46,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const patch = parsed.data
 
-    // If any earnings field changed, recalculate all computed fields
     const earningsChanged =
-      patch.basePay != null ||
-      patch.overtimeHours != null ||
-      patch.bonus != null ||
-      patch.thr != null ||
-      patch.allowances != null ||
-      patch.otherDeductions != null
+      patch.basePay != null || patch.overtimeHours != null || patch.bonus != null ||
+      patch.thr != null || patch.allowances != null || patch.otherDeductions != null
 
     let computedFields: Record<string, number> = {}
 
     if (earningsChanged) {
-      const employee = await prisma.employee.findUnique({ where: { id: existing.employeeId } })
+      const employee = await prisma.employee.findFirst({ where: { id: existing.employeeId, companyId: cid } })
       if (!employee) return apiError('Karyawan tidak ditemukan', 404)
 
       const basePay = patch.basePay ?? Number(existing.basePay)
@@ -76,27 +66,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       const hourlyRate = Number(employee.hourlyRate ?? 0)
 
       const calculations = calculatePayslip({
-        baseSalary: basePay,
-        overtimeHours,
-        hourlyRate,
-        bonus,
-        thr,
-        allowances,
-        otherDeductions,
+        baseSalary: basePay, overtimeHours, hourlyRate, bonus, thr, allowances, otherDeductions,
         pph21Status: employee.pph21Status as Parameters<typeof calculatePayslip>[0]['pph21Status'],
         monthCount,
       })
 
-      const overtimePay =
-        overtimeHours && hourlyRate
-          ? overtimeHours <= 1
-            ? overtimeHours * hourlyRate * 1.5
-            : hourlyRate * 1.5 + (overtimeHours - 1) * hourlyRate * 2
-          : 0
+      const overtimePay = overtimeHours && hourlyRate
+        ? overtimeHours <= 1 ? overtimeHours * hourlyRate * 1.5 : hourlyRate * 1.5 + (overtimeHours - 1) * hourlyRate * 2
+        : 0
 
       computedFields = {
-        overtimePay,
-        pph21: calculations.pph21,
+        overtimePay, pph21: calculations.pph21,
         bpjsKesehatan: calculations.bpjsKesehatan,
         bpjsKetenagakerjaan: calculations.bpjsKetenagakerjaan,
         grossPay: calculations.grossPay,
@@ -115,9 +95,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(patch.bonus != null ? { bonus: patch.bonus } : {}),
         ...(patch.thr != null ? { thr: patch.thr } : {}),
         ...(patch.allowances != null ? { allowances: JSON.stringify(patch.allowances) } : {}),
-        ...(patch.otherDeductions != null
-          ? { otherDeductions: JSON.stringify(patch.otherDeductions) }
-          : {}),
+        ...(patch.otherDeductions != null ? { otherDeductions: JSON.stringify(patch.otherDeductions) } : {}),
         ...computedFields,
       },
     })
@@ -129,11 +107,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const { id } = await params
 
-    const existing = await prisma.payslip.findUnique({ where: { id } })
+    const existing = await prisma.payslip.findFirst({ where: { id, companyId: cid } })
     if (!existing) return apiError('Slip gaji tidak ditemukan', 404)
 
     await prisma.payslip.delete({ where: { id } })

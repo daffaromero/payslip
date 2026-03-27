@@ -1,43 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generatePayslipPDF } from '@/lib/pdf/generator'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
+import { apiError } from '@/lib/api/respond'
 import { deserializeTemplate, RawTemplate } from '@/lib/api/template-serializer'
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
-    const { payslipId } = await request.json()
-    
+    const { payslipId } = await req.json()
+
     if (!payslipId) {
-      return NextResponse.json(
-        { error: 'Payslip ID diperlukan' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Payslip ID diperlukan' }, { status: 400 })
     }
-    
-    // Fetch payslip with related data
-    const payslip = await prisma.payslip.findUnique({
-      where: { id: payslipId },
-      include: {
-        employee: true,
-        template: true,
-        company: true,
-      },
+
+    const payslip = await prisma.payslip.findFirst({
+      where: { id: payslipId, companyId: cid },
+      include: { employee: true, template: true, company: true },
     })
-    
+
     if (!payslip) {
-      return NextResponse.json(
-        { error: 'Payslip tidak ditemukan' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Payslip tidak ditemukan' }, { status: 404 })
     }
-    
-    // Generate PDF
+
     const pdfBuffer = await generatePayslipPDF({
       payslip: {
         id: payslip.id,
         companyId: payslip.companyId,
         employeeId: payslip.employeeId,
         templateId: payslip.templateId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         periodType: payslip.periodType as any,
         startDate: payslip.startDate,
         endDate: payslip.endDate,
@@ -70,12 +64,14 @@ export async function POST(request: NextRequest) {
         bankName: payslip.employee.bankName,
         baseSalary: payslip.employee.baseSalary,
         hourlyRate: payslip.employee.hourlyRate,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         pph21Status: payslip.employee.pph21Status as any,
         isActive: payslip.employee.isActive,
         joinedAt: payslip.employee.joinedAt,
         createdAt: payslip.employee.createdAt,
         updatedAt: payslip.employee.updatedAt,
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       template: deserializeTemplate(payslip.template as unknown as RawTemplate) as any,
       company: {
         id: payslip.company.id,
@@ -89,8 +85,8 @@ export async function POST(request: NextRequest) {
         updatedAt: payslip.company.updatedAt,
       },
     })
-    
-    // Return PDF
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return new NextResponse(pdfBuffer as any, {
       headers: {
         'Content-Type': 'application/pdf',
@@ -99,9 +95,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('PDF generation error:', error)
-    return NextResponse.json(
-      { error: 'Gagal generate PDF' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Gagal generate PDF' }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
 import { apiOk, apiError } from '@/lib/api/respond'
 import { z } from 'zod'
 
@@ -11,13 +12,12 @@ const CompanySchema = z.object({
   email:   z.string().email().nullable().optional(),
 })
 
-async function getCompany() {
-  return prisma.company.findFirst({ orderBy: { createdAt: 'asc' } })
-}
+export async function GET(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
 
-export async function GET() {
   try {
-    const company = await getCompany()
+    const company = await prisma.company.findUnique({ where: { id: cid } })
     if (!company) return apiError('Belum ada data perusahaan', 404)
     return apiOk({ company })
   } catch (e) {
@@ -27,17 +27,15 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const body = await req.json()
     const parsed = CompanySchema.safeParse(body)
     if (!parsed.success) return apiError(parsed.error.issues[0].message, 400)
 
-    let company = await getCompany()
-    if (company) {
-      company = await prisma.company.update({ where: { id: company.id }, data: parsed.data })
-    } else {
-      company = await prisma.company.create({ data: parsed.data as Parameters<typeof prisma.company.create>[0]['data'] })
-    }
+    const company = await prisma.company.update({ where: { id: cid }, data: parsed.data })
     return apiOk({ company })
   } catch (e) {
     console.error(e)

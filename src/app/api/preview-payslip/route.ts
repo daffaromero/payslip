@@ -2,24 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generatePayslipHTML } from '@/lib/pdf/generator'
 import { calculatePayslip, getPeriodMonths } from '@/lib/calculations/payslip'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
+import { apiError } from '@/lib/api/respond'
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
-    const data = await request.json()
+    const data = await req.json()
 
-    const employee = await prisma.employee.findUnique({
-      where: { id: data.employeeId },
-    })
-
-    const template = await prisma.template.findUnique({
-      where: { id: data.templateId },
-    })
+    const [employee, template, company] = await Promise.all([
+      prisma.employee.findFirst({ where: { id: data.employeeId, companyId: cid } }),
+      prisma.template.findFirst({ where: { id: data.templateId, companyId: cid } }),
+      prisma.company.findUnique({ where: { id: cid } }),
+    ])
 
     if (!employee || !template) {
-      return NextResponse.json(
-        { error: 'Data tidak ditemukan' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 404 })
     }
 
     const monthCount = getPeriodMonths(data.periodType || 'monthly')
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const payslipData = {
       id: 'preview',
-      companyId: employee.companyId,
+      companyId: cid,
       employeeId: employee.id,
       templateId: template.id,
       periodType: data.periodType || 'monthly',
@@ -61,24 +61,19 @@ export async function POST(request: NextRequest) {
       generatedAt: new Date(),
     }
 
-    const company = await prisma.company.findFirst()
-
     const html = generatePayslipHTML({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       payslip: payslipData as any,
-      employee: {
-        ...employee,
-        pph21Status: employee.pph21Status as any,
-      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      employee: { ...employee, pph21Status: employee.pph21Status as any },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       template: template as any,
-      company: company || { id: '', name: 'PT Contoh Indonesia', address: null, taxId: null, phone: null, email: null, logoUrl: null, createdAt: new Date(), updatedAt: new Date() },
+      company: company || { id: cid, name: '', address: null, taxId: null, phone: null, email: null, logoUrl: null, createdAt: new Date(), updatedAt: new Date() },
     })
 
     return NextResponse.json({ success: true, html })
   } catch (error) {
     console.error('Preview error:', error)
-    return NextResponse.json(
-      { error: 'Gagal membuat preview' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Gagal membuat preview' }, { status: 500 })
   }
 }

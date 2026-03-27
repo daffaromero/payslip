@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
+import { apiError } from '@/lib/api/respond'
 import * as XLSX from 'xlsx'
 
 export async function GET(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   const { searchParams } = new URL(req.url)
   const month = searchParams.get('month') // e.g. '2024-01'
 
@@ -14,7 +19,7 @@ export async function GET(req: NextRequest) {
     : undefined
 
   const payslips = await prisma.payslip.findMany({
-    where: startDateFilter ? { startDate: startDateFilter } : undefined,
+    where: { companyId: cid, ...(startDateFilter ? { startDate: startDateFilter } : {}) },
     include: { employee: { select: { name: true, employeeId: true, department: true } } },
     orderBy: [{ startDate: 'desc' }, { employee: { name: 'asc' } }],
   })

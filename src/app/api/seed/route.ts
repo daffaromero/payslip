@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
+import { hashPassword } from '@/lib/crypto'
 import { apiOk, apiError } from '@/lib/api/respond'
 
 const COMPANY_HEADER = {
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
     await prisma.payslip.deleteMany()
     await prisma.template.deleteMany()
     await prisma.employee.deleteMany()
+    await prisma.user.deleteMany()
     await prisma.company.deleteMany()
 
     const company = await prisma.company.create({
@@ -135,7 +137,18 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    return apiOk({ message: '✓ Seeded company + 5 preset templates' })
+    const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@contoh.co.id'
+    const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin123'
+    await prisma.user.create({
+      data: {
+        companyId: company.id,
+        email: adminEmail,
+        passwordHash: await hashPassword(adminPassword),
+        role: 'admin',
+      },
+    })
+
+    return apiOk({ message: `✓ Seeded company, 5 preset templates, and admin user (${adminEmail})` })
   } catch (error) {
     console.error('Seed error:', error)
     return apiError('Seed failed', 500)

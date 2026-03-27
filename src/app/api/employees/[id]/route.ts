@@ -1,18 +1,19 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
 import { apiOk, apiError } from '@/lib/api/respond'
 import { parseData } from '@/lib/api/validate'
 import { EmployeePatchSchema } from '@/lib/api/schemas/employee'
 
 type Params = { params: Promise<{ id: string }> }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const { id } = await params
-    const employee = await prisma.employee.findUnique({
-      where: { id },
-      include: { company: true },
-    })
+    const employee = await prisma.employee.findFirst({ where: { id, companyId: cid } })
     if (!employee) return apiError('Karyawan tidak ditemukan', 404)
     return apiOk({ employee })
   } catch (error) {
@@ -22,20 +23,20 @@ export async function GET(_req: NextRequest, { params }: Params) {
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const { id } = await params
 
-    const existing = await prisma.employee.findUnique({ where: { id } })
+    const existing = await prisma.employee.findFirst({ where: { id, companyId: cid } })
     if (!existing) return apiError('Karyawan tidak ditemukan', 404)
 
     const body = await req.json()
     const parsed = parseData(EmployeePatchSchema, body)
     if (!parsed.ok) return parsed.response
 
-    const employee = await prisma.employee.update({
-      where: { id },
-      data: parsed.data,
-    })
+    const employee = await prisma.employee.update({ where: { id }, data: parsed.data })
     return apiOk({ employee })
   } catch (error) {
     console.error('Error updating employee:', error)
@@ -43,18 +44,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const { id } = await params
 
-    const existing = await prisma.employee.findUnique({ where: { id } })
+    const existing = await prisma.employee.findFirst({ where: { id, companyId: cid } })
     if (!existing) return apiError('Karyawan tidak ditemukan', 404)
 
-    // Soft-delete to preserve payslip foreign key integrity
-    await prisma.employee.update({
-      where: { id },
-      data: { isActive: false },
-    })
+    await prisma.employee.update({ where: { id }, data: { isActive: false } })
     return apiOk({ success: true })
   } catch (error) {
     console.error('Error deleting employee:', error)

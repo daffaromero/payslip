@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
+import { apiError } from '@/lib/api/respond'
 import * as XLSX from 'xlsx'
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   const employees = await prisma.employee.findMany({
-    where: { isActive: true },
+    where: { companyId: cid, isActive: true },
     orderBy: { name: 'asc' },
   })
 

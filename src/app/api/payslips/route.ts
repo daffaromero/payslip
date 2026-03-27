@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
 import { calculatePayslip, getPeriodMonths } from '@/lib/calculations/payslip'
 import { apiOk, apiError } from '@/lib/api/respond'
 
 export async function GET(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   try {
     const { searchParams } = new URL(req.url)
     const employeeId = searchParams.get('employeeId') ?? undefined
@@ -14,6 +18,7 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit
 
     const where = {
+      companyId: cid,
       ...(employeeId ? { employeeId } : {}),
       ...(year && month
         ? { startDate: { gte: new Date(year, month - 1, 1), lt: new Date(year, month, 1) } }
@@ -51,20 +56,18 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const data = await request.json()
-    
-    // Get employee for calculations
-    const employee = await prisma.employee.findUnique({
-      where: { id: data.employeeId },
-    })
+export async function POST(req: NextRequest) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
 
+  try {
+    const data = await req.json()
+
+    const employee = await prisma.employee.findFirst({
+      where: { id: data.employeeId, companyId: cid },
+    })
     if (!employee) {
-      return NextResponse.json(
-        { error: 'Karyawan tidak ditemukan' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Karyawan tidak ditemukan' }, { status: 404 })
     }
 
     const monthCount = getPeriodMonths(data.periodType || 'monthly')
@@ -80,23 +83,13 @@ export async function POST(request: NextRequest) {
       monthCount,
     })
 
-    // Calculate YTD (Year to Date) from previous payslips this year
     const startDate = new Date(data.startDate)
     const year = startDate.getFullYear()
-    const startOfYear = new Date(year, 0, 1) // January 1st
+    const startOfYear = new Date(year, 0, 1)
 
     const previousYtd = await prisma.payslip.aggregate({
-      where: {
-        employeeId: data.employeeId,
-        startDate: {
-          gte: startOfYear,
-          lt: startDate,
-        },
-      },
-      _sum: {
-        ytdGross: true,
-        ytdPph21: true,
-      },
+      where: { employeeId: data.employeeId, startDate: { gte: startOfYear, lt: startDate } },
+      _sum: { ytdGross: true, ytdPph21: true },
     })
 
     const previousYtdGross = Number(previousYtd._sum.ytdGross) || 0
@@ -104,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     const payslip = await prisma.payslip.create({
       data: {
-        companyId: employee.companyId,
+        companyId: cid,
         employeeId: data.employeeId,
         templateId: data.templateId,
         periodType: data.periodType || 'monthly',
@@ -112,7 +105,7 @@ export async function POST(request: NextRequest) {
         endDate: new Date(data.endDate),
         basePay: data.basePay || Number(employee.baseSalary),
         overtimeHours: data.overtimeHours || 0,
-        overtimePay: calculations.grossPay - (data.basePay || Number(employee.baseSalary)) - (data.bonus || 0) - (data.thr || 0) - (data.allowances?.reduce((a: number, al: any) => a + (al.amount || 0), 0) || 0),
+        overtimePay: calculations.grossPay - (data.basePay || Number(employee.baseSalary)) - (data.bonus || 0) - (data.thr || 0) - (data.allowances?.reduce((a: number, al: { amount?: number }) => a + (al.amount || 0), 0) || 0),
         bonus: data.bonus || 0,
         thr: data.thr || 0,
         allowances: JSON.stringify(data.allowances || []),
@@ -132,9 +125,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, payslipId: payslip.id })
   } catch (error) {
     console.error('Create payslip error:', error)
-    return NextResponse.json(
-      { error: 'Gagal membuat slip gaji' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Gagal membuat slip gaji' }, { status: 500 })
   }
 }
