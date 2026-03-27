@@ -41,12 +41,18 @@ assert() {
 
 # ── Pre-flight ────────────────────────────────────────────────────────────────
 section "Pre-flight"
-req GET /api/company
+req GET /api/health
 if [ "$STATUS" = "000" ] || [ -z "$STATUS" ]; then
   echo -e "${R}Server not reachable at ${BASE}. Start with: npm run dev${N}"
   exit 1
 fi
 pass "Server is up at $BASE"
+
+section "Health"
+req GET /api/health
+assert "GET /api/health → 200 (no auth required)" "200"
+DB_OK=$(jf "$BODY" "d.get('ok', False)")
+[ "$DB_OK" = "True" ] && pass "DB reachable (ok:true)" || fail "DB not reachable"
 
 # ── Auth: unauthenticated (no cookie yet) ────────────────────────────────────
 section "Auth — unauthenticated access"
@@ -95,6 +101,64 @@ assert "PATCH /api/company (restore) → 200" "200"
 
 req PATCH /api/company -d '{}'
 assert "PATCH /api/company missing name → 400" "400"
+
+# Logo upload
+section "Company — Logo Upload"
+# Create a minimal valid PNG (1x1 pixel)
+TMPIMG=$(mktemp /tmp/test-logo.XXXXXX.png)
+printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' > "$TMPIMG"
+LOGO_STATUS=$(curl -s -o /tmp/logo_response.json -w "%{http_code}" \
+  -b "$COOKIES" -c "$COOKIES" \
+  -X POST "${BASE}/api/company/logo" \
+  -F "file=@${TMPIMG};type=image/png")
+[ "$LOGO_STATUS" = "200" ] && pass "POST /api/company/logo → 200" || fail "POST /api/company/logo → $LOGO_STATUS ($(cat /tmp/logo_response.json))"
+LOGO_URL=$(python3 -c "import json; d=json.load(open('/tmp/logo_response.json')); print(d.get('logoUrl',''))" 2>/dev/null)
+[ -n "$LOGO_URL" ] && pass "logoUrl returned: $LOGO_URL" || fail "logoUrl missing from response"
+
+# Serve the uploaded logo
+if [ -n "$LOGO_URL" ]; then
+  SERVE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -b "$COOKIES" "${BASE}/api${LOGO_URL}")
+  [ "$SERVE_STATUS" = "200" ] && pass "GET /api${LOGO_URL} → 200" || fail "GET /api${LOGO_URL} → $SERVE_STATUS"
+fi
+
+# Wrong mime type
+TMPTEXT=$(mktemp /tmp/test-logo.XXXXXX.txt)
+echo "not an image" > "$TMPTEXT"
+BADMIME_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+  -b "$COOKIES" -c "$COOKIES" \
+  -X POST "${BASE}/api/company/logo" \
+  -F "file=@${TMPTEXT};type=text/plain")
+[ "$BADMIME_STATUS" = "400" ] && pass "POST /api/company/logo wrong mime → 400" || fail "POST /api/company/logo wrong mime → $BADMIME_STATUS"
+
+rm -f "$TMPIMG" "$TMPTEXT" /tmp/logo_response.json
+
+# ── Change Password ───────────────────────────────────────────────────────────
+section "Auth — Change Password"
+req POST /api/auth/change-password -d '{"currentPassword":"wrong","newPassword":"newpass123"}'
+assert "change-password wrong current → 401" "401"
+
+req POST /api/auth/change-password -d "{\"currentPassword\":\"${PASSWORD}\",\"newPassword\":\"short\"}"
+assert "change-password new too short → 400" "400"
+
+req POST /api/auth/change-password -d '{"newPassword":"newpass123"}'
+assert "change-password missing fields → 400" "400"
+
+# Change to a temp password then back
+req POST /api/auth/change-password -d "{\"currentPassword\":\"${PASSWORD}\",\"newPassword\":\"TempPass999!\"}"
+assert "change-password valid → 200" "200"
+
+# Verify old password no longer works
+req POST /api/auth/logout
+req POST /api/auth/login -d "{\"email\":\"${EMAIL}\",\"password\":\"${PASSWORD}\"}"
+assert "Login with old password after change → 401" "401"
+
+# Login with new password
+req POST /api/auth/login -d "{\"email\":\"${EMAIL}\",\"password\":\"TempPass999!\"}"
+assert "Login with new password → 200" "200"
+
+# Restore original password
+req POST /api/auth/change-password -d "{\"currentPassword\":\"TempPass999!\",\"newPassword\":\"${PASSWORD}\"}"
+assert "change-password restore original → 200" "200"
 
 # ── Templates ─────────────────────────────────────────────────────────────────
 section "Templates"

@@ -5,22 +5,20 @@ services:
     environment:
       DATABASE_URL: file:/data/payslip.db
       JWT_SECRET: ${JWT_SECRET}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@contoh.co.id}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       SEED_TOKEN: ${SEED_TOKEN:-}
+      WA_SESSION_DIR: /data/whatsapp-session
+      UPLOAD_DIR: /data/uploads/logos
       NODE_ENV: production
     volumes:
       - payslip_data:/data
     expose:
       - "3000"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/auth/login"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

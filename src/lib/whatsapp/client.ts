@@ -10,7 +10,7 @@ import path from 'path'
 import { promises as fs } from 'fs'
 import P from 'pino'
 
-const SESSION_DIR = path.join(process.cwd(), 'whatsapp-session')
+const SESSION_DIR = process.env.WA_SESSION_DIR ?? path.join(process.cwd(), 'whatsapp-session')
 
 export type WAStatus = 'disconnected' | 'connecting' | 'connected'
 
