@@ -1,0 +1,11 @@
+.git
+.github
+.next
+node_modules
+packages/*/node_modules
+prisma/dev.db
+.env
+.env.local
+.env*.local
+scripts
+*.md

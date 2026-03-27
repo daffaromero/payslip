@@ -1,0 +1,46 @@
+services:
+  app:
+    image: ghcr.io/daffaromero/payslip:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: file:/data/payslip.db
+      JWT_SECRET: ${JWT_SECRET}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@contoh.co.id}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SEED_TOKEN: ${SEED_TOKEN:-}
+      NODE_ENV: production
+    volumes:
+      - payslip_data:/data
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/auth/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  payslip_data:
+  caddy_data:
+  caddy_config:
