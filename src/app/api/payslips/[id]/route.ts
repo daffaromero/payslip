@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     const payslip = await prisma.payslip.update({
-      where: { id },
+      where: { id, companyId: cid },
       data: {
         ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
         ...(patch.templateId ? { templateId: patch.templateId } : {}),
@@ -117,7 +117,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const existing = await prisma.payslip.findFirst({ where: { id, companyId: cid } })
     if (!existing) return apiError('Slip gaji tidak ditemukan', 404)
 
-    await prisma.payslip.delete({ where: { id } })
+    await prisma.payslip.delete({ where: { id, companyId: cid } })
     return apiOk({ success: true })
   } catch (error) {
     console.error('Error deleting payslip:', error)

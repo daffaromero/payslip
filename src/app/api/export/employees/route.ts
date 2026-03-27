@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     'ID Karyawan': e.employeeId,
     'Nama': e.name,
     'Email': e.email ?? '',
+    'WhatsApp': e.whatsappNumber ?? '',
     'Departemen': e.department ?? '',
     'Jabatan': e.position ?? '',
     'Gaji Pokok': e.baseSalary,
