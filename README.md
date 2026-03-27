@@ -1,13 +1,16 @@
 # Payslip
 
-Aplikasi manajemen slip gaji berbasis web untuk perusahaan Indonesia. Generate PDF slip gaji, kelola karyawan, dan kirim langsung ke email karyawan.
+Aplikasi manajemen slip gaji berbasis web untuk perusahaan Indonesia. Generate PDF slip gaji, kelola karyawan, dan kirim langsung ke email atau WhatsApp karyawan.
 
 ## Stack
 
 - **Next.js 16** (App Router) + TypeScript
-- **Prisma 5** + SQLite (LibSQL/Turso for production)
-- **Puppeteer** — PDF generation via headless Chrome
+- **Prisma 5** + SQLite
+- **Puppeteer** — PDF generation via headless Chromium
+- **Baileys** — WhatsApp integration
+- **Resend** — transactional email
 - **Tailwind CSS v4**
+- **Docker** + **Caddy** — production deployment
 
 ---
 
@@ -28,23 +31,17 @@ npm install
 
 ### 2. Environment
 
-```bash
-cp .env.example .env
-```
-
-Minimal `.env` for local development:
+Create `.env.local`:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./prisma/dev.db"
+JWT_SECRET="your-secret-here"
 ```
 
 ### 3. Database
 
 ```bash
-# Create tables
-npx prisma migrate dev --name init
-
-# Seed with 5 default templates + sample company
+npx prisma migrate dev
 npm run db:seed
 ```
 
@@ -54,7 +51,7 @@ npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and log in with the seeded admin credentials.
 
 ---
 
@@ -65,7 +62,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run dev` | Dev server (Turbopack) |
 | `npm run build` | Production build |
 | `npm run start` | Production server |
-| `npm run db:seed` | Seed default templates & company |
+| `npm run db:seed` | Seed templates, company, and admin user |
+| `./scripts/test-api.sh` | Run full API test suite (78 tests) |
 | `npx prisma studio` | Visual DB browser |
 | `npx prisma migrate dev` | Run migrations |
 
@@ -73,15 +71,14 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Features
 
-- **Dashboard** — employee count, payslip stats, recent activity
-- **Karyawan** — manage employees with department, position, BPJS & PPh 21 status
-- **Slip Gaji** — generate payslips (monthly/weekly/quarterly), download PDF
+- **Dashboard** — employee count, payslip stats, YTD payroll, recent activity
+- **Karyawan** — manage employees (BPJS, PPh 21, bank details, WhatsApp number)
+- **Slip Gaji** — generate payslips (monthly/weekly/quarterly/annual), filter, download PDF, send via email or WhatsApp
+- **Generate Massal** — bulk generate for all employees with progress tracking
+- **Import / Export** — import employees from Excel with column mapping, export data to XLSX
 - **Template** — 5 preset PDF templates with in-browser preview
-  - Formal Klasik *(default)*
-  - Korporat
-  - Minimalis
-  - Hijau Profesional
-  - Resmi Bertanda Tangan
+- **Pengaturan** — company profile, WhatsApp connection (QR scan via Baileys)
+- **Auth** — JWT in httpOnly cookie, scoped per company, change password
 
 ---
 
@@ -89,41 +86,31 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | `file:./dev.db` for local, `libsql://...` for Turso |
-| `SMTP_HOST` | For email | SMTP server hostname |
-| `SMTP_PORT` | For email | SMTP port (default: 587) |
-| `SMTP_USER` | For email | SMTP username / email address |
-| `SMTP_PASS` | For email | SMTP password or app password |
-| `SMTP_FROM` | For email | Sender display e.g. `HR <hr@company.com>` |
-
-### Getting SMTP credentials
-
-- **Gmail** — enable 2FA, then create an [App Password](https://myaccount.google.com/apppasswords). Use `smtp.gmail.com` port `587`.
-- **Outlook/Office 365** — use `smtp.office365.com` port `587` with your normal credentials.
-- **Custom SMTP** — use whatever your hosting provider gives you.
+| `DATABASE_URL` | Yes | `file:./prisma/dev.db` for local, `file:/data/payslip.db` in Docker |
+| `JWT_SECRET` | Yes | Random hex string — `openssl rand -hex 32` |
+| `RESEND_API_KEY` | For email | Resend API key |
+| `RESEND_FROM` | For email | Sender address e.g. `noreply@yourdomain.com` |
+| `ADMIN_EMAIL` | For seed | Admin user email |
+| `ADMIN_PASSWORD` | For seed | Admin user password |
+| `SEED_TOKEN` | For seed | Token to protect the `/api/seed` endpoint |
+| `WA_SESSION_DIR` | Optional | WhatsApp session path (default: `./whatsapp-session`) |
+| `UPLOAD_DIR` | Optional | Logo upload path (default: `./uploads/logos`) |
+| `PUPPETEER_EXECUTABLE_PATH` | Optional | Chromium path (set automatically in Docker) |
 
 ---
 
 ## Production (Docker)
 
-> Dockerfile coming soon. In the meantime, deploy to any Node 20+ server:
-
 ```bash
-npm run build
-npm run start
+# On the VPS
+cd /opt/payslip
+docker compose up -d
 ```
 
-Point a reverse proxy (Nginx/Caddy) at port 3000. Use a persistent volume for `prisma/` to keep the SQLite database.
+First deploy — seed the database:
 
----
+```bash
+curl -X POST https://yourdomain.com/api/seed?token=<SEED_TOKEN>
+```
 
-## Roadmap
-
-- [x] PDF generation with 5 traditional templates
-- [x] Template browser preview
-- [ ] Email delivery (Nodemailer + SMTP)
-- [ ] WhatsApp delivery (Fonnte / Meta Cloud API)
-- [ ] Docker + one-command deployment guide
-- [ ] Custom template builder
-- [ ] Bulk send to all employees
-- [ ] Multi-company support
+See [ROADMAP.md](./ROADMAP.md) for what's coming next.
