@@ -1,5 +1,8 @@
 export const dynamic = 'force-dynamic'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
+import { verifyToken, COOKIE } from '@/lib/auth'
 import { PayslipGeneratorForm } from './form'
 import { Employee } from '@/types'
 import { PageHeader } from '@/components/layout/page-header'
@@ -9,10 +12,16 @@ export default async function GeneratePage({
 }: {
   searchParams: Promise<{ employeeId?: string }>
 }) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get(COOKIE)?.value
+  const claims = token ? await verifyToken(token) : null
+  if (!claims) redirect('/login')
+
+  const { companyId } = claims
   const { employeeId } = await searchParams
 
   const employeesRaw = await prisma.employee.findMany({
-    where: { isActive: true },
+    where: { companyId, isActive: true },
     orderBy: { name: 'asc' },
   })
 
@@ -22,6 +31,7 @@ export default async function GeneratePage({
   }))
 
   const templatesRaw = await prisma.template.findMany({
+    where: { companyId },
     orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
   })
 

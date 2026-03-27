@@ -1,6 +1,6 @@
 'use client'
 
-export function TopBar() {
+export function TopBar({ companyName, userInitial }: { companyName: string; userInitial: string }) {
   return (
     <header style={{
       position: 'sticky',
@@ -16,7 +16,7 @@ export function TopBar() {
       flexShrink: 0,
     }}>
       <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-        PT Contoh Indonesia
+        {companyName}
       </span>
       <div style={{
         display: 'flex',
@@ -30,7 +30,7 @@ export function TopBar() {
         fontSize: 11,
         fontWeight: 600,
       }}>
-        A
+        {userInitial}
       </div>
     </header>
   )

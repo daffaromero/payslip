@@ -1,35 +1,46 @@
 export const dynamic = 'force-dynamic'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
+import { verifyToken, COOKIE } from '@/lib/auth'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Users, FileText, TrendingUp, Plus, Banknote, CalendarDays, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
 
 export default async function DashboardPage() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get(COOKIE)?.value
+  const claims = token ? await verifyToken(token) : null
+  if (!claims) redirect('/login')
+
+  const { companyId } = claims
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const yearStart  = new Date(now.getFullYear(), 0, 1)
 
   const [totalEmployees, totalPayslips, recentPayslips, thisMonthPayslips, thisMonthPayroll, ytdPayroll, avgNetPay] = await Promise.all([
-    prisma.employee.count({ where: { isActive: true } }),
-    prisma.payslip.count(),
+    prisma.employee.count({ where: { companyId, isActive: true } }),
+    prisma.payslip.count({ where: { companyId } }),
     prisma.payslip.findMany({
+      where: { companyId },
       take: 8,
       orderBy: { generatedAt: 'desc' },
       include: { employee: { select: { name: true, employeeId: true } } },
     }),
     prisma.payslip.count({
-      where: { startDate: { gte: monthStart } },
+      where: { companyId, startDate: { gte: monthStart } },
     }),
     prisma.payslip.aggregate({
-      where: { startDate: { gte: monthStart } },
+      where: { companyId, startDate: { gte: monthStart } },
       _sum: { netPay: true },
     }),
     prisma.payslip.aggregate({
-      where: { startDate: { gte: yearStart } },
+      where: { companyId, startDate: { gte: yearStart } },
       _sum: { netPay: true },
     }),
     prisma.payslip.aggregate({
+      where: { companyId },
       _avg: { netPay: true },
     }),
   ])

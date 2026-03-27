@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
-import { Loader2, Wifi, WifiOff, RefreshCw, LogOut, Smartphone, Building2 } from 'lucide-react'
+import { Loader2, Wifi, WifiOff, RefreshCw, LogOut, Smartphone, Building2, Lock } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 
 type WAStatus = 'disconnected' | 'connecting' | 'connected'
 interface WAData { status: WAStatus; qrDataUrl: string | null; error: string | null }
-interface Company { name: string; address: string; taxId: string; phone: string; email: string }
+interface Company { name: string; address: string; taxId: string; phone: string; email: string; logoUrl: string | null }
 
 const SPIN = { animation: 'spin 1s linear infinite' } as const
 
@@ -25,7 +25,7 @@ export default function SettingsPage() {
   const toast = useToast()
 
   // ── Company ──────────────────────────────────────────────────────────────
-  const [company, setCompany] = useState<Company>({ name: '', address: '', taxId: '', phone: '', email: '' })
+  const [company, setCompany] = useState<Company>({ name: '', address: '', taxId: '', phone: '', email: '', logoUrl: null })
   const [savingCompany, setSavingCompany] = useState(false)
   const [loadingCompany, setLoadingCompany] = useState(true)
   const setC = (k: keyof Company, v: string) => setCompany(p => ({ ...p, [k]: v }))
@@ -33,7 +33,7 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch('/api/company')
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.company) setCompany({ name: d.company.name ?? '', address: d.company.address ?? '', taxId: d.company.taxId ?? '', phone: d.company.phone ?? '', email: d.company.email ?? '' }) })
+      .then(d => { if (d?.company) setCompany({ name: d.company.name ?? '', address: d.company.address ?? '', taxId: d.company.taxId ?? '', phone: d.company.phone ?? '', email: d.company.email ?? '', logoUrl: d.company.logoUrl ?? null }) })
       .finally(() => setLoadingCompany(false))
   }, [])
 
@@ -57,6 +57,7 @@ export default function SettingsPage() {
   // ── WhatsApp ─────────────────────────────────────────────────────────────
   const [wa, setWa] = useState<WAData>({ status: 'disconnected', qrDataUrl: null, error: null })
   const [acting, setActing] = useState(false)
+  const [changingPw, setChangingPw] = useState(false)
 
   const pollWa = useCallback(async () => {
     const res = await fetch('/api/whatsapp/status')
@@ -111,6 +112,43 @@ export default function SettingsPage() {
             </div>
           ) : (
             <form onSubmit={saveCompany} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Logo</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {company.logoUrl ? (
+                      <img src={company.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <Building2 style={{ width: 24, height: 24, color: 'var(--text-tertiary)' }} />
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                      id="logo-upload"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const fd = new FormData()
+                        fd.append('file', file)
+                        const res = await fetch('/api/company/logo', { method: 'POST', body: fd })
+                        const d = await res.json()
+                        if (!res.ok) { toast.error(d.error || 'Gagal upload logo'); return }
+                        setCompany(c => ({ ...c, logoUrl: d.logoUrl }))
+                        toast.success('Logo berhasil diupload')
+                        e.target.value = ''
+                      }}
+                    />
+                    <label htmlFor="logo-upload" className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
+                      Upload Logo
+                    </label>
+                    <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>JPG, PNG, WebP, atau SVG. Maks 2MB.</p>
+                  </div>
+                </div>
+              </div>
+
               <F label="Nama Perusahaan *">
                 <input required className="input" value={company.name} onChange={e => setC('name', e.target.value)} placeholder="PT Contoh Indonesia" />
               </F>
@@ -192,6 +230,61 @@ export default function SettingsPage() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Change Password */}
+        <div className="card" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Lock style={{ width: 20, height: 20, color: '#7c3aed' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Ubah Password</p>
+              <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>Untuk keamanan, gunakan password yang kuat dan berbeda</p>
+            </div>
+          </div>
+
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            const fd = new FormData(e.currentTarget)
+            const current = fd.get('currentPassword') as string
+            const next = fd.get('newPassword') as string
+            const confirm = fd.get('confirmPassword') as string
+            if (next !== confirm) { toast.error('Password baru dan konfirmasi tidak cocok'); return }
+            setChangingPw(true)
+            try {
+              const res = await fetch('/api/auth/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword: current, newPassword: next }),
+              })
+              const d = await res.json()
+              if (!res.ok) throw new Error(d.error || 'Gagal mengubah password')
+              toast.success('Password berhasil diubah')
+              ;(e.target as HTMLFormElement).reset()
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan')
+            } finally {
+              setChangingPw(false)
+            }
+          }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Password Lama</label>
+              <input name="currentPassword" type="password" required className="input" placeholder="••••••••" autoComplete="current-password" />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Password Baru</label>
+              <input name="newPassword" type="password" required minLength={8} className="input" placeholder="Minimal 8 karakter" autoComplete="new-password" />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Konfirmasi Password Baru</label>
+              <input name="confirmPassword" type="password" required minLength={8} className="input" placeholder="Ulangi password baru" autoComplete="new-password" />
+            </div>
+            <button type="submit" disabled={changingPw} className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+              {changingPw && <Loader2 style={{ width: 14, height: 14, ...SPIN }} />}
+              {changingPw ? 'Menyimpan...' : 'Ubah Password'}
+            </button>
+          </form>
         </div>
 
       </div>

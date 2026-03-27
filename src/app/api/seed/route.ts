@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return apiOk({ message: `✓ Seeded company, 5 preset templates, and admin user (${adminEmail})` })
+    return apiOk({ message: `✓ Seeded company, 5 preset templates, and admin user`, email: adminEmail })
   } catch (error) {
     console.error('Seed error:', error)
     return apiError('Seed failed', 500)

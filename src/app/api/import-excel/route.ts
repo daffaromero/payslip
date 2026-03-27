@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseExcelFile, autoMapColumns } from '@/lib/excel/parser'
 import { generateImportPreview } from '@/lib/excel/mapper'
+import { getCompanyId } from '@/lib/api/identity'
+import { apiError } from '@/lib/api/respond'
 import type { Pph21Status } from '@/types'
 
 export async function POST(request: NextRequest) {
+  const cid = getCompanyId(request)
+  if (!cid) return apiError('Unauthorized', 401)
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -48,6 +52,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const cid = getCompanyId(request)
+  if (!cid) return apiError('Unauthorized', 401)
+
   // Endpoint to preview import with custom mappings
   try {
     const { rows, mappings } = await request.json()

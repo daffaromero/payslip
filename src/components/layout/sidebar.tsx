@@ -2,37 +2,29 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings, LogOut, ArrowUpDown } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings, LogOut, ArrowUpDown, Copy } from 'lucide-react'
 
 const nav = [
   { href: '/',              label: 'Dashboard',      icon: LayoutDashboard, exact: true  },
   { href: '/employees',     label: 'Karyawan',        icon: Users                        },
   { href: '/payslips',      label: 'Slip Gaji',       icon: Receipt                      },
   { href: '/generate',      label: 'Buat Slip Gaji',  icon: FileText,        exact: true  },
-  { href: '/generate/bulk', label: 'Generate Massal', icon: Users                        },
+  { href: '/generate/bulk', label: 'Generate Massal', icon: Copy },
   { href: '/data',          label: 'Import / Export', icon: ArrowUpDown                  },
   { href: '/templates',     label: 'Template',        icon: PanelTop                     },
   { href: '/settings',      label: 'Pengaturan',      icon: Settings                     },
 ]
 
-export function Sidebar() {
+export function Sidebar({ companyName }: { companyName: string }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [companyName, setCompanyName] = useState('Memuat...')
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
   }, [router])
-
-  useEffect(() => {
-    fetch('/api/company')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.company?.name) setCompanyName(d.company.name) })
-      .catch(() => setCompanyName('Payslip'))
-  }, [])
 
   return (
     <aside style={{

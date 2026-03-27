@@ -50,4 +50,8 @@ prisma/*.db-journal
 # whatsapp session (credentials — never commit)
 /whatsapp-session/
 
+# uploaded files
+/data/uploads/
+/uploads/
+
 /lib/generated/prisma

@@ -50,6 +50,7 @@ jobs:
           script: |
             set -e
             cd /opt/payslip
+            test -f .env || { echo "ERROR: /opt/payslip/.env is missing. Create it before deploying."; exit 1; }
             docker compose pull app
             docker compose up -d --remove-orphans
             docker image prune -f

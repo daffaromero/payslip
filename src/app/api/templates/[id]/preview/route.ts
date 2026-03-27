@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getCompanyId } from '@/lib/api/identity'
 import { deserializeTemplate } from '@/lib/api/template-serializer'
 import { generatePayslipHTML } from '@/lib/pdf/generator'
+import { apiError } from '@/lib/api/respond'
 
 const SAMPLE_COMPANY = {
   id: 'preview',
@@ -66,11 +68,14 @@ const SAMPLE_PAYSLIP = {
   pdfUrl: null,
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const cid = getCompanyId(req)
+  if (!cid) return apiError('Unauthorized', 401)
+
   const { id } = await params
 
   try {
-    const raw = await prisma.template.findUnique({ where: { id } })
+    const raw = await prisma.template.findFirst({ where: { id, companyId: cid } })
     if (!raw) return NextResponse.json({ error: 'Template not found' }, { status: 404 })
 
     const template = deserializeTemplate(raw)
