@@ -95,13 +95,13 @@ export function Sidebar({ companyName }: { companyName: string }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {companyName}
             </p>
-            <p style={{ fontSize: 11, color: 'var(--text-disabled)', margin: '2px 0 0' }}>v0.1.0</p>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '2px 0 0' }}>v0.1.0</p>
           </div>
-          <button onClick={logout} title="Keluar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', padding: 4, display: 'flex', flexShrink: 0 }}>
-            <LogOut style={{ width: 14, height: 14 }} />
+          <button onClick={logout} title="Keluar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 4, display: 'flex', flexShrink: 0 }}>
+            <LogOut style={{ width: 15, height: 15 }} />
           </button>
         </div>
       </div>
@@ -124,7 +124,7 @@ function NavItem({ href, label, icon: Icon, active }: {
         gap: 10,
         padding: '9px 12px',
         borderRadius: 6,
-        fontSize: 13.5,
+        fontSize: 14,
         fontWeight: 500,
         color: active ? 'var(--accent)' : 'var(--text-secondary)',
         background: active ? 'var(--accent-light)' : 'transparent',

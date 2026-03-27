@@ -15,19 +15,19 @@ export function TopBar({ companyName, userInitial }: { companyName: string; user
       borderBottom: '1px solid var(--border)',
       flexShrink: 0,
     }}>
-      <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
         {companyName}
       </span>
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        width: 28,
-        height: 28,
+        width: 30,
+        height: 30,
         borderRadius: '50%',
         background: 'var(--accent-light)',
         color: 'var(--accent)',
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 600,
       }}>
         {userInitial}
