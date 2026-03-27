@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, FileText, Trash2, Download, Loader2, Mail, MessageCircle, Filter } from 'lucide-react'
+import { Plus, FileText, Trash2, Download, Loader2, Mail, MessageCircle, Filter, Eye } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { PreviewModal } from '@/components/ui/preview-modal'
 
 interface Payslip {
   id: string; employeeId: string; periodType: string
@@ -35,8 +37,12 @@ export default function PayslipsPage() {
   const [filterEmployee, setFilterEmployee] = useState('')
   const [filterYear, setFilterYear] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [previewingId, setPreviewingId] = useState<string | null>(null)
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null)
+  const [previewFilename, setPreviewFilename] = useState('')
   const [emailingId, setEmailingId] = useState<string | null>(null)
   const [whatsappingId, setWhatsappingId] = useState<string | null>(null)
   const toast = useToast()
@@ -60,12 +66,13 @@ export default function PayslipsPage() {
 
   useEffect(() => { load() }, [load])
 
-  const del = async (id: string) => {
-    if (!confirm('Hapus slip gaji ini?')) return
-    setDeletingId(id)
-    const res = await fetch(`/api/payslips/${id}`, { method: 'DELETE' })
-    if (res.ok) setPayslips(p => p.filter(x => x.id !== id))
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
+    setDeletingId(pendingDelete.id)
+    const res = await fetch(`/api/payslips/${pendingDelete.id}`, { method: 'DELETE' })
+    if (res.ok) setPayslips(p => p.filter(x => x.id !== pendingDelete.id))
     setDeletingId(null)
+    setPendingDelete(null)
   }
 
   const sendEmail = async (id: string) => {
@@ -95,12 +102,31 @@ export default function PayslipsPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payslipId: id }),
       })
-      if (!res.ok) { alert('Gagal generate PDF'); return }
+      if (!res.ok) { toast.error('Gagal generate PDF'); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = Object.assign(document.createElement('a'), { href: url, download: `slip-gaji-${name}-${date}.pdf` })
       document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
     } finally { setDownloadingId(null) }
+  }
+
+  const preview = async (id: string, name: string, date: string) => {
+    setPreviewingId(id)
+    try {
+      const res = await fetch('/api/generate-pdf', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payslipId: id }),
+      })
+      if (!res.ok) { toast.error('Gagal membuat preview'); return }
+      const blob = await res.blob()
+      setPreviewSrc(URL.createObjectURL(blob))
+      setPreviewFilename(`slip-gaji-${name}-${date}.pdf`)
+    } finally { setPreviewingId(null) }
+  }
+
+  const closePreview = () => {
+    if (previewSrc) URL.revokeObjectURL(previewSrc)
+    setPreviewSrc(null)
   }
 
   const hasFilter = filterEmployee || filterYear || filterMonth
@@ -109,6 +135,26 @@ export default function PayslipsPage() {
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title="Hapus slip gaji?"
+        description={`Slip gaji ${pendingDelete?.name} ini akan dihapus permanen.`}
+        confirmLabel="Hapus"
+        loading={deletingId !== null}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+
+      {previewSrc && (
+        <PreviewModal
+          open
+          src={previewSrc}
+          filename={previewFilename}
+          onClose={closePreview}
+        />
+      )}
+
       <PageHeader title="Slip Gaji" subtitle={loading ? '' : `${total} slip gaji ditemukan`}>
         <Link href="/generate" className="btn btn-primary">
           <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
@@ -135,8 +181,7 @@ export default function PayslipsPage() {
             className="input"
             style={{ fontSize: 13, height: 32, width: 80, flexShrink: 0 }}
             placeholder="Tahun"
-            min="2000"
-            max="2099"
+            min="2000" max="2099"
           />
           <select
             value={filterMonth}
@@ -187,7 +232,7 @@ export default function PayslipsPage() {
                   <th>Tipe</th>
                   <th style={{ textAlign: 'right' }}>Gaji Kotor</th>
                   <th style={{ textAlign: 'right' }}>Gaji Bersih</th>
-                  <th style={{ width: '80px' }}></th>
+                  <th style={{ width: '96px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -227,10 +272,13 @@ export default function PayslipsPage() {
                         <button onClick={() => sendEmail(p.id)} disabled={emailingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke Email">
                           {emailingId === p.id ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Mail style={{ width: 14, height: 14 }} />}
                         </button>
+                        <button onClick={() => preview(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={previewingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Preview PDF">
+                          {previewingId === p.id ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Eye style={{ width: 14, height: 14 }} />}
+                        </button>
                         <button onClick={() => download(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={downloadingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Download PDF">
                           {downloadingId === p.id ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Download style={{ width: 14, height: 14 }} />}
                         </button>
-                        <button onClick={() => del(p.id)} disabled={deletingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Hapus" style={{ color: 'var(--text-tertiary)' }}>
+                        <button onClick={() => setPendingDelete({ id: p.id, name: p.employee.name })} disabled={deletingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Hapus" style={{ color: 'var(--text-tertiary)' }}>
                           <Trash2 style={{ width: 14, height: 14 }} />
                         </button>
                       </div>

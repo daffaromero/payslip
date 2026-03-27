@@ -1,12 +1,16 @@
 export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Users, FileText, TrendingUp, Plus } from 'lucide-react'
+import { Users, FileText, TrendingUp, Plus, Banknote, CalendarDays, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
 
 export default async function DashboardPage() {
-  const [totalEmployees, totalPayslips, recentPayslips, thisMonthPayslips] = await Promise.all([
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const yearStart  = new Date(now.getFullYear(), 0, 1)
+
+  const [totalEmployees, totalPayslips, recentPayslips, thisMonthPayslips, thisMonthPayroll, ytdPayroll, avgNetPay] = await Promise.all([
     prisma.employee.count({ where: { isActive: true } }),
     prisma.payslip.count(),
     prisma.payslip.findMany({
@@ -15,14 +19,31 @@ export default async function DashboardPage() {
       include: { employee: { select: { name: true, employeeId: true } } },
     }),
     prisma.payslip.count({
-      where: { generatedAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } },
+      where: { startDate: { gte: monthStart } },
+    }),
+    prisma.payslip.aggregate({
+      where: { startDate: { gte: monthStart } },
+      _sum: { netPay: true },
+    }),
+    prisma.payslip.aggregate({
+      where: { startDate: { gte: yearStart } },
+      _sum: { netPay: true },
+    }),
+    prisma.payslip.aggregate({
+      _avg: { netPay: true },
     }),
   ])
 
-  const stats = [
-    { label: 'Karyawan Aktif',   value: totalEmployees,    icon: Users,      href: '/employees', color: '#0066ff', bg: '#eff6ff' },
-    { label: 'Total Slip Gaji',  value: totalPayslips,     icon: FileText,   href: '/payslips',  color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Slip Bulan Ini',   value: thisMonthPayslips, icon: TrendingUp, href: null,         color: '#059669', bg: '#ecfdf5' },
+  const countStats = [
+    { label: 'Karyawan Aktif',  value: String(totalEmployees),    icon: Users,      href: '/employees', color: '#0066ff', bg: '#eff6ff' },
+    { label: 'Total Slip Gaji', value: String(totalPayslips),     icon: FileText,   href: '/payslips',  color: '#7c3aed', bg: '#f5f3ff' },
+    { label: 'Slip Bulan Ini',  value: String(thisMonthPayslips), icon: TrendingUp, href: null,         color: '#059669', bg: '#ecfdf5' },
+  ]
+
+  const payrollStats = [
+    { label: 'Payroll Bulan Ini', value: formatCurrency(Number(thisMonthPayroll._sum.netPay) || 0), icon: Banknote,     color: '#0066ff', bg: '#eff6ff' },
+    { label: 'Payroll YTD',       value: formatCurrency(Number(ytdPayroll._sum.netPay) || 0),       icon: CalendarDays, color: '#7c3aed', bg: '#f5f3ff' },
+    { label: 'Rata-rata Bersih',  value: formatCurrency(Number(avgNetPay._avg.netPay) || 0),         icon: BarChart3,    color: '#059669', bg: '#ecfdf5' },
   ]
 
   return (
@@ -34,14 +55,11 @@ export default async function DashboardPage() {
       </PageHeader>
 
       <div style={{ padding: 12 }}>
-        {/* Stats row */}
+        {/* Count stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
-          {stats.map(({ label, value, icon: Icon, href, color, bg }) => (
+          {countStats.map(({ label, value, icon: Icon, href, color, bg }) => (
             <div key={label} className="card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div
-                className="flex items-center justify-center rounded-xl"
-                style={{ background: bg, width: 52, height: 52, flexShrink: 0 }}
-              >
+              <div className="flex items-center justify-center rounded-xl" style={{ background: bg, width: 52, height: 52, flexShrink: 0 }}>
                 <Icon style={{ color, width: 24, height: 24 }} />
               </div>
               <div style={{ minWidth: 0 }}>
@@ -54,6 +72,23 @@ export default async function DashboardPage() {
                     Lihat semua →
                   </Link>
                 )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Payroll stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+          {payrollStats.map(({ label, value, icon: Icon, color, bg }) => (
+            <div key={label} className="card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div className="flex items-center justify-center rounded-xl" style={{ background: bg, width: 52, height: 52, flexShrink: 0 }}>
+                <Icon style={{ color, width: 24, height: 24 }} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{label}</p>
+                <p style={{ color: 'var(--text-primary)', fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
+                  {value}
+                </p>
               </div>
             </div>
           ))}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, Search, Users, Pencil, Trash2, FileText } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 
 interface Employee {
   id: string; employeeId: string; name: string; email: string | null
@@ -16,6 +17,7 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
   const load = useCallback(async () => {
     const res = await fetch('/api/employees')
@@ -24,12 +26,13 @@ export default function EmployeesPage() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  const del = async (id: string, name: string) => {
-    if (!confirm(`Hapus karyawan "${name}"?`)) return
-    setDeletingId(id)
-    const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' })
-    if (res.ok) setEmployees(p => p.filter(e => e.id !== id))
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
+    setDeletingId(pendingDelete.id)
+    const res = await fetch(`/api/employees/${pendingDelete.id}`, { method: 'DELETE' })
+    if (res.ok) setEmployees(p => p.filter(e => e.id !== pendingDelete.id))
     setDeletingId(null)
+    setPendingDelete(null)
   }
 
   const filtered = employees.filter(e => {
@@ -39,6 +42,15 @@ export default function EmployeesPage() {
 
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title={`Hapus karyawan?`}
+        description={`"${pendingDelete?.name}" akan dihapus permanen dan tidak bisa dikembalikan.`}
+        confirmLabel="Hapus"
+        loading={deletingId !== null}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
       <PageHeader title="Karyawan" subtitle={loading ? '' : `${employees.length} karyawan aktif`}>
         <Link href="/employees/new" className="btn btn-primary">
           <Plus className="h-3.5 w-3.5" /> Tambah Karyawan
@@ -126,7 +138,7 @@ export default function EmployeesPage() {
                           <FileText className="h-3.5 w-3.5" />
                         </Link>
                         <button
-                          onClick={() => del(e.id, e.name)}
+                          onClick={() => setPendingDelete({ id: e.id, name: e.name })}
                           disabled={deletingId === e.id}
                           className="btn btn-ghost btn-icon btn-sm"
                           style={{ color: 'var(--text-tertiary)' }}

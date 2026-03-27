@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import { Employee, Template } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 import { calculatePayslip } from '@/lib/calculations/payslip'
-import { Download, Loader2, Plus, X } from 'lucide-react'
+import { Download, Loader2, Plus, X, Eye } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
+import { PreviewModal } from '@/components/ui/preview-modal'
 
 interface Props { employees: Employee[]; templates: Template[]; defaultEmployeeId?: string }
 
@@ -25,6 +26,8 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   const [loading, setLoading] = useState(false)
   const [generatedId, setGeneratedId] = useState<string | null>(null)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const [previewingSrc, setPreviewingSrc] = useState<string | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
   const toast = useToast()
   const [employeeId, setEmployeeId] = useState(defaultEmployeeId ?? '')
   const [templateId, setTemplateId] = useState(templates.find(t => t.isDefault)?.id ?? templates[0]?.id ?? '')
@@ -122,9 +125,38 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     finally { setDownloadingPdf(false) }
   }
 
+  const previewSlip = async () => {
+    if (!employeeId || !templateId) { toast.error('Pilih karyawan dan template'); return }
+    setLoadingPreview(true)
+    try {
+      const res = await fetch('/api/preview-payslip', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId, templateId, periodType, startDate, endDate, basePay, overtimeHours, hourlyRate, bonus, thr, allowances, otherDeductions: deductions, notes }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Gagal membuat preview'); return }
+      const blob = new Blob([data.html], { type: 'text/html' })
+      setPreviewingSrc(URL.createObjectURL(blob))
+    } catch { toast.error('Gagal membuat preview') }
+    finally { setLoadingPreview(false) }
+  }
+
+  const closePreview = () => {
+    if (previewingSrc) URL.revokeObjectURL(previewingSrc)
+    setPreviewingSrc(null)
+  }
+
   return (
     <>
     <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
+    {previewingSrc && (
+      <PreviewModal
+        open
+        src={previewingSrc}
+        filename={`preview-slip-${emp?.name ?? 'karyawan'}-${startDate}.html`}
+        onClose={closePreview}
+      />
+    )}
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
       {/* Form */}
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -299,10 +331,16 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
           </F>
         </div>
 
-        <button onClick={generate} disabled={loading} className="btn btn-primary btn-lg" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          {loading && <Loader2 style={{ width: 16, height: 16, ...SPIN }} />}
-          {loading ? 'Memproses...' : 'Generate Slip Gaji'}
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={previewSlip} disabled={loadingPreview || loading} className="btn btn-secondary btn-lg" style={{ flex: '0 0 auto' }}>
+            {loadingPreview ? <Loader2 style={{ width: 16, height: 16, ...SPIN }} /> : <Eye style={{ width: 16, height: 16 }} />}
+            Preview
+          </button>
+          <button onClick={generate} disabled={loading} className="btn btn-primary btn-lg" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {loading && <Loader2 style={{ width: 16, height: 16, ...SPIN }} />}
+            {loading ? 'Memproses...' : 'Generate Slip Gaji'}
+          </button>
+        </div>
       </div>
 
       {/* Sidebar — live preview */}
