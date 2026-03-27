@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings, LogOut, ArrowUpDown } from 'lucide-react'
 
 const nav = [
   { href: '/',              label: 'Dashboard',      icon: LayoutDashboard, exact: true  },
@@ -12,6 +12,7 @@ const nav = [
   { href: '/payslips',      label: 'Slip Gaji',       icon: Receipt                      },
   { href: '/generate',      label: 'Buat Slip Gaji',  icon: FileText,        exact: true  },
   { href: '/generate/bulk', label: 'Generate Massal', icon: Users                        },
+  { href: '/data',          label: 'Import / Export', icon: ArrowUpDown                  },
   { href: '/templates',     label: 'Template',        icon: PanelTop                     },
   { href: '/settings',      label: 'Pengaturan',      icon: Settings                     },
 ]

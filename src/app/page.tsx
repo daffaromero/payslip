@@ -90,7 +90,7 @@ export default async function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentPayslips.map(p => (
+                {recentPayslips.map((p: typeof recentPayslips[number]) => (
                   <tr key={p.id}>
                     <td>
                       <div className="flex items-center gap-3" style={{ gap: 12 }}>
