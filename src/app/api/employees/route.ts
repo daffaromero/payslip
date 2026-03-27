@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
         employeeId: data.employeeId,
         name: data.name,
         email: data.email || null,
+        whatsappNumber: data.whatsappNumber || null,
         department: data.department || null,
         position: data.position || null,
         npwp: data.npwp || null,

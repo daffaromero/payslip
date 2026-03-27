@@ -38,7 +38,7 @@ export async function generatePayslipPDF(options: GeneratePdfOptions): Promise<B
   try {
     const page = await browser.newPage()
     const html = generatePayslipHTML({ payslip, employee, template, company })
-    await page.setContent(html, { waitUntil: 'networkidle0' })
+    await page.setContent(html, { waitUntil: 'domcontentloaded' })
     const pdf = await page.pdf({
       format: template.layout.pageSize === 'letter' ? 'Letter' : 'A4',
       landscape: template.layout.orientation === 'landscape',
