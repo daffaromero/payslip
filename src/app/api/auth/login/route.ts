@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { signToken, COOKIE } from '@/lib/auth'
+import { verifyPassword } from '@/lib/crypto'
+import { prisma } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
-  const { password } = await req.json()
+  const { email, password } = await req.json()
 
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: 'Password salah' }, { status: 401 })
+  if (!email || !password) {
+    return NextResponse.json({ error: 'Email dan password wajib diisi' }, { status: 400 })
   }
 
-  const token = await signToken()
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+    return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 })
+  }
+
+  const token = await signToken({ userId: user.id, companyId: user.companyId, role: user.role })
   const res = NextResponse.json({ ok: true })
   res.cookies.set(COOKIE, token, {
     httpOnly: true,

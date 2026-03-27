@@ -8,6 +8,7 @@ const SPIN = { animation: 'spin 1s linear infinite' } as const
 
 function LoginForm() {
   const params = useSearchParams()
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -18,7 +19,7 @@ function LoginForm() {
     setLoading(true); setError('')
     const res = await fetch('/api/auth/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ email, password }),
     })
     if (res.ok) {
       window.location.href = params.get('from') || '/'
@@ -45,6 +46,19 @@ function LoginForm() {
         <div className="card" style={{ padding: 24 }}>
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Email</label>
+              <input
+                type="email"
+                className="input"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="admin@perusahaan.co.id"
+                autoFocus
+                required
+              />
+            </div>
+
+            <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Password</label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -54,7 +68,6 @@ function LoginForm() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  autoFocus
                   required
                 />
                 <button

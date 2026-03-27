@@ -1,6 +1,7 @@
 import { config } from 'dotenv'
 import { resolve } from 'path'
 import { PrismaClient } from '@prisma/client'
+import { hashPassword } from '../src/lib/crypto'
 
 config({ path: resolve(__dirname, '../.env'), override: false })
 console.log('Using database URL:', process.env.DATABASE_URL || 'file:./dev.db')
@@ -23,6 +24,7 @@ async function main() {
   await prisma.payslip.deleteMany()
   await prisma.template.deleteMany()
   await prisma.employee.deleteMany()
+  await prisma.user.deleteMany()
   await prisma.company.deleteMany()
 
   const company = await prisma.company.create({
@@ -160,6 +162,20 @@ async function main() {
   }})
 
   console.log('✓ Seeded 5 preset templates')
+
+  // ── Admin user ────────────────────────────────────────────────────────────
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@contoh.co.id'
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'
+  const passwordHash = await hashPassword(adminPassword)
+  await prisma.user.create({
+    data: {
+      companyId: company.id,
+      email: adminEmail,
+      passwordHash,
+      role: 'admin',
+    },
+  })
+  console.log(`✓ Seeded admin user: ${adminEmail}`)
 }
 
 main()

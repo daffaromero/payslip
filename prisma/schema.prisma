@@ -17,9 +17,24 @@ model Company {
   logoUrl     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  users       User[]
   templates   Template[]
   employees   Employee[]
   payslips    Payslip[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  companyId    String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company      Company  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
 }
 
 model Employee {
