@@ -32,6 +32,7 @@ export async function generatePayslipPDF(options: GeneratePdfOptions): Promise<B
       '--disable-gpu',
       '--disable-crash-reporter',
       '--no-zygote',
+      '--single-process',
     ],
   })
 
