@@ -42,14 +42,17 @@ ENV NODE_ENV=production \
     PORT=3001 \
     HOSTNAME=0.0.0.0
 
-# Wrap crashpad handler to supply --database argument
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 --ingroup nodejs apiuser \
-  && mv /usr/lib/chromium/chrome_crashpad_handler /usr/lib/chromium/chrome_crashpad_handler.real \
-  && printf '#!/bin/sh\nmkdir -p /tmp/chromium-crash\nexec /usr/lib/chromium/chrome_crashpad_handler.real --database=/tmp/chromium-crash "$@"\n' \
-     > /usr/lib/chromium/chrome_crashpad_handler \
-  && chmod +x /usr/lib/chromium/chrome_crashpad_handler \
-  && ln -sf /usr/lib/chromium/chrome_crashpad_handler /usr/bin/chrome_crashpad_handler
+# Create non-root user (Debian uses groupadd/useradd, not addgroup/adduser)
+# Wrap crashpad handler to supply --database argument if it exists
+RUN groupadd --system --gid 1001 nodejs \
+  && useradd --system --uid 1001 --gid nodejs apiuser \
+  && if [ -f /usr/lib/chromium/chrome_crashpad_handler ]; then \
+       mv /usr/lib/chromium/chrome_crashpad_handler /usr/lib/chromium/chrome_crashpad_handler.real \
+       && printf '#!/bin/sh\nmkdir -p /tmp/chromium-crash\nexec /usr/lib/chromium/chrome_crashpad_handler.real --database=/tmp/chromium-crash "$@"\n' \
+          > /usr/lib/chromium/chrome_crashpad_handler \
+       && chmod +x /usr/lib/chromium/chrome_crashpad_handler \
+       && ln -sf /usr/lib/chromium/chrome_crashpad_handler /usr/bin/chrome_crashpad_handler; \
+     fi
 
 COPY --from=builder --chown=apiuser:nodejs /app/package*.json ./
 COPY --from=builder --chown=apiuser:nodejs /app/node_modules ./node_modules
