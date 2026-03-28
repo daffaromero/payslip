@@ -1,4 +1,4 @@
-slipgajiku.online {
+{$DOMAIN} {
     reverse_proxy /api/* api:3001
     reverse_proxy * app:3000
 }
