@@ -1,0 +1,98 @@
+import { Hono } from 'hono'
+import { prisma } from '@/lib/db'
+import { hashPassword } from '@/lib/crypto'
+import type { Env } from '../types'
+
+const router = new Hono<Env>()
+
+const COMPANY_HEADER = {
+  showLogo: false, companyName: 'PT Contoh Indonesia',
+  companyAddress: 'Jl. Sudirman No. 1, Jakarta Pusat 10220',
+  companyTaxId: '09.123.456.7-123.000', companyPhone: '(021) 1234-5678',
+  companyEmail: 'hr@contoh.co.id',
+}
+const LAYOUT_A4 = { orientation: 'portrait', pageSize: 'A4', columns: 1 }
+const j = JSON.stringify
+
+const TEMPLATES = [
+  {
+    name: 'Formal Klasik', isDefault: true,
+    theme: j({ primaryColor: '#1a365d', secondaryColor: '#2b6cb0', fontFamily: 'inter', fontSize: 'medium' }),
+    sections: j({ companyHeader: true, employeeInfo: true, earnings: true, deductions: true, netPay: true, ytdSummary: true, bankDetails: true, notes: true, signature: false }),
+    customCss: `.header{border:2px solid #1a365d;padding:16px}.section-title{background:#1a365d;color:white;padding:5px 10px;border-bottom:none;margin-bottom:8px}.amount-table th{background:#2c5282;color:white;padding:7px 10px}.amount-table td,.amount-table th{border:1px solid #bee3f8;padding:6px 10px}.amount-table tr:nth-child(even) td{background:#ebf8ff}.total-row td{background:#dbeafe!important;border-top:2px solid #1a365d!important}.net-pay-box{border-radius:0}.info-row{border-bottom:1px solid #e2e8f0;padding:4px 0}`,
+  },
+  {
+    name: 'Korporat', isDefault: false,
+    theme: j({ primaryColor: '#1f2937', secondaryColor: '#6b7280', fontFamily: 'inter', fontSize: 'medium' }),
+    sections: j({ companyHeader: true, employeeInfo: true, earnings: true, deductions: true, netPay: true, ytdSummary: false, bankDetails: true, notes: false, signature: false }),
+    customCss: `.header{text-align:left;border-bottom:3px solid #1f2937;padding-bottom:14px}.payslip-title{text-align:left}.payslip-period{text-align:left}.section-title{letter-spacing:.1em;border-bottom:2px solid #d1d5db;color:#374151}.amount-table td{border-bottom:1px solid #e5e7eb;padding:7px 4px}.amount-table th{color:#374151;font-size:10px}.total-row td{background:#f9fafb}.net-pay-box{border-radius:2px}.info-label{color:#6b7280}`,
+  },
+  {
+    name: 'Minimalis', isDefault: false,
+    theme: j({ primaryColor: '#111827', secondaryColor: '#9ca3af', fontFamily: 'inter', fontSize: 'small' }),
+    sections: j({ companyHeader: true, employeeInfo: true, earnings: true, deductions: true, netPay: true, ytdSummary: false, bankDetails: true, notes: false, signature: false }),
+    customCss: `.header{border-bottom:1px solid #e5e7eb;padding-bottom:14px}.company-name{font-size:15px;letter-spacing:.04em}.payslip-title{font-size:11px;font-weight:400;color:#9ca3af;letter-spacing:.15em;margin-top:10px}.section-title{font-weight:400;color:#9ca3af;border-bottom:1px solid #f3f4f6}.amount-table td{padding:7px 0;border-bottom:1px solid #f9fafb}.amount-table th{border-bottom:1px solid #e5e7eb;color:#9ca3af}.total-row td{border-top:1px solid #d1d5db!important;border-bottom:none;background:none}.net-pay-box{background:#111827;padding:16px 20px}.info-label{color:#9ca3af}`,
+  },
+  {
+    name: 'Hijau Profesional', isDefault: false,
+    theme: j({ primaryColor: '#065f46', secondaryColor: '#059669', fontFamily: 'inter', fontSize: 'medium' }),
+    sections: j({ companyHeader: true, employeeInfo: true, earnings: true, deductions: true, netPay: true, ytdSummary: true, bankDetails: true, notes: true, signature: true }),
+    customCss: `.header{border-bottom:3px solid #065f46;padding-bottom:12px}.section-title{color:#065f46;background:#f0fdf4;padding:5px 10px;border-bottom:none;border-left:4px solid #059669}.amount-table th{background:#065f46;color:white;padding:7px 10px}.amount-table td{border-bottom:1px solid #d1fae5;padding:6px 10px}.amount-table tr:nth-child(even) td{background:#f0fdf4}.total-row td{background:#dcfce7!important;border-top:2px solid #065f46!important}.net-pay-box{border-radius:4px}.info-label{color:#6b7280}`,
+  },
+  {
+    name: 'Resmi Bertanda Tangan', isDefault: false,
+    theme: j({ primaryColor: '#7f1d1d', secondaryColor: '#b91c1c', fontFamily: 'inter', fontSize: 'medium' }),
+    sections: j({ companyHeader: true, employeeInfo: true, earnings: true, deductions: true, netPay: true, ytdSummary: false, bankDetails: true, notes: true, signature: true }),
+    customCss: `.payslip{border:2px solid #7f1d1d;padding:0}.header{background:#7f1d1d;padding:20px 24px;border-bottom:none;margin-bottom:0}.company-name{color:white}.company-info{color:#fca5a5}.payslip-title{color:white;border-top:1px solid rgba(255,255,255,.3);margin-top:12px;padding-top:10px}.payslip-period{color:#fca5a5}.section{padding:0 20px}.section-title{color:#7f1d1d;background:#fff1f2;padding:5px 10px;border-left:3px solid #7f1d1d;border-bottom:none;margin:0 -20px 10px -20px}.amount-table th{background:#7f1d1d;color:white;padding:6px 10px}.amount-table td{border-bottom:1px solid #fecdd3;padding:6px 10px}.total-row td{background:#fff1f2!important;border-top:2px solid #7f1d1d!important}.net-pay-box{margin:0;border-radius:0}.signature-row{padding:0 20px 20px;margin-top:30px}.signature-line{border-bottom:1px solid #7f1d1d}`,
+  },
+]
+
+router.post('/', async (c) => {
+  const token = c.req.query('token')
+  if (!token || token !== process.env.SEED_TOKEN) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  try {
+    await prisma.payslip.deleteMany()
+    await prisma.template.deleteMany()
+    await prisma.employee.deleteMany()
+    await prisma.user.deleteMany()
+    await prisma.company.deleteMany()
+
+    const company = await prisma.company.create({
+      data: {
+        name: 'PT Contoh Indonesia',
+        address: 'Jl. Sudirman No. 1, Jakarta Pusat 10220',
+        taxId: '09.123.456.7-123.000',
+        phone: '(021) 1234-5678',
+        email: 'hr@contoh.co.id',
+      },
+    })
+
+    for (const t of TEMPLATES) {
+      await prisma.template.create({
+        data: {
+          companyId: company.id, type: 'preset', language: 'id',
+          layout: j(LAYOUT_A4), header: j(COMPANY_HEADER), customFields: j([]), ...t,
+        },
+      })
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@contoh.co.id'
+    const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin123'
+    await prisma.user.create({
+      data: {
+        companyId: company.id, email: adminEmail,
+        passwordHash: await hashPassword(adminPassword), role: 'admin',
+      },
+    })
+
+    return c.json({ message: '✓ Seeded company, 5 preset templates, and admin user', email: adminEmail })
+  } catch (e) {
+    console.error('Seed error:', e)
+    return c.json({ error: 'Seed failed' }, 500)
+  }
+})
+
+export default router
