@@ -4,7 +4,8 @@ import { verifyToken, COOKIE } from '@/lib/auth'
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  if (pathname.startsWith('/login') || pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
+  // /api/* is handled by Hono (via Caddy in prod, rewrite in dev) — let it through
+  if (pathname.startsWith('/login') || pathname.startsWith('/api/') || pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
     return NextResponse.next()
   }
 

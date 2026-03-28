@@ -50,6 +50,41 @@ router.post('/', async (c) => {
   }
 })
 
+// GET /api/employees/export — must be before /:id to avoid wildcard match
+router.get('/export', async (c) => {
+  const cid = c.get('companyId')
+  const employees = await prisma.employee.findMany({
+    where: { companyId: cid, isActive: true },
+    orderBy: { name: 'asc' },
+  })
+
+  const rows = employees.map(e => ({
+    'ID Karyawan': e.employeeId,
+    'Nama': e.name,
+    'Email': e.email ?? '',
+    'WhatsApp': e.whatsappNumber ?? '',
+    'Departemen': e.department ?? '',
+    'Jabatan': e.position ?? '',
+    'Gaji Pokok': e.baseSalary,
+    'Status PPh21': e.pph21Status,
+    'NPWP': e.npwp ?? '',
+    'Nama Bank': e.bankName ?? '',
+    'No Rekening': e.bankAccount ?? '',
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Karyawan')
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+
+  return new Response(buf, {
+    headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="karyawan.xlsx"',
+    },
+  })
+})
+
 router.get('/:id', async (c) => {
   const cid = c.get('companyId')
   try {
@@ -98,38 +133,3 @@ router.delete('/:id', async (c) => {
 })
 
 export default router
-
-// Export handler (mounted separately at /api/export/employees)
-export async function exportEmployees(c: Parameters<typeof router.get>[1] extends (c: infer C) => unknown ? C : never) {
-  const cid = c.get('companyId')
-  const employees = await prisma.employee.findMany({
-    where: { companyId: cid, isActive: true },
-    orderBy: { name: 'asc' },
-  })
-
-  const rows = employees.map(e => ({
-    'ID Karyawan': e.employeeId,
-    'Nama': e.name,
-    'Email': e.email ?? '',
-    'WhatsApp': e.whatsappNumber ?? '',
-    'Departemen': e.department ?? '',
-    'Jabatan': e.position ?? '',
-    'Gaji Pokok': e.baseSalary,
-    'Status PPh21': e.pph21Status,
-    'NPWP': e.npwp ?? '',
-    'Nama Bank': e.bankName ?? '',
-    'No Rekening': e.bankAccount ?? '',
-  }))
-
-  const ws = XLSX.utils.json_to_sheet(rows)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Karyawan')
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
-
-  return new Response(buf, {
-    headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename="karyawan.xlsx"',
-    },
-  })
-}

@@ -193,6 +193,47 @@ router.post('/bulk', async (c) => {
   }
 })
 
+// GET /api/payslips/export — must be before /:id to avoid wildcard match
+router.get('/export', async (c) => {
+  const cid = c.get('companyId')
+  const month = c.req.query('month')
+
+  const startDateFilter = month
+    ? (() => {
+        const [year, mon] = month.split('-').map(Number)
+        return { gte: new Date(year, mon - 1, 1), lt: new Date(year, mon, 1) }
+      })()
+    : undefined
+
+  const payslips = await prisma.payslip.findMany({
+    where: { companyId: cid, ...(startDateFilter ? { startDate: startDateFilter } : {}) },
+    include: { employee: { select: { name: true, employeeId: true, department: true } } },
+    orderBy: [{ startDate: 'desc' }, { employee: { name: 'asc' } }],
+  })
+
+  const rows = payslips.map(p => ({
+    'ID Karyawan': p.employee.employeeId, 'Nama': p.employee.name,
+    'Departemen': p.employee.department ?? '', 'Periode Mulai': new Date(p.startDate).toLocaleDateString('id-ID'),
+    'Periode Akhir': new Date(p.endDate).toLocaleDateString('id-ID'), 'Tipe': p.periodType,
+    'Gaji Pokok': p.basePay, 'Lembur': p.overtimePay, 'Bonus': p.bonus, 'THR': p.thr,
+    'Gaji Kotor': p.grossPay, 'PPh21': p.pph21, 'BPJS Kesehatan': p.bpjsKesehatan,
+    'BPJS TK': p.bpjsKetenagakerjaan, 'Total Potongan': p.totalDeductions, 'Gaji Bersih': p.netPay,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Slip Gaji')
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+  const filename = month ? `slip-gaji-${month}.xlsx` : 'slip-gaji-semua.xlsx'
+
+  return new Response(buf, {
+    headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    },
+  })
+})
+
 // GET /api/payslips/:id
 router.get('/:id', async (c) => {
   const cid = c.get('companyId')
@@ -373,44 +414,3 @@ router.post('/:id/send-whatsapp', async (c) => {
 })
 
 export default router
-
-// Export handler
-export async function exportPayslips(c: { get: (k: string) => string; req: { query: (k: string) => string | undefined } }) {
-  const cid = c.get('companyId')
-  const month = c.req.query('month')
-
-  const startDateFilter = month
-    ? (() => {
-        const [year, mon] = month.split('-').map(Number)
-        return { gte: new Date(year, mon - 1, 1), lt: new Date(year, mon, 1) }
-      })()
-    : undefined
-
-  const payslips = await prisma.payslip.findMany({
-    where: { companyId: cid, ...(startDateFilter ? { startDate: startDateFilter } : {}) },
-    include: { employee: { select: { name: true, employeeId: true, department: true } } },
-    orderBy: [{ startDate: 'desc' }, { employee: { name: 'asc' } }],
-  })
-
-  const rows = payslips.map(p => ({
-    'ID Karyawan': p.employee.employeeId, 'Nama': p.employee.name,
-    'Departemen': p.employee.department ?? '', 'Periode Mulai': new Date(p.startDate).toLocaleDateString('id-ID'),
-    'Periode Akhir': new Date(p.endDate).toLocaleDateString('id-ID'), 'Tipe': p.periodType,
-    'Gaji Pokok': p.basePay, 'Lembur': p.overtimePay, 'Bonus': p.bonus, 'THR': p.thr,
-    'Gaji Kotor': p.grossPay, 'PPh21': p.pph21, 'BPJS Kesehatan': p.bpjsKesehatan,
-    'BPJS TK': p.bpjsKetenagakerjaan, 'Total Potongan': p.totalDeductions, 'Gaji Bersih': p.netPay,
-  }))
-
-  const ws = XLSX.utils.json_to_sheet(rows)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Slip Gaji')
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
-  const filename = month ? `slip-gaji-${month}.xlsx` : 'slip-gaji-semua.xlsx'
-
-  return new Response(buf, {
-    headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    },
-  })
-}
