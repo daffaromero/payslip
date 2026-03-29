@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Employee, Template } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 import { calculatePayslip } from '@/lib/calculations/payslip'
+import { calcProrate } from '@/lib/calculations/prorate'
 import { Download, Loader2, Plus, X, Eye } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { PreviewModal } from '@/components/ui/preview-modal'
@@ -48,71 +49,26 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   const [prorateCalcMode, setProrateCalcMode] = useState<'period' | 'span'>('period')
   const [prorateUseCount, setProrateUseCount] = useState(false)
   const [prorateCount, setProrateCount] = useState(1)
+  const [prorateDayBasis, setProrateDayBasis] = useState<'calendar' | 'working'>('calendar')
 
   const emp = employees.find(e => e.id === employeeId)
 
   const PERIOD_COUNT: Record<string, number> = { weekly: 1, monthly: 1, quarterly: 3, 'semi-annual': 6, annual: 12 }
   const periodCount = PERIOD_COUNT[periodType] ?? 1
 
-  function getSubPeriods(s: Date, e: Date, n: number) {
-    if (n === 1) return [{ start: s, end: e }]
-    return Array.from({ length: n }, (_, i) => ({
-      start: new Date(s.getFullYear(), s.getMonth() + i, s.getDate()),
-      end: i === n - 1 ? e : new Date(s.getFullYear(), s.getMonth() + i + 1, s.getDate() - 1),
-    }))
-  }
-
-  const { prorateFactor, prorateBreakdown } = (() => {
-    if (!prorateEnabled || !startDate || !endDate) return { prorateFactor: null, prorateBreakdown: null }
-    const s = new Date(startDate), e = new Date(endDate)
-
-    if (prorateUseCount) {
-      return { prorateFactor: Math.min(1, Math.max(0, prorateCount / periodCount)), prorateBreakdown: null }
-    }
-
-    if (!prorateDate) return { prorateFactor: null, prorateBreakdown: null }
-    const d = new Date(prorateDate)
-
-    if (prorateCalcMode === 'span' || periodCount === 1) {
-      const total = Math.round((e.getTime() - s.getTime()) / 86400000) + 1
-      const worked = prorateType === 'join'
-        ? Math.max(0, Math.round((e.getTime() - d.getTime()) / 86400000) + 1)
-        : Math.max(0, Math.round((d.getTime() - s.getTime()) / 86400000) + 1)
-      return { prorateFactor: total > 0 ? Math.min(1, worked / total) : null, prorateBreakdown: null }
-    }
-
-    const subs = getSubPeriods(s, e, periodCount)
-    const idx = subs.findIndex(p => d >= p.start && d <= p.end)
-    if (idx === -1) {
-      const f = prorateType === 'join' ? (d <= s ? 1 : 0) : (d >= e ? 1 : 0)
-      return { prorateFactor: f, prorateBreakdown: null }
-    }
-
-    const sp = subs[idx]
-    const spDays = Math.round((sp.end.getTime() - sp.start.getTime()) / 86400000) + 1
-    const workedInSp = prorateType === 'join'
-      ? Math.round((sp.end.getTime() - d.getTime()) / 86400000) + 1
-      : Math.round((d.getTime() - sp.start.getTime()) / 86400000) + 1
-    const partial = Math.max(0, Math.min(1, workedInSp / spDays))
-    const full = prorateType === 'join' ? periodCount - idx - 1 : idx
-    const factor = (partial + full) / periodCount
-
-    const fmt = (dt: Date) => dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-    const breakdown = subs.map((p, i) => {
-      const pDays = Math.round((p.end.getTime() - p.start.getTime()) / 86400000) + 1
-      if (prorateType === 'join') {
-        if (i < idx) return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: 0, note: 'tidak bekerja' }
-        if (i === idx) return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: partial, note: `${workedInSp}/${pDays} hari` }
-        return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: 1, note: 'penuh' }
-      } else {
-        if (i > idx) return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: 0, note: 'tidak bekerja' }
-        if (i === idx) return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: partial, note: `${workedInSp}/${pDays} hari` }
-        return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: 1, note: 'penuh' }
-      }
-    })
-
-    return { prorateFactor: factor, prorateBreakdown: breakdown }
-  })()
+  const { prorateFactor, prorateBreakdown } = !prorateEnabled || !startDate || !endDate
+    ? { prorateFactor: null, prorateBreakdown: null }
+    : calcProrate({
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        prorateDate: prorateDate ? new Date(prorateDate) : undefined,
+        prorateType,
+        prorateCalcMode,
+        prorateUseCount,
+        prorateCount,
+        periodCount,
+        prorateDayBasis,
+      })
 
   useEffect(() => {
     const now = new Date()
@@ -344,6 +300,14 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
                       <option value="period">Per sub-periode</option>
                       <option value="span">Seluruh rentang</option>
                       <option value="count">Jumlah periode</option>
+                    </select>
+                  </F>
+                )}
+                {!prorateUseCount && (
+                  <F label="Basis hari">
+                    <select className="input" value={prorateDayBasis} onChange={e => setProrateDayBasis(e.target.value as 'calendar' | 'working')}>
+                      <option value="calendar">Hari kalender</option>
+                      <option value="working">Hari kerja (Senin–Jumat)</option>
                     </select>
                   </F>
                 )}
