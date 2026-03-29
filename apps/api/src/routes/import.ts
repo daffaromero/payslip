@@ -5,9 +5,11 @@ import { generateImportPreview } from '@/lib/excel/mapper'
 import { z } from 'zod'
 import { parse } from '../lib/validate'
 import type { Pph21Status } from '@/types'
+import { requireAdmin } from '../middleware/admin'
 import type { Env } from '../types'
 
 const router = new Hono<Env>()
+router.on(['POST', 'PATCH', 'PUT', 'DELETE'], '*', requireAdmin)
 
 const CommitSchema = z.object({
   rows: z.array(z.record(z.string(), z.union([z.string(), z.number(), z.null()]))),

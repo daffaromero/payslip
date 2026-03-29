@@ -18,9 +18,11 @@ import type {
 } from '@/types'
 import { generatePayslipHTML } from '@/lib/pdf/generator'
 import { parse } from '../lib/validate'
+import { requireAdmin } from '../middleware/admin'
 import type { Env } from '../types'
 
 const router = new Hono<Env>()
+router.on(['POST', 'PATCH', 'PUT', 'DELETE'], '*', requireAdmin)
 
 const SAMPLE_COMPANY = {
   id: 'preview', name: 'PT Contoh Indonesia',

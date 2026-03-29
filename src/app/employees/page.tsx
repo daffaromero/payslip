@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/utils'
 import { Plus, Search, Users, Pencil, Trash2, FileText } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { useRole } from '@/lib/hooks/use-role'
 
 interface Employee {
   id: string; employeeId: string; name: string; email: string | null
@@ -13,6 +14,8 @@ interface Employee {
 }
 
 export default function EmployeesPage() {
+  const role = useRole()
+  const isAdmin = role === 'admin'
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
@@ -52,9 +55,11 @@ export default function EmployeesPage() {
         onCancel={() => setPendingDelete(null)}
       />
       <PageHeader title="Karyawan" subtitle={loading ? '' : `${employees.length} karyawan aktif`}>
-        <Link href="/employees/new" className="btn btn-primary">
-          <Plus className="h-3.5 w-3.5" /> Tambah Karyawan
-        </Link>
+        {isAdmin && (
+          <Link href="/employees/new" className="btn btn-primary">
+            <Plus className="h-3.5 w-3.5" /> Tambah Karyawan
+          </Link>
+        )}
       </PageHeader>
 
       <div style={{ padding: 12 }}>
@@ -86,7 +91,7 @@ export default function EmployeesPage() {
               <p className="text-[12px]" style={{ color: 'var(--text-tertiary)', marginTop: 4 }}>
                 {q ? 'Coba kata kunci lain' : 'Tambah karyawan untuk mulai'}
               </p>
-              {!q && (
+              {!q && isAdmin && (
                 <Link href="/employees/new" className="btn btn-secondary btn-sm" style={{ marginTop: 16 }}>
                   <Plus className="h-3.5 w-3.5" /> Tambah Karyawan
                 </Link>
@@ -132,21 +137,25 @@ export default function EmployeesPage() {
                     </td>
                     <td>
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: 4 }}>
-                        <Link href={`/employees/${e.id}/edit`} className="btn btn-ghost btn-icon btn-sm" title="Edit">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Link>
+                        {isAdmin && (
+                          <Link href={`/employees/${e.id}/edit`} className="btn btn-ghost btn-icon btn-sm" title="Edit">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Link>
+                        )}
                         <Link href={`/generate?employeeId=${e.id}`} className="btn btn-ghost btn-icon btn-sm" title="Buat Slip Gaji">
                           <FileText className="h-3.5 w-3.5" />
                         </Link>
-                        <button
-                          onClick={() => setPendingDelete({ id: e.id, name: e.name })}
-                          disabled={deletingId === e.id}
-                          className="btn btn-ghost btn-icon btn-sm"
-                          style={{ color: 'var(--text-tertiary)' }}
-                          title="Hapus"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => setPendingDelete({ id: e.id, name: e.name })}
+                            disabled={deletingId === e.id}
+                            className="btn btn-ghost btn-icon btn-sm"
+                            style={{ color: 'var(--text-tertiary)' }}
+                            title="Hapus"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

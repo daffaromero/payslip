@@ -3,9 +3,11 @@ import { prisma } from '@/lib/db'
 import { EmployeePatchSchema } from '@/lib/api/schemas/employee'
 import { parse } from '../lib/validate'
 import * as XLSX from 'xlsx'
+import { requireAdmin } from '../middleware/admin'
 import type { Env } from '../types'
 
 const router = new Hono<Env>()
+router.on(['POST', 'PATCH', 'PUT', 'DELETE'], '*', requireAdmin)
 
 router.get('/', async (c) => {
   const cid = c.get('companyId')

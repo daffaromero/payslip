@@ -39,6 +39,21 @@ router.post('/logout', (c) => {
   return c.json({ ok: true })
 })
 
+router.get('/me', async (c) => {
+  const userId = c.get('userId')
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true },
+    })
+    if (!user) return c.json({ error: 'Unauthorized' }, 401)
+    return c.json({ user })
+  } catch (e) {
+    return c.json({ error: 'Terjadi kesalahan' }, 500)
+  }
+})
+
 router.post('/change-password', async (c) => {
   const userId = c.get('userId')
   if (!userId) return c.json({ error: 'Unauthorized' }, 401)

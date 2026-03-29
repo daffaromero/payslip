@@ -3,9 +3,11 @@ import { prisma } from '@/lib/db'
 import { generatePayslipPDF, generatePayslipHTML } from '@/lib/pdf/generator'
 import { calculatePayslip, getPeriodMonths } from '@/lib/calculations/payslip'
 import { deserializeTemplate, type RawTemplate } from '@/lib/api/template-serializer'
+import { requireAdmin } from '../middleware/admin'
 import type { Env } from '../types'
 
 const router = new Hono<Env>()
+router.on(['POST', 'PATCH', 'PUT', 'DELETE'], '*', requireAdmin)
 
 // POST /api/generate-pdf
 router.post('/generate-pdf', async (c) => {

@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
-import { Loader2, Wifi, WifiOff, RefreshCw, LogOut, Smartphone, Building2, Lock } from 'lucide-react'
+import { Loader2, Wifi, WifiOff, RefreshCw, LogOut, Smartphone, Building2, Lock, Users, Plus, Trash2 } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
+import { useRole } from '@/lib/hooks/use-role'
 
 type WAStatus = 'disconnected' | 'connecting' | 'connected'
 interface WAData { status: WAStatus; qrDataUrl: string | null; error: string | null }
 interface Company { name: string; address: string; taxId: string; phone: string; email: string; logoUrl: string | null }
+interface TeamUser { id: string; email: string; role: string; createdAt: string }
 
 const SPIN = { animation: 'spin 1s linear infinite' } as const
 
@@ -23,6 +25,70 @@ function F({ label, hint, children }: { label: string; hint?: string; children: 
 
 export default function SettingsPage() {
   const toast = useToast()
+  const role = useRole()
+
+  // ── Team ─────────────────────────────────────────────────────────────────
+  const [team, setTeam] = useState<TeamUser[]>([])
+  const [loadingTeam, setLoadingTeam] = useState(true)
+  const [showInvite, setShowInvite] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [invitePassword, setInvitePassword] = useState('')
+  const [inviteRole, setInviteRole] = useState<'admin' | 'viewer'>('viewer')
+  const [inviting, setInviting] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+
+  const loadTeam = useCallback(async () => {
+    setLoadingTeam(true)
+    try {
+      const res = await fetch('/api/users')
+      if (res.ok) { const d = await res.json(); setTeam(d.users ?? []) }
+    } finally { setLoadingTeam(false) }
+  }, [])
+
+  useEffect(() => { loadTeam() }, [loadTeam])
+
+  const invite = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setInviting(true)
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail, password: invitePassword, role: inviteRole }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Gagal menambahkan pengguna')
+      toast.success(`Pengguna ${inviteEmail} berhasil ditambahkan`)
+      setShowInvite(false); setInviteEmail(''); setInvitePassword(''); setInviteRole('viewer')
+      loadTeam()
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan') }
+    finally { setInviting(false) }
+  }
+
+  const removeUser = async (user: TeamUser) => {
+    if (!confirm(`Hapus pengguna ${user.email}?`)) return
+    setRemovingId(user.id)
+    try {
+      const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Gagal menghapus pengguna')
+      toast.success('Pengguna dihapus')
+      loadTeam()
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan') }
+    finally { setRemovingId(null) }
+  }
+
+  const changeRole = async (user: TeamUser, newRole: 'admin' | 'viewer') => {
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Gagal mengubah role')
+      toast.success('Role diperbarui')
+      loadTeam()
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan') }
+  }
 
   // ── Company ──────────────────────────────────────────────────────────────
   const [company, setCompany] = useState<Company>({ name: '', address: '', taxId: '', phone: '', email: '', logoUrl: null })
@@ -173,6 +239,91 @@ export default function SettingsPage() {
             </form>
           )}
         </div>
+
+        {/* Team — admin only */}
+        {role === 'admin' && (
+          <div className="card" style={{ padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Users style={{ width: 20, height: 20, color: '#16a34a' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Tim</p>
+                  <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>Kelola akses pengguna dalam perusahaan</p>
+                </div>
+              </div>
+              <button onClick={() => setShowInvite(v => !v)} className="btn btn-secondary btn-sm">
+                <Plus style={{ width: 13, height: 13 }} /> Tambah
+              </button>
+            </div>
+
+            {/* Invite form */}
+            {showInvite && (
+              <form onSubmit={invite} style={{ padding: 16, background: 'var(--bg-subtle)', borderRadius: 8, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>Tambah Pengguna Baru</p>
+                <F label="Email">
+                  <input type="email" required className="input" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="hr@perusahaan.co.id" />
+                </F>
+                <F label="Password Sementara">
+                  <input type="text" required minLength={8} className="input" value={invitePassword} onChange={e => setInvitePassword(e.target.value)} placeholder="Minimal 8 karakter" />
+                </F>
+                <F label="Role">
+                  <select className="input" value={inviteRole} onChange={e => setInviteRole(e.target.value as 'admin' | 'viewer')}>
+                    <option value="viewer">Viewer — hanya bisa melihat</option>
+                    <option value="admin">Admin — akses penuh</option>
+                  </select>
+                </F>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="submit" disabled={inviting} className="btn btn-primary btn-sm">
+                    {inviting && <Loader2 style={{ width: 13, height: 13, ...SPIN }} />}
+                    {inviting ? 'Menyimpan...' : 'Tambah Pengguna'}
+                  </button>
+                  <button type="button" onClick={() => setShowInvite(false)} className="btn btn-secondary btn-sm">Batal</button>
+                </div>
+              </form>
+            )}
+
+            {/* User list */}
+            {loadingTeam ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+                <Loader2 style={{ width: 16, height: 16, ...SPIN, color: 'var(--text-tertiary)' }} />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0, border: '1px solid var(--border)', borderRadius: 8, overflow: 'clip' }}>
+                {team.map((u, i) => (
+                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: i < team.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
+                        Bergabung {new Date(u.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      <select
+                        className="input"
+                        value={u.role}
+                        onChange={e => changeRole(u, e.target.value as 'admin' | 'viewer')}
+                        style={{ height: 30, fontSize: 12, padding: '0 8px', width: 'auto' }}
+                      >
+                        <option value="viewer">Viewer</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        onClick={() => removeUser(u)}
+                        disabled={removingId === u.id}
+                        className="btn btn-danger btn-sm btn-icon"
+                        title="Hapus pengguna"
+                      >
+                        {removingId === u.id ? <Loader2 style={{ width: 13, height: 13, ...SPIN }} /> : <Trash2 style={{ width: 13, height: 13 }} />}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* WhatsApp */}
         <div className="card" style={{ padding: 24 }}>

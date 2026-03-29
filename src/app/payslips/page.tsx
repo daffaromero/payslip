@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { PreviewModal } from '@/components/ui/preview-modal'
+import { useRole } from '@/lib/hooks/use-role'
 
 interface Payslip {
   id: string; employeeId: string; periodType: string
@@ -30,6 +31,7 @@ const MONTHS = [
 ]
 
 export default function PayslipsPage() {
+  const isAdmin = useRole() === 'admin'
   const [payslips, setPayslips] = useState<Payslip[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -156,9 +158,11 @@ export default function PayslipsPage() {
       )}
 
       <PageHeader title="Slip Gaji" subtitle={loading ? '' : `${total} slip gaji ditemukan`}>
-        <Link href="/generate" className="btn btn-primary">
-          <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
-        </Link>
+        {isAdmin && (
+          <Link href="/generate" className="btn btn-primary">
+            <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
+          </Link>
+        )}
       </PageHeader>
 
       <div style={{ padding: 12 }}>
@@ -217,11 +221,11 @@ export default function PayslipsPage() {
               </p>
               {hasFilter ? (
                 <button onClick={clearFilters} className="btn btn-secondary btn-sm" style={{ marginTop: 16 }}>Reset Filter</button>
-              ) : (
+              ) : isAdmin ? (
                 <Link href="/generate" className="btn btn-secondary btn-sm" style={{ marginTop: 16 }}>
                   <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
                 </Link>
-              )}
+              ) : null}
             </div>
           ) : (
             <div className="table-scroll">
@@ -279,9 +283,11 @@ export default function PayslipsPage() {
                         <button onClick={() => download(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={downloadingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Download PDF">
                           {downloadingId === p.id ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Download style={{ width: 14, height: 14 }} />}
                         </button>
-                        <button onClick={() => setPendingDelete({ id: p.id, name: p.employee.name })} disabled={deletingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Hapus" style={{ color: 'var(--text-tertiary)' }}>
-                          <Trash2 style={{ width: 14, height: 14 }} />
-                        </button>
+                        {isAdmin && (
+                          <button onClick={() => setPendingDelete({ id: p.id, name: p.employee.name })} disabled={deletingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Hapus" style={{ color: 'var(--text-tertiary)' }}>
+                            <Trash2 style={{ width: 14, height: 14 }} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

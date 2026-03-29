@@ -8,9 +8,11 @@ import { sendPayslipEmail } from '@/lib/email/sender'
 import { sendDocument } from '@/lib/whatsapp/client'
 import { parse } from '../lib/validate'
 import * as XLSX from 'xlsx'
+import { requireAdmin } from '../middleware/admin'
 import type { Env } from '../types'
 
 const router = new Hono<Env>()
+router.on(['POST', 'PATCH', 'PUT', 'DELETE'], '*', requireAdmin)
 
 function deserializePayslip(p: { allowances: string; otherDeductions: string; [k: string]: unknown }) {
   return { ...p, allowances: JSON.parse(p.allowances), otherDeductions: JSON.parse(p.otherDeductions) }

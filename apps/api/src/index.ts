@@ -13,6 +13,7 @@ import generateRouter from './routes/generate'
 import importRouter from './routes/import'
 import whatsappRouter from './routes/whatsapp'
 import uploadsRouter from './routes/uploads'
+import usersRouter from './routes/users'
 import seedRouter from './routes/seed'
 import healthRouter from './routes/health'
 
@@ -35,6 +36,7 @@ app.route('/api', generateRouter)
 app.route('/api/import-excel', importRouter)
 app.route('/api/whatsapp', whatsappRouter)
 app.route('/api/uploads', uploadsRouter)
+app.route('/api/users', usersRouter)
 app.route('/api/seed', seedRouter)
 
 const port = Number(process.env.PORT ?? 3001)
