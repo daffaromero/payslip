@@ -293,3 +293,12 @@
   border-color: var(--border) !important;
   box-shadow: var(--shadow-sm) !important;
 }
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  :root { --sidebar-width: 0px; }
+}
+.mobile-only { display: none !important; }
+@media (max-width: 768px) { .mobile-only { display: flex !important; } }
+.desktop-only { display: flex !important; }
+@media (max-width: 768px) { .desktop-only { display: none !important; } }

@@ -27,12 +27,11 @@ export function Sidebar({ companyName }: { companyName: string }) {
   }, [router])
 
   return (
-    <aside style={{
+    <aside className="desktop-only" style={{
       position: 'fixed',
       inset: '0 auto 0 0',
       width: 'var(--sidebar-width)',
       zIndex: 50,
-      display: 'flex',
       flexDirection: 'column',
       background: 'var(--bg-surface)',
       borderRight: '1px solid var(--border)',

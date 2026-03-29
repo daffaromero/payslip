@@ -1,5 +1,7 @@
 'use client'
 
+import { MobileMenu } from './mobile-menu'
+
 export function TopBar({ companyName, userInitial }: { companyName: string; userInitial: string }) {
   return (
     <header style={{
@@ -15,9 +17,12 @@ export function TopBar({ companyName, userInitial }: { companyName: string; user
       borderBottom: '1px solid var(--border)',
       flexShrink: 0,
     }}>
-      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-        {companyName}
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <MobileMenu companyName={companyName} />
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+          {companyName}
+        </span>
+      </div>
       <div style={{
         display: 'flex',
         alignItems: 'center',
