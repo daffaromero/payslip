@@ -17,13 +17,13 @@ export const PayslipFormSchema = z.object({
   startDate: z.string().min(1, 'Masukkan tanggal mulai'),
   endDate: z.string().min(1, 'Masukkan tanggal selesai'),
   basePay: z.number().min(0),
-  overtimeHours: z.number().min(0).default(0),
-  hourlyRate: z.number().min(0).default(0),
-  bonus: z.number().min(0).default(0),
-  thr: z.number().min(0).default(0),
-  allowances: z.array(AllowanceSchema).default([]),
-  deductions: z.array(DeductionSchema).default([]),
-  notes: z.string().default(''),
+  overtimeHours: z.number().min(0).optional().default(0),
+  hourlyRate: z.number().min(0).optional().default(0),
+  bonus: z.number().min(0).optional().default(0),
+  thr: z.number().min(0).optional().default(0),
+  allowances: z.array(AllowanceSchema).optional().default([]),
+  deductions: z.array(DeductionSchema).optional().default([]),
+  notes: z.string().optional().default(''),
 })
 
 export type PayslipFormValues = z.infer<typeof PayslipFormSchema>
