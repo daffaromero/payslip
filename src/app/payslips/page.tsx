@@ -199,7 +199,7 @@ export default function PayslipsPage() {
           )}
         </div>
 
-        <div className="card overflow-hidden">
+        <div className="card" style={{ overflow: 'clip' }}>
           {loading ? (
             <div className="flex items-center justify-center" style={{ padding: '80px 0' }}>
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--accent)] border-t-transparent" />
@@ -224,6 +224,7 @@ export default function PayslipsPage() {
               )}
             </div>
           ) : (
+            <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
@@ -287,6 +288,7 @@ export default function PayslipsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
           {payslips.length > 0 && (
             <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)' }}>

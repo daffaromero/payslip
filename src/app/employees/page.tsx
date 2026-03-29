@@ -58,7 +58,7 @@ export default function EmployeesPage() {
       </PageHeader>
 
       <div style={{ padding: 12 }}>
-        <div className="card overflow-hidden">
+        <div className="card" style={{ overflow: 'clip' }}>
           {/* Search toolbar */}
           <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid var(--border)', gap: 12 }}>
             <div style={{ position: 'relative', flex: 1, maxWidth: 384 }}>
@@ -93,6 +93,7 @@ export default function EmployeesPage() {
               )}
             </div>
           ) : (
+            <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
@@ -152,6 +153,7 @@ export default function EmployeesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
           {filtered.length > 0 && (

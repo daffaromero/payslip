@@ -73,7 +73,7 @@ function ExportSection() {
         Unduh data karyawan atau rekapitulasi slip gaji dalam format .xlsx
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="form-grid-2" style={{ gap: 12 }}>
         {/* Employee export */}
         <div style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>

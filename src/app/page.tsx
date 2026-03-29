@@ -67,7 +67,7 @@ export default async function DashboardPage() {
 
       <div style={{ padding: 12 }}>
         {/* Count stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+        <div className="stat-grid" style={{ gap: 12, marginBottom: 12 }}>
           {countStats.map(({ label, value, icon: Icon, href, color, bg }) => (
             <div key={label} className="card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
               <div className="flex items-center justify-center rounded-xl" style={{ background: bg, width: 52, height: 52, flexShrink: 0 }}>
@@ -89,7 +89,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Payroll stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+        <div className="stat-grid" style={{ gap: 12, marginBottom: 12 }}>
           {payrollStats.map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
               <div className="flex items-center justify-center rounded-xl" style={{ background: bg, width: 52, height: 52, flexShrink: 0 }}>

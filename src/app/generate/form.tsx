@@ -165,7 +165,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         onClose={closePreview}
       />
     )}
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
+    <div className="generate-layout" style={{ gap: 24 }}>
       {/* Form */}
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Download button shown after successful generation */}
@@ -182,7 +182,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         {/* Setup */}
         <div className="card" style={{ padding: 20 }}>
           <p className="section-label" style={{ marginBottom: 20 }}>Informasi Dasar</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="form-grid-2" style={{ gap: 16 }}>
             <F label="Karyawan *">
               <select className="input" value={employeeId} onChange={e => setEmployeeId(e.target.value)}>
                 <option value="">Pilih karyawan...</option>
@@ -204,7 +204,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
                 <option value="annual">Tahunan</option>
               </select>
             </F>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2" style={{ gap: 12 }}>
               <F label="Mulai"><input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} /></F>
               <F label="Selesai"><input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} /></F>
             </div>
@@ -214,7 +214,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         {/* Earnings */}
         <div className="card" style={{ padding: 20 }}>
           <p className="section-label" style={{ marginBottom: 20 }}>Penerimaan</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="form-grid-2" style={{ gap: 16 }}>
             <F label="Gaji Pokok">
               <div className="input-prefix"><span className="prefix">Rp</span><input type="number" className="input" value={basePay} onChange={e => setBasePay(Number(e.target.value))} /></div>
             </F>
@@ -282,7 +282,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
           {prorateEnabled && (
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Type + method toggle */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="form-grid-2" style={{ gap: 16 }}>
                 <F label="Tipe">
                   <select className="input" value={prorateType} onChange={e => setProrateType(e.target.value as 'join' | 'resign')}>
                     <option value="join">Bergabung (mulai kerja)</option>
