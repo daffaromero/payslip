@@ -4,29 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { Download, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, Users, Receipt } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type ImportStep = 'upload' | 'map' | 'preview' | 'done'
-
-interface ParsedFile {
-  headers: string[]
-  rows: Record<string, string | number | null>[]
-  totalRows: number
-  autoMappings: Record<string, string>
-}
-
-interface PreviewRow {
-  data: Record<string, string | number | boolean | null>
-  errors: string[]
-  valid: boolean
-}
-
-interface ImportResult {
-  created: number
-  skipped: number
-  errors: { row: number; errors: string[] }[]
-}
+import { useImportWizard, ImportStep, ParsedFile, PreviewRow, ImportResult } from '@/lib/hooks/use-import-wizard'
 
 const EMPLOYEE_FIELDS = [
   { value: '',             label: '— tidak dipetakan —' },
@@ -141,13 +119,7 @@ function ExportSection() {
 // ─── Import Section ───────────────────────────────────────────────────────────
 
 function ImportSection({ toast }: { toast: ToastHandle }) {
-  const [step, setStep] = useState<ImportStep>('upload')
-  const [parsedFile, setParsedFile] = useState<ParsedFile | null>(null)
-  const [mappings, setMappings] = useState<Record<string, string>>({})
-  const [previewRows, setPreviewRows] = useState<PreviewRow[]>([])
-  const [totalValid, setTotalValid] = useState(0)
-  const [totalInvalid, setTotalInvalid] = useState(0)
-  const [result, setResult] = useState<ImportResult | null>(null)
+  const wizard = useImportWizard()
   const [loading, setLoading] = useState(false)
   const [dragging, setDragging] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -164,9 +136,8 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
       const res = await fetch('/api/import-excel', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) { toast.error(data.error || 'Gagal memproses file'); return }
-      setParsedFile(data)
-      setMappings(data.autoMappings ?? {})
-      setStep('map')
+      wizard.setParsedFile(data)
+      wizard.goToStep('map')
     } finally {
       setLoading(false)
     }
@@ -186,53 +157,47 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
   }
 
   const loadPreview = useCallback(async () => {
-    if (!parsedFile) return
+    if (!wizard.parsedFile) return
     setLoading(true)
     try {
       const res = await fetch('/api/import-excel', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows: parsedFile.rows, mappings }),
+        body: JSON.stringify({ rows: wizard.parsedFile.rows, mappings: wizard.mappings }),
       })
       const data = await res.json()
       if (!res.ok) { toast.error(data.error || 'Gagal membuat preview'); return }
-      setPreviewRows(data.preview)
-      setTotalValid(data.totalValid)
-      setTotalInvalid(data.totalInvalid)
-      setStep('preview')
+      wizard.setPreviewResults(data.preview, data.totalValid, data.totalInvalid)
+      wizard.goToStep('preview')
     } finally {
       setLoading(false)
     }
-  }, [parsedFile, mappings, toast])
+  }, [wizard, toast])
 
   const commit = useCallback(async () => {
-    if (!parsedFile) return
+    if (!wizard.parsedFile) return
     setLoading(true)
     try {
       const res = await fetch('/api/import-excel/commit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows: parsedFile.rows, mappings, skipInvalid: totalInvalid > 0 }),
+        body: JSON.stringify({ rows: wizard.parsedFile.rows, mappings: wizard.mappings, skipInvalid: wizard.totalInvalid > 0 }),
       })
       const data = await res.json()
       if (!res.ok) { toast.error(data.error || 'Gagal menyimpan data'); return }
-      setResult(data)
-      setStep('done')
+      wizard.setResult(data)
+      wizard.goToStep('done')
     } finally {
       setLoading(false)
     }
-  }, [parsedFile, mappings, totalInvalid, toast])
+  }, [wizard, toast])
 
   const reset = () => {
-    setStep('upload')
-    setParsedFile(null)
-    setMappings({})
-    setPreviewRows([])
-    setResult(null)
+    wizard.reset()
   }
 
   // ── Step: upload ────────────────────────────────────────────────────────────
-  if (step === 'upload') {
+  if (wizard.step === 'upload') {
     return (
       <div className="card" style={{ padding: 24 }}>
         <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px' }}>
@@ -282,14 +247,14 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
   }
 
   // ── Step: map ───────────────────────────────────────────────────────────────
-  if (step === 'map' && parsedFile) {
+  if (wizard.step === 'map' && wizard.parsedFile) {
     return (
       <div className="card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
             Pemetaan Kolom
           </h2>
-          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{parsedFile.totalRows} baris ditemukan</span>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{wizard.parsedFile.totalRows} baris ditemukan</span>
         </div>
         <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: '0 0 20px' }}>
           Cocokkan kolom dari file Excel dengan field karyawan. Kolom yang sudah dideteksi otomatis ditampilkan di bawah.
@@ -311,18 +276,18 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
               </tr>
             </thead>
             <tbody>
-              {parsedFile.headers.map((header, i) => {
-                const sample = parsedFile.rows[0]?.[header]
+              {wizard.parsedFile.headers.map((header: string, i: number) => {
+                const sample = wizard.parsedFile?.rows[0]?.[header]
                 return (
-                  <tr key={header} style={{ borderBottom: i < parsedFile.headers.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <tr key={header} style={{ borderBottom: i < wizard.parsedFile!.headers.length - 1 ? '1px solid var(--border)' : 'none' }}>
                     <td style={{ padding: '10px 16px', color: 'var(--text-primary)', fontWeight: 500 }}>{header}</td>
                     <td style={{ padding: '10px 16px', color: 'var(--text-tertiary)', fontFamily: 'monospace', fontSize: 12 }}>
                       {sample !== null && sample !== undefined ? String(sample) : <span style={{ opacity: 0.4 }}>—</span>}
                     </td>
                     <td style={{ padding: '8px 16px' }}>
                       <select
-                        value={mappings[header] ?? ''}
-                        onChange={e => setMappings(m => ({ ...m, [header]: e.target.value }))}
+                        value={wizard.mappings[header] ?? ''}
+                        onChange={e => wizard.setMappings({ ...wizard.mappings, [header]: e.target.value })}
                         className="input"
                         style={{ fontSize: 13, height: 32, width: '100%' }}
                       >
@@ -350,24 +315,24 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
   }
 
   // ── Step: preview ────────────────────────────────────────────────────────────
-  if (step === 'preview') {
+  if (wizard.step === 'preview') {
     return (
       <div className="card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Preview Import</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             <span style={{ fontSize: 12, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 5, padding: '3px 10px' }}>
-              {totalValid} valid
+              {wizard.totalValid} valid
             </span>
-            {totalInvalid > 0 && (
+            {wizard.totalInvalid > 0 && (
               <span style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 5, padding: '3px 10px' }}>
-                {totalInvalid} tidak valid
+                {wizard.totalInvalid} tidak valid
               </span>
             )}
           </div>
         </div>
         <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: '0 0 20px' }}>
-          Menampilkan hingga 10 baris pertama.{totalInvalid > 0 ? ' Baris tidak valid akan dilewati.' : ''}
+          Menampilkan hingga 10 baris pertama.{wizard.totalInvalid > 0 ? ' Baris tidak valid akan dilewati.' : ''}
         </p>
 
         <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 20 }}>
@@ -383,11 +348,11 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
               </tr>
             </thead>
             <tbody>
-              {previewRows.map((row, i) => (
+              {wizard.previewRows.map((row: PreviewRow, i: number) => (
                 <tr
                   key={i}
                   style={{
-                    borderBottom: i < previewRows.length - 1 ? '1px solid var(--border)' : 'none',
+                    borderBottom: i < wizard.previewRows.length - 1 ? '1px solid var(--border)' : 'none',
                     background: row.valid ? undefined : '#fff8f8',
                   }}
                 >
@@ -422,20 +387,20 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
           </table>
         </div>
 
-        {totalInvalid > 0 && (
+        {wizard.totalInvalid > 0 && (
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 16 }}>
             <AlertCircle style={{ width: 14, height: 14, color: '#d97706', flexShrink: 0, marginTop: 1 }} />
             <p style={{ fontSize: 12, color: '#92400e', margin: 0 }}>
-              {totalInvalid} baris tidak valid akan dilewati. Hanya {totalValid} baris yang akan diimpor.
+              {wizard.totalInvalid} baris tidak valid akan dilewati. Hanya {wizard.totalValid} baris yang akan diimpor.
             </p>
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button className="btn btn-secondary" onClick={() => setStep('map')}>Kembali</button>
-          <button className="btn btn-primary" onClick={commit} disabled={loading || totalValid === 0}>
+          <button className="btn btn-secondary" onClick={() => wizard.goToStep('map')}>Kembali</button>
+          <button className="btn btn-primary" onClick={commit} disabled={loading || wizard.totalValid === 0}>
             {loading && <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />}
-            Import {totalValid} Karyawan
+            Import {wizard.totalValid} Karyawan
           </button>
         </div>
       </div>
@@ -443,7 +408,7 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
   }
 
   // ── Step: done ───────────────────────────────────────────────────────────────
-  if (step === 'done' && result) {
+  if (wizard.step === 'done' && wizard.result) {
     return (
       <div className="card" style={{ padding: 24, textAlign: 'center' }}>
         <CheckCircle2 style={{ width: 40, height: 40, color: '#16a34a', margin: '0 auto 16px' }} />
@@ -451,7 +416,7 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
           Import Selesai
         </h2>
         <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: '0 0 20px' }}>
-          {result.created} karyawan berhasil diimpor{result.skipped > 0 ? `, ${result.skipped} baris dilewati` : ''}.
+          {wizard.result.created} karyawan berhasil diimpor{wizard.result.skipped > 0 ? `, ${wizard.result.skipped} baris dilewati` : ''}.
         </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           <a href="/employees" className="btn btn-secondary">Lihat Karyawan</a>

@@ -4,20 +4,20 @@ import { useState, useCallback } from 'react'
 
 export type ImportStep = 'upload' | 'map' | 'preview' | 'done'
 
-interface ParsedFile {
+export interface ParsedFile {
   headers: string[]
   rows: Record<string, string | number | null>[]
   totalRows: number
   autoMappings: Record<string, string>
 }
 
-interface PreviewRow {
+export interface PreviewRow {
   data: Record<string, string | number | boolean | null>
   errors: string[]
   valid: boolean
 }
 
-interface ImportResult {
+export interface ImportResult {
   created: number
   skipped: number
   errors: { row: number; errors: string[] }[]
