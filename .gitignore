@@ -55,3 +55,6 @@ prisma/*.db-journal
 /uploads/
 
 /lib/generated/prisma
+
+# worktrees
+.worktrees/
