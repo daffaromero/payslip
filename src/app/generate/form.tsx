@@ -45,21 +45,73 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   const [prorateEnabled, setProrateEnabled] = useState(false)
   const [prorateType, setProrateType] = useState<'join' | 'resign'>('join')
   const [prorateDate, setProrateDate] = useState('')
+  const [prorateCalcMode, setProrateCalcMode] = useState<'period' | 'span'>('period')
+  const [prorateUseCount, setProrateUseCount] = useState(false)
+  const [prorateCount, setProrateCount] = useState(1)
 
   const emp = employees.find(e => e.id === employeeId)
 
-  // Prorate factor: days worked / total days in period
-  const prorateFactor = (() => {
-    if (!prorateEnabled || !prorateDate || !startDate || !endDate) return null
-    const s = new Date(startDate)
-    const e = new Date(endDate)
+  const PERIOD_COUNT: Record<string, number> = { weekly: 1, monthly: 1, quarterly: 3, 'semi-annual': 6, annual: 12 }
+  const periodCount = PERIOD_COUNT[periodType] ?? 1
+
+  function getSubPeriods(s: Date, e: Date, n: number) {
+    if (n === 1) return [{ start: s, end: e }]
+    return Array.from({ length: n }, (_, i) => ({
+      start: new Date(s.getFullYear(), s.getMonth() + i, s.getDate()),
+      end: i === n - 1 ? e : new Date(s.getFullYear(), s.getMonth() + i + 1, s.getDate() - 1),
+    }))
+  }
+
+  const { prorateFactor, prorateBreakdown } = (() => {
+    if (!prorateEnabled || !startDate || !endDate) return { prorateFactor: null, prorateBreakdown: null }
+    const s = new Date(startDate), e = new Date(endDate)
+
+    if (prorateUseCount) {
+      return { prorateFactor: Math.min(1, Math.max(0, prorateCount / periodCount)), prorateBreakdown: null }
+    }
+
+    if (!prorateDate) return { prorateFactor: null, prorateBreakdown: null }
     const d = new Date(prorateDate)
-    const totalDays = Math.round((e.getTime() - s.getTime()) / 86400000) + 1
-    const workedDays = prorateType === 'join'
-      ? Math.max(0, Math.round((e.getTime() - d.getTime()) / 86400000) + 1)
-      : Math.max(0, Math.round((d.getTime() - s.getTime()) / 86400000) + 1)
-    if (totalDays <= 0) return null
-    return Math.min(1, workedDays / totalDays)
+
+    if (prorateCalcMode === 'span' || periodCount === 1) {
+      const total = Math.round((e.getTime() - s.getTime()) / 86400000) + 1
+      const worked = prorateType === 'join'
+        ? Math.max(0, Math.round((e.getTime() - d.getTime()) / 86400000) + 1)
+        : Math.max(0, Math.round((d.getTime() - s.getTime()) / 86400000) + 1)
+      return { prorateFactor: total > 0 ? Math.min(1, worked / total) : null, prorateBreakdown: null }
+    }
+
+    const subs = getSubPeriods(s, e, periodCount)
+    const idx = subs.findIndex(p => d >= p.start && d <= p.end)
+    if (idx === -1) {
+      const f = prorateType === 'join' ? (d <= s ? 1 : 0) : (d >= e ? 1 : 0)
+      return { prorateFactor: f, prorateBreakdown: null }
+    }
+
+    const sp = subs[idx]
+    const spDays = Math.round((sp.end.getTime() - sp.start.getTime()) / 86400000) + 1
+    const workedInSp = prorateType === 'join'
+      ? Math.round((sp.end.getTime() - d.getTime()) / 86400000) + 1
+      : Math.round((d.getTime() - sp.start.getTime()) / 86400000) + 1
+    const partial = Math.max(0, Math.min(1, workedInSp / spDays))
+    const full = prorateType === 'join' ? periodCount - idx - 1 : idx
+    const factor = (partial + full) / periodCount
+
+    const fmt = (dt: Date) => dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+    const breakdown = subs.map((p, i) => {
+      const pDays = Math.round((p.end.getTime() - p.start.getTime()) / 86400000) + 1
+      if (prorateType === 'join') {
+        if (i < idx) return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: 0, note: 'tidak bekerja' }
+        if (i === idx) return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: partial, note: `${workedInSp}/${pDays} hari` }
+        return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: 1, note: 'penuh' }
+      } else {
+        if (i > idx) return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: 0, note: 'tidak bekerja' }
+        if (i === idx) return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: partial, note: `${workedInSp}/${pDays} hari` }
+        return { label: `${fmt(p.start)}–${fmt(p.end)}`, pct: 1, note: 'penuh' }
+      }
+    })
+
+    return { prorateFactor: factor, prorateBreakdown: breakdown }
   })()
 
   useEffect(() => {
@@ -272,30 +324,80 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
           </div>
 
           {prorateEnabled && (
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <F label="Tipe">
-                <select className="input" value={prorateType} onChange={e => setProrateType(e.target.value as 'join' | 'resign')}>
-                  <option value="join">Bergabung (mulai kerja)</option>
-                  <option value="resign">Keluar (hari terakhir)</option>
-                </select>
-              </F>
-              <F label={prorateType === 'join' ? 'Tanggal Bergabung' : 'Tanggal Terakhir Kerja'}>
-                <input type="date" className="input" value={prorateDate} onChange={e => setProrateDate(e.target.value)}
-                  min={startDate} max={endDate} />
-              </F>
-              {prorateFactor !== null && (
-                <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8 }}>
-                  <div style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    Faktor prorate: <strong style={{ color: 'var(--text-primary)' }}>{(prorateFactor * 100).toFixed(1)}%</strong>
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Type + method toggle */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <F label="Tipe">
+                  <select className="input" value={prorateType} onChange={e => setProrateType(e.target.value as 'join' | 'resign')}>
+                    <option value="join">Bergabung (mulai kerja)</option>
+                    <option value="resign">Keluar (hari terakhir)</option>
+                  </select>
+                </F>
+                {periodCount > 1 && (
+                  <F label="Metode hitung">
+                    <select className="input" value={prorateUseCount ? 'count' : prorateCalcMode}
+                      onChange={e => {
+                        const v = e.target.value
+                        if (v === 'count') { setProrateUseCount(true) }
+                        else { setProrateUseCount(false); setProrateCalcMode(v as 'period' | 'span') }
+                      }}>
+                      <option value="period">Per sub-periode</option>
+                      <option value="span">Seluruh rentang</option>
+                      <option value="count">Jumlah periode</option>
+                    </select>
+                  </F>
+                )}
+              </div>
+
+              {/* Date input or count input */}
+              {prorateUseCount ? (
+                <F label={`Periode bekerja (dari ${periodCount})`} hint={`Karyawan bekerja selama berapa periode dari total ${periodCount} periode`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input type="range" min={0} max={periodCount} step={0.5} value={prorateCount}
+                      onChange={e => setProrateCount(Number(e.target.value))}
+                      style={{ flex: 1 }} />
+                    <input type="number" className="input" min={0} max={periodCount} step={0.5} value={prorateCount}
+                      onChange={e => setProrateCount(Math.min(periodCount, Math.max(0, Number(e.target.value))))}
+                      style={{ width: 70 }} />
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>/ {periodCount}</span>
                   </div>
-                  {emp && (
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                      Gaji pokok: <span style={{ textDecoration: 'line-through', color: 'var(--text-tertiary)', marginRight: 6 }}>
-                        {formatCurrency(Number(emp.baseSalary))}
-                      </span>
-                      <strong style={{ color: 'var(--accent)' }}>{formatCurrency(basePay)}</strong>
+                </F>
+              ) : (
+                <F label={prorateType === 'join' ? 'Tanggal Bergabung' : 'Tanggal Terakhir Kerja'}>
+                  <input type="date" className="input" value={prorateDate} onChange={e => setProrateDate(e.target.value)}
+                    min={startDate} max={endDate} />
+                </F>
+              )}
+
+              {/* Result */}
+              {prorateFactor !== null && (
+                <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                  {/* Sub-period breakdown for period mode */}
+                  {prorateBreakdown && (
+                    <div style={{ borderBottom: '1px solid var(--border)' }}>
+                      {prorateBreakdown.map((row, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 14px', borderBottom: i < prorateBreakdown.length - 1 ? '1px solid var(--border-subtle, var(--border))' : 'none', opacity: row.pct === 0 ? 0.45 : 1 }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Periode {i + 1} · {row.label}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{row.note}</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: row.pct === 0 ? 'var(--danger)' : row.pct === 1 ? 'var(--success)' : 'var(--accent)', minWidth: 40, textAlign: 'right' }}>{(row.pct * 100).toFixed(0)}%</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
+                  {/* Summary row */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px' }}>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                      Faktor prorate: <strong style={{ color: 'var(--text-primary)' }}>{(prorateFactor * 100).toFixed(1)}%</strong>
+                    </div>
+                    {emp && (
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                        <span style={{ textDecoration: 'line-through', color: 'var(--text-tertiary)', marginRight: 6 }}>{formatCurrency(Number(emp.baseSalary))}</span>
+                        <strong style={{ color: 'var(--accent)' }}>{formatCurrency(basePay)}</strong>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
