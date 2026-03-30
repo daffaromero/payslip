@@ -7,6 +7,7 @@ import { Plus, Search, Users, Pencil, Trash2, FileText } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { useRole } from '@/lib/hooks/use-role'
+import { useAsyncOperation } from '@/lib/hooks/use-async-operation'
 
 interface Employee {
   id: string; employeeId: string; name: string; email: string | null
@@ -19,8 +20,15 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
-  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+  const deleteEmployee = useAsyncOperation(
+    async (id: string) => {
+      const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete')
+      return id
+    },
+    { onSuccess: (id) => setEmployees(p => p.filter(e => e.id !== id)) }
+  )
 
   const load = useCallback(async () => {
     const res = await fetch('/api/employees')
@@ -31,10 +39,7 @@ export default function EmployeesPage() {
 
   const confirmDelete = async () => {
     if (!pendingDelete) return
-    setDeletingId(pendingDelete.id)
-    const res = await fetch(`/api/employees/${pendingDelete.id}`, { method: 'DELETE' })
-    if (res.ok) setEmployees(p => p.filter(e => e.id !== pendingDelete.id))
-    setDeletingId(null)
+    await deleteEmployee.execute(pendingDelete.id)
     setPendingDelete(null)
   }
 
@@ -50,7 +55,7 @@ export default function EmployeesPage() {
         title={`Hapus karyawan?`}
         description={`"${pendingDelete?.name}" akan dihapus permanen dan tidak bisa dikembalikan.`}
         confirmLabel="Hapus"
-        loading={deletingId !== null}
+        loading={deleteEmployee.isLoading}
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
@@ -148,7 +153,7 @@ export default function EmployeesPage() {
                         {isAdmin && (
                           <button
                             onClick={() => setPendingDelete({ id: e.id, name: e.name })}
-                            disabled={deletingId === e.id}
+                            disabled={deleteEmployee.isLoading}
                             className="btn btn-ghost btn-icon btn-sm"
                             style={{ color: 'var(--text-tertiary)' }}
                             title="Hapus"

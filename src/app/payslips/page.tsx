@@ -9,6 +9,8 @@ import { ToastContainer, useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { PreviewModal } from '@/components/ui/preview-modal'
 import { useRole } from '@/lib/hooks/use-role'
+import { usePayslipFilters } from '@/lib/hooks/use-payslip-filters'
+import { useAsyncOperation } from '@/lib/hooks/use-async-operation'
 
 interface Payslip {
   id: string; employeeId: string; periodType: string
@@ -36,18 +38,85 @@ export default function PayslipsPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [employees, setEmployees] = useState<Employee[]>([])
-  const [filterEmployee, setFilterEmployee] = useState('')
-  const [filterYear, setFilterYear] = useState('')
-  const [filterMonth, setFilterMonth] = useState('')
+  const { filterEmployee, filterYear, filterMonth, setFilterEmployee, setFilterYear, setFilterMonth, clearFilters, hasFilter } = usePayslipFilters()
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [downloadingId, setDownloadingId] = useState<string | null>(null)
-  const [previewingId, setPreviewingId] = useState<string | null>(null)
   const [previewSrc, setPreviewSrc] = useState<string | null>(null)
   const [previewFilename, setPreviewFilename] = useState('')
-  const [emailingId, setEmailingId] = useState<string | null>(null)
-  const [whatsappingId, setWhatsappingId] = useState<string | null>(null)
   const toast = useToast()
+
+  const deleteOp = useAsyncOperation(
+    async (id: string) => {
+      const res = await fetch(`/api/payslips/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
+      return id
+    },
+    {
+      onSuccess: (id) => setPayslips(p => p.filter(x => x.id !== id)),
+    }
+  )
+
+  const downloadOp = useAsyncOperation(
+    async ({ id, name, date }: { id: string; name: string; date: string }) => {
+      const res = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payslipId: id }),
+      })
+      if (!res.ok) throw new Error('Gagal generate PDF')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = Object.assign(document.createElement('a'), { href: url, download: `slip-gaji-${name}-${date}.pdf` })
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
+  )
+
+  const previewOp = useAsyncOperation(
+    async ({ id, name, date }: { id: string; name: string; date: string }) => {
+      const res = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payslipId: id }),
+      })
+      if (!res.ok) throw new Error('Gagal membuat preview')
+      const blob = await res.blob()
+      return { blob, filename: `slip-gaji-${name}-${date}.pdf` }
+    },
+    {
+      onSuccess: ({ blob, filename }) => {
+        setPreviewSrc(URL.createObjectURL(blob))
+        setPreviewFilename(filename)
+      },
+    }
+  )
+
+  const emailOp = useAsyncOperation(
+    async (id: string) => {
+      const res = await fetch(`/api/payslips/${id}/send-email`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal mengirim email')
+      return data
+    },
+    {
+      onSuccess: (data) => toast.success(data.message),
+      onError: (err) => toast.error(err.message),
+    }
+  )
+
+  const whatsappOp = useAsyncOperation(
+    async (id: string) => {
+      const res = await fetch(`/api/payslips/${id}/send-whatsapp`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal mengirim WhatsApp')
+      return data
+    },
+    {
+      onSuccess: (data) => toast.success(data.message),
+      onError: (err) => toast.error(err.message),
+    }
+  )
 
   useEffect(() => {
     fetch('/api/employees').then(r => r.ok ? r.json() : null).then(d => {
@@ -70,69 +139,25 @@ export default function PayslipsPage() {
 
   const confirmDelete = async () => {
     if (!pendingDelete) return
-    setDeletingId(pendingDelete.id)
-    const res = await fetch(`/api/payslips/${pendingDelete.id}`, { method: 'DELETE' })
-    if (res.ok) setPayslips(p => p.filter(x => x.id !== pendingDelete.id))
-    setDeletingId(null)
-    setPendingDelete(null)
+    try {
+      await deleteOp.execute(pendingDelete.id)
+    } finally {
+      setPendingDelete(null)
+    }
   }
 
-  const sendEmail = async (id: string) => {
-    setEmailingId(id)
-    try {
-      const res = await fetch(`/api/payslips/${id}/send-email`, { method: 'POST' })
-      const data = await res.json()
-      if (res.ok) toast.success(data.message)
-      else toast.error(data.error || 'Gagal mengirim email')
-    } finally { setEmailingId(null) }
-  }
+  const sendEmail = (id: string) => emailOp.execute(id)
 
-  const sendWhatsApp = async (id: string) => {
-    setWhatsappingId(id)
-    try {
-      const res = await fetch(`/api/payslips/${id}/send-whatsapp`, { method: 'POST' })
-      const data = await res.json()
-      if (res.ok) toast.success(data.message)
-      else toast.error(data.error || 'Gagal mengirim WhatsApp')
-    } finally { setWhatsappingId(null) }
-  }
+  const sendWhatsApp = (id: string) => whatsappOp.execute(id)
 
-  const download = async (id: string, name: string, date: string) => {
-    setDownloadingId(id)
-    try {
-      const res = await fetch('/api/generate-pdf', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payslipId: id }),
-      })
-      if (!res.ok) { toast.error('Gagal generate PDF'); return }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = Object.assign(document.createElement('a'), { href: url, download: `slip-gaji-${name}-${date}.pdf` })
-      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
-    } finally { setDownloadingId(null) }
-  }
+  const download = (id: string, name: string, date: string) => downloadOp.execute({ id, name, date })
 
-  const preview = async (id: string, name: string, date: string) => {
-    setPreviewingId(id)
-    try {
-      const res = await fetch('/api/generate-pdf', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payslipId: id }),
-      })
-      if (!res.ok) { toast.error('Gagal membuat preview'); return }
-      const blob = await res.blob()
-      setPreviewSrc(URL.createObjectURL(blob))
-      setPreviewFilename(`slip-gaji-${name}-${date}.pdf`)
-    } finally { setPreviewingId(null) }
-  }
+  const preview = (id: string, name: string, date: string) => previewOp.execute({ id, name, date })
 
   const closePreview = () => {
     if (previewSrc) URL.revokeObjectURL(previewSrc)
     setPreviewSrc(null)
   }
-
-  const hasFilter = filterEmployee || filterYear || filterMonth
-  const clearFilters = () => { setFilterEmployee(''); setFilterYear(''); setFilterMonth('') }
 
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
@@ -143,7 +168,7 @@ export default function PayslipsPage() {
         title="Hapus slip gaji?"
         description={`Slip gaji ${pendingDelete?.name} ini akan dihapus permanen.`}
         confirmLabel="Hapus"
-        loading={deletingId !== null}
+        loading={deleteOp.isLoading}
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
@@ -271,20 +296,20 @@ export default function PayslipsPage() {
                     </td>
                     <td>
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: 4 }}>
-                        <button onClick={() => sendWhatsApp(p.id)} disabled={whatsappingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke WhatsApp" style={{ color: '#16a34a' }}>
-                          {whatsappingId === p.id ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <MessageCircle style={{ width: 14, height: 14 }} />}
+                        <button onClick={() => sendWhatsApp(p.id)} disabled={whatsappOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke WhatsApp" style={{ color: '#16a34a' }}>
+                          {whatsappOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <MessageCircle style={{ width: 14, height: 14 }} />}
                         </button>
-                        <button onClick={() => sendEmail(p.id)} disabled={emailingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke Email">
-                          {emailingId === p.id ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Mail style={{ width: 14, height: 14 }} />}
+                        <button onClick={() => sendEmail(p.id)} disabled={emailOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke Email">
+                          {emailOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Mail style={{ width: 14, height: 14 }} />}
                         </button>
-                        <button onClick={() => preview(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={previewingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Preview PDF">
-                          {previewingId === p.id ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Eye style={{ width: 14, height: 14 }} />}
+                        <button onClick={() => preview(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={previewOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Preview PDF">
+                          {previewOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Eye style={{ width: 14, height: 14 }} />}
                         </button>
-                        <button onClick={() => download(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={downloadingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Download PDF">
-                          {downloadingId === p.id ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Download style={{ width: 14, height: 14 }} />}
+                        <button onClick={() => download(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={downloadOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Download PDF">
+                          {downloadOp.isLoading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Download style={{ width: 14, height: 14 }} />}
                         </button>
                         {isAdmin && (
-                          <button onClick={() => setPendingDelete({ id: p.id, name: p.employee.name })} disabled={deletingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Hapus" style={{ color: 'var(--text-tertiary)' }}>
+                          <button onClick={() => setPendingDelete({ id: p.id, name: p.employee.name })} disabled={deleteOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Hapus" style={{ color: 'var(--text-tertiary)' }}>
                             <Trash2 style={{ width: 14, height: 14 }} />
                           </button>
                         )}
