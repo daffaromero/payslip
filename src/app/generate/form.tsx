@@ -77,7 +77,6 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
 
   const periodType = watchedValues.periodType
   const employeeId = watchedValues.employeeId
-  const templateId = watchedValues.templateId
   const startDate = watchedValues.startDate
   const endDate = watchedValues.endDate
   const basePay = watchedValues.basePay

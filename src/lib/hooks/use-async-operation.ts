@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 
 export type AsyncStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -16,8 +16,6 @@ export function useAsyncOperation<T, Args extends unknown[] = unknown[]>(
   const [status, setStatus] = useState<AsyncStatus>('idle')
   const [error, setError] = useState<Error | null>(null)
   const [data, setData] = useState<T | null>(null)
-  const optionsRef = useRef(options)
-  optionsRef.current = options
 
   const execute = useCallback(async (...args: Args) => {
     setStatus('loading')
@@ -26,16 +24,16 @@ export function useAsyncOperation<T, Args extends unknown[] = unknown[]>(
       const result = await fn(...args)
       setData(result)
       setStatus('success')
-      optionsRef.current.onSuccess?.(result)
+      options.onSuccess?.(result)
       return result
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err))
       setError(error)
       setStatus('error')
-      optionsRef.current.onError?.(error)
+      options.onError?.(error)
       throw error
     }
-  }, [fn])
+  }, [fn, options])
 
   const reset = useCallback(() => {
     setStatus('idle')

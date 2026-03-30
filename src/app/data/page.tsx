@@ -2,9 +2,10 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { Download, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, Users, Receipt } from 'lucide-react'
+import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
-import { useImportWizard, ImportStep, ParsedFile, PreviewRow, ImportResult } from '@/lib/hooks/use-import-wizard'
+import { useImportWizard, PreviewRow } from '@/lib/hooks/use-import-wizard'
 
 const EMPLOYEE_FIELDS = [
   { value: '',             label: '— tidak dipetakan —' },
@@ -141,7 +142,7 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, wizard])
 
   const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -419,7 +420,7 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
           {wizard.result.created} karyawan berhasil diimpor{wizard.result.skipped > 0 ? `, ${wizard.result.skipped} baris dilewati` : ''}.
         </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <a href="/employees" className="btn btn-secondary">Lihat Karyawan</a>
+          <Link href="/employees" className="btn btn-secondary">Lihat Karyawan</Link>
           <button className="btn btn-primary" onClick={reset}>Import Lagi</button>
         </div>
       </div>
