@@ -19,16 +19,34 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const claims = token ? await verifyToken(token) : null
 
   let companyName = 'Payslip'
-  let userInitial = 'P'
+  let userInitials = 'P'
+  let companyLogoUrl: string | null = null
+  let userName: string | null = null
+  let userEmail: string | null = null
 
   if (claims) {
-    const company = await prisma.company.findUnique({
-      where: { id: claims.companyId },
-      select: { name: true },
-    })
+    const [company, user] = await Promise.all([
+      prisma.company.findUnique({
+        where: { id: claims.companyId },
+        select: { name: true, logoUrl: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: claims.userId },
+        select: { email: true, name: true },
+      }),
+    ])
     if (company) {
       companyName = company.name
-      userInitial = company.name.charAt(0).toUpperCase()
+      companyLogoUrl = company.logoUrl ?? null
+    }
+    if (user) {
+      userEmail = user.email
+      userName = user.name?.trim() || null
+      const source = userName || user.email.split('@')[0]
+      const parts = source.split(/[\s._-]/).filter(Boolean)
+      userInitials = parts.length >= 2
+        ? (parts[0][0] + parts[1][0]).toUpperCase()
+        : parts[0].slice(0, 2).toUpperCase()
     }
   }
 
@@ -38,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="flex min-h-screen bg-[--bg-app]">
           <Sidebar companyName={companyName} />
           <main className="flex flex-col flex-1 min-h-screen" style={{ paddingLeft: 'var(--sidebar-width)' }}>
-            <TopBar companyName={companyName} userInitial={userInitial} />
+            <TopBar companyName={companyName} userInitials={userInitials} companyLogoUrl={companyLogoUrl} userName={userName} userEmail={userEmail} />
             <div className="flex-1">{children}</div>
           </main>
         </div>

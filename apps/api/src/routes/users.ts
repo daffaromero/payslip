@@ -14,7 +14,7 @@ router.get('/', async (c) => {
   try {
     const users = await prisma.user.findMany({
       where: { companyId: cid },
-      select: { id: true, email: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, role: true, createdAt: true },
       orderBy: { createdAt: 'asc' },
     })
     return c.json({ users })
@@ -28,7 +28,7 @@ router.get('/', async (c) => {
 router.post('/', async (c) => {
   const cid = c.get('companyId')
   try {
-    const { email, password, role } = await c.req.json()
+    const { email, password, role, name } = await c.req.json()
     if (!email || !password) return c.json({ error: 'Email dan password wajib diisi' }, 400)
     if (password.length < 8) return c.json({ error: 'Password minimal 8 karakter' }, 400)
     if (role && !['admin', 'viewer'].includes(role)) return c.json({ error: 'Role tidak valid' }, 400)
@@ -38,8 +38,8 @@ router.post('/', async (c) => {
 
     const passwordHash = await hashPassword(password)
     const user = await prisma.user.create({
-      data: { companyId: cid, email, passwordHash, role: role ?? 'viewer' },
-      select: { id: true, email: true, role: true, createdAt: true },
+      data: { companyId: cid, email, name: name || null, passwordHash, role: role ?? 'viewer' },
+      select: { id: true, email: true, name: true, role: true, createdAt: true },
     })
     return c.json({ user }, 201)
   } catch (e) {
@@ -48,28 +48,31 @@ router.post('/', async (c) => {
   }
 })
 
-// Change a user's role
+// Change a user's role (and optionally name)
 router.patch('/:id', async (c) => {
   const cid = c.get('companyId')
   const selfId = c.get('userId')
   const { id } = c.req.param()
   try {
-    const { role } = await c.req.json()
-    if (!['admin', 'viewer'].includes(role)) return c.json({ error: 'Role tidak valid' }, 400)
+    const { role, name } = await c.req.json()
+    if (role !== undefined && !['admin', 'viewer'].includes(role)) return c.json({ error: 'Role tidak valid' }, 400)
 
     const target = await prisma.user.findFirst({ where: { id, companyId: cid } })
     if (!target) return c.json({ error: 'Pengguna tidak ditemukan' }, 404)
 
     // Prevent demoting self if last admin
-    if (id === selfId && role !== 'admin') {
+    if (role !== undefined && id === selfId && role !== 'admin') {
       const adminCount = await prisma.user.count({ where: { companyId: cid, role: 'admin' } })
       if (adminCount <= 1) return c.json({ error: 'Tidak bisa mengubah role admin terakhir' }, 400)
     }
 
     const user = await prisma.user.update({
       where: { id },
-      data: { role },
-      select: { id: true, email: true, role: true, createdAt: true },
+      data: {
+        ...(role !== undefined ? { role } : {}),
+        ...(name !== undefined ? { name: name || null } : {}),
+      },
+      select: { id: true, email: true, name: true, role: true, createdAt: true },
     })
     return c.json({ user })
   } catch (e) {

@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
-import { Loader2, Wifi, WifiOff, RefreshCw, LogOut, Smartphone, Building2, Lock, Users, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Wifi, WifiOff, RefreshCw, LogOut, Smartphone, Building2, Lock, Users, Plus, Trash2, UserCircle } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { useRole } from '@/lib/hooks/use-role'
 
 type WAStatus = 'disconnected' | 'connecting' | 'connected'
 interface WAData { status: WAStatus; qrDataUrl: string | null; error: string | null }
 interface Company { name: string; address: string; taxId: string; phone: string; email: string; logoUrl: string | null }
-interface TeamUser { id: string; email: string; role: string; createdAt: string }
+interface TeamUser { id: string; email: string; name: string | null; role: string; createdAt: string }
 
 const SPIN = { animation: 'spin 1s linear infinite' } as const
 
@@ -27,11 +27,42 @@ export default function SettingsPage() {
   const toast = useToast()
   const role = useRole()
 
+  // ── Profile ───────────────────────────────────────────────────────────────
+  const [profileName, setProfileName] = useState('')
+  const [profileEmail, setProfileEmail] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [loadingProfile, setLoadingProfile] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.user) { setProfileName(d.user.name ?? ''); setProfileEmail(d.user.email) } })
+      .finally(() => setLoadingProfile(false))
+  }, [])
+
+  const saveProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingProfile(true)
+    try {
+      const res = await fetch('/api/auth/me', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: profileName }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan')
+      toast.success('Profil berhasil disimpan')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan')
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
   // ── Team ─────────────────────────────────────────────────────────────────
   const [team, setTeam] = useState<TeamUser[]>([])
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [showInvite, setShowInvite] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteName, setInviteName] = useState('')
   const [invitePassword, setInvitePassword] = useState('')
   const [inviteRole, setInviteRole] = useState<'admin' | 'viewer'>('viewer')
   const [inviting, setInviting] = useState(false)
@@ -53,12 +84,12 @@ export default function SettingsPage() {
     try {
       const res = await fetch('/api/users', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail, password: invitePassword, role: inviteRole }),
+        body: JSON.stringify({ email: inviteEmail, name: inviteName || undefined, password: invitePassword, role: inviteRole }),
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Gagal menambahkan pengguna')
       toast.success(`Pengguna ${inviteEmail} berhasil ditambahkan`)
-      setShowInvite(false); setInviteEmail(''); setInvitePassword(''); setInviteRole('viewer')
+      setShowInvite(false); setInviteEmail(''); setInviteName(''); setInvitePassword(''); setInviteRole('viewer')
       loadTeam()
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan') }
     finally { setInviting(false) }
@@ -159,6 +190,38 @@ export default function SettingsPage() {
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       <PageHeader title="Pengaturan" subtitle="Kelola profil perusahaan dan koneksi" />
       <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 640 }}>
+
+        {/* Profile */}
+        <div className="card" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <UserCircle style={{ width: 20, height: 20, color: '#0284c7' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Profil Saya</p>
+              <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>Nama ditampilkan di avatar dan daftar tim</p>
+            </div>
+          </div>
+
+          {loadingProfile ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+              <Loader2 style={{ width: 18, height: 18, ...SPIN, color: 'var(--text-tertiary)' }} />
+            </div>
+          ) : (
+            <form onSubmit={saveProfile} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <F label="Email">
+                <input className="input" value={profileEmail} disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} />
+              </F>
+              <F label="Nama" hint="Opsional. Jika kosong, inisial diambil dari email.">
+                <input className="input" value={profileName} onChange={e => setProfileName(e.target.value)} placeholder="Contoh: Budi Santoso" />
+              </F>
+              <button type="submit" disabled={savingProfile} className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+                {savingProfile && <Loader2 style={{ width: 14, height: 14, ...SPIN }} />}
+                {savingProfile ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </form>
+          )}
+        </div>
 
         {/* Company */}
         <div className="card" style={{ padding: 24 }}>
@@ -265,6 +328,9 @@ export default function SettingsPage() {
                 <F label="Email">
                   <input type="email" required className="input" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="hr@perusahaan.co.id" />
                 </F>
+                <F label="Nama" hint="Opsional">
+                  <input className="input" value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="Contoh: Budi Santoso" />
+                </F>
                 <F label="Password Sementara">
                   <input type="text" required minLength={8} className="input" value={invitePassword} onChange={e => setInvitePassword(e.target.value)} placeholder="Minimal 8 karakter" />
                 </F>
@@ -294,7 +360,8 @@ export default function SettingsPage() {
                 {team.map((u, i) => (
                   <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: i < team.length - 1 ? '1px solid var(--border)' : 'none' }}>
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</p>
+                      {u.name && <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</p>}
+                      <p style={{ fontSize: u.name ? 11 : 13, fontWeight: u.name ? 400 : 500, color: u.name ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</p>
                       <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
                         Bergabung {new Date(u.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>

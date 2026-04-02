@@ -45,12 +45,29 @@ router.get('/me', async (c) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, role: true },
+      select: { id: true, email: true, name: true, role: true },
     })
     if (!user) return c.json({ error: 'Unauthorized' }, 401)
     return c.json({ user })
   } catch (e) {
     return c.json({ error: 'Terjadi kesalahan' }, 500)
+  }
+})
+
+router.patch('/me', async (c) => {
+  const userId = c.get('userId')
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { name } = await c.req.json()
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { name: name?.trim() || null },
+      select: { id: true, email: true, name: true, role: true },
+    })
+    return c.json({ user })
+  } catch (e) {
+    console.error('Update profile error:', e)
+    return c.json({ error: 'Gagal memperbarui profil' }, 500)
   }
 })
 
