@@ -7,7 +7,7 @@ import { Employee, Template } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 import { calculatePayslip } from '@/lib/calculations/payslip'
 import { calcProrate } from '@/lib/calculations/prorate'
-import { Download, Loader2, Plus, X, Eye } from 'lucide-react'
+import { Download, Loader2, Plus, X, Eye, CheckCircle2, XCircle } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { PreviewModal } from '@/components/ui/preview-modal'
 import { useAsyncOperation } from '@/lib/hooks/use-async-operation'
@@ -17,6 +17,9 @@ import { PayslipFormSchema, PayslipFormValues } from '@/lib/schemas/payslip-form
 interface Props { employees: Employee[]; templates: Template[]; defaultEmployeeId?: string }
 
 const SPIN = { animation: 'spin 1s linear infinite' } as const
+const ID_MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+
+type MultiResult = { label: string; ok: boolean; payslipId?: string; error?: string }
 
 function F({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -71,6 +74,10 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   const toast = useToast()
   const [previewingSrc, setPreviewingSrc] = useState<string | null>(null)
   const [generatedId, setGeneratedId] = useState<string | null>(null)
+  const [months, setMonths] = useState(1)
+  const [multiRunning, setMultiRunning] = useState(false)
+  const [multiProgress, setMultiProgress] = useState(0)
+  const [multiResults, setMultiResults] = useState<MultiResult[]>([])
 
   const { watch, setValue, getValues } = form
   const watchedValues = watch()
@@ -149,6 +156,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     }
     setValue('startDate', s.toISOString().split('T')[0])
     setValue('endDate', en.toISOString().split('T')[0])
+    if (periodType !== 'monthly') setMonths(1)
   }, [periodType, setValue])
 
   useEffect(() => {
@@ -191,6 +199,36 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   const handleProrateToggle = () => {
     toggleProrate()
     if (prorateEnabled && emp) setValue('basePay', Number(emp.baseSalary) || 0)
+  }
+
+  const handleMultiGenerate = async () => {
+    const vals = getValues()
+    const base = new Date(vals.startDate)
+    setMultiRunning(true)
+    setMultiResults([])
+    setMultiProgress(0)
+    const out: MultiResult[] = []
+    for (let i = 0; i < months; i++) {
+      const ms = new Date(base.getFullYear(), base.getMonth() + i, 1)
+      const me = new Date(base.getFullYear(), base.getMonth() + i + 1, 0)
+      const label = `${ID_MONTHS[ms.getMonth()]} ${ms.getFullYear()}`
+      try {
+        const res = await fetch('/api/payslips', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: 'monthly', startDate: ms.toISOString().split('T')[0], endDate: me.toISOString().split('T')[0], basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, allowances: vals.allowances, otherDeductions: vals.deductions, notes: vals.notes }),
+        })
+        if (!res.ok) throw new Error((await res.json()).error || 'Gagal')
+        const d = await res.json()
+        out.push({ label, ok: true, payslipId: d.payslipId })
+      } catch (err) {
+        out.push({ label, ok: false, error: err instanceof Error ? err.message : 'Error' })
+      }
+      setMultiProgress(i + 1)
+      setMultiResults([...out])
+    }
+    setMultiRunning(false)
+    const ok = out.filter(r => r.ok).length
+    toast.success(`${ok} dari ${months} slip gaji berhasil dibuat`)
   }
 
   const addAllowance = () => setValue('allowances', [...allowances, { name: '', amount: 0 }])
@@ -257,7 +295,10 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
             </F>
             <div className="form-grid-2" style={{ gap: 12 }}>
               <F label="Mulai"><input type="date" className="input" {...form.register('startDate')} /></F>
-              <F label="Selesai"><input type="date" className="input" {...form.register('endDate')} /></F>
+              {periodType === 'monthly'
+                ? <F label="Jumlah Bulan"><input type="number" className="input" min={1} max={12} value={months} onChange={e => setMonths(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))} /></F>
+                : <F label="Selesai"><input type="date" className="input" {...form.register('endDate')} /></F>
+              }
             </div>
           </div>
         </div>
@@ -451,15 +492,37 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => previewOp.execute()} disabled={previewOp.isLoading || generateOp.isLoading} className="btn btn-secondary btn-lg" style={{ flex: '0 0 auto' }}>
-            {previewOp.isLoading ? <Loader2 style={{ width: 16, height: 16, ...SPIN }} /> : <Eye style={{ width: 16, height: 16 }} />}
-            Preview
-          </button>
-          <button onClick={() => generateOp.execute()} disabled={generateOp.isLoading} className="btn btn-primary btn-lg" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {generateOp.isLoading && <Loader2 style={{ width: 16, height: 16, ...SPIN }} />}
-            {generateOp.isLoading ? 'Memproses...' : 'Generate Slip Gaji'}
+          {months === 1 && (
+            <button onClick={() => previewOp.execute()} disabled={previewOp.isLoading || generateOp.isLoading || multiRunning} className="btn btn-secondary btn-lg" style={{ flex: '0 0 auto' }}>
+              {previewOp.isLoading ? <Loader2 style={{ width: 16, height: 16, ...SPIN }} /> : <Eye style={{ width: 16, height: 16 }} />}
+              Preview
+            </button>
+          )}
+          <button
+            onClick={() => months > 1 ? handleMultiGenerate() : generateOp.execute()}
+            disabled={generateOp.isLoading || multiRunning}
+            className="btn btn-primary btn-lg"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            {(generateOp.isLoading || multiRunning) && <Loader2 style={{ width: 16, height: 16, ...SPIN }} />}
+            {multiRunning ? `Memproses... (${multiProgress}/${months})` : generateOp.isLoading ? 'Memproses...' : months > 1 ? `Generate ${months} Bulan` : 'Generate Slip Gaji'}
           </button>
         </div>
+
+        {/* Multi-month results */}
+        {multiResults.length > 0 && (
+          <div className="card" style={{ padding: 16 }}>
+            {multiResults.map((r, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < multiResults.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{r.label}</span>
+                {r.ok
+                  ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#16a34a' }}><CheckCircle2 style={{ width: 13, height: 13 }} /> Berhasil</span>
+                  : <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--danger)' }}><XCircle style={{ width: 13, height: 13 }} /> {r.error}</span>
+                }
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Sidebar — live preview */}

@@ -322,10 +322,11 @@
 
 .generate-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  max-width: 1000px;
 }
 @media (max-width: 900px) {
-  .generate-layout { grid-template-columns: 1fr; }
+  .generate-layout { grid-template-columns: 1fr; max-width: 100%; }
 }
 
 /* Horizontal scroll wrapper for tables on mobile */
