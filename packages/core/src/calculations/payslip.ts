@@ -6,7 +6,8 @@ export interface CalculationResult {
   grossPay: number
   pph21: number
   bpjsKesehatan: number
-  bpjsKetenagakerjaan: number
+  bpjsTkJht: number
+  bpjsTkJp: number
   otherDeductions: Deduction[]
   totalDeductions: number
   netPay: number
@@ -38,21 +39,22 @@ export function calculatePayslip(input: PayslipCalculationInput): CalculationRes
   const grossPay = baseSalary + overtimePay + bonus + thr + totalAllowances
 
   const bpjsKesehatan = calculateBpjsKesehatan(baseSalary).employee
-  const bpjsKetenagakerjaan =
-    calculateBpjsKetenagakerjaan(baseSalary).jht.employee +
-    calculateBpjsKetenagakerjaan(baseSalary).jp.employee
+  const ketena = calculateBpjsKetenagakerjaan(baseSalary)
+  const bpjsTkJht = ketena.jht.employee
+  const bpjsTkJp = ketena.jp.employee
 
   const pph21 = calculatePph21ForPeriod(grossPay, pph21Status, monthCount)
 
   const otherDeductionsTotal = (otherDeductions as Deduction[]).reduce((sum, d) => sum + d.amount, 0)
-  const totalDeductions = pph21 + bpjsKesehatan + bpjsKetenagakerjaan + otherDeductionsTotal
+  const totalDeductions = pph21 + bpjsKesehatan + bpjsTkJht + bpjsTkJp + otherDeductionsTotal
   const netPay = grossPay - totalDeductions
 
   return {
     grossPay,
     pph21,
     bpjsKesehatan,
-    bpjsKetenagakerjaan,
+    bpjsTkJht,
+    bpjsTkJp,
     otherDeductions: otherDeductions as Deduction[],
     totalDeductions,
     netPay,

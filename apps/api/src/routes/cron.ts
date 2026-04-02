@@ -41,7 +41,8 @@ async function exportMonthlyPayslips() {
         'Net Pay': Number(p.netPay),
         'PPh21': Number(p.pph21),
         'BPJS Kesehatan': Number(p.bpjsKesehatan),
-        'BPJS Ketenagakerjaan': Number(p.bpjsKetenagakerjaan),
+        'BPJS TK JHT': Number(p.bpjsTkJht),
+        'BPJS TK JP': Number(p.bpjsTkJp),
       }))
 
       const ws = XLSX.utils.json_to_sheet(rows)

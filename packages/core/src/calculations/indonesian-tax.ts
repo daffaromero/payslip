@@ -3,7 +3,7 @@
  * Based on UU HPP (2022) progressive tax brackets
  */
 
-const TAX_BRACKETS = [
+export const TAX_BRACKETS = [
   { limit: 60000000, rate: 0.05 },      // 0 - 60jt: 5%
   { limit: 250000000, rate: 0.15 },    // 60jt - 250jt: 15%
   { limit: 500000000, rate: 0.25 },    // 250jt - 500jt: 25%
@@ -73,4 +73,43 @@ export function calculatePph21ForPeriod(
   const monthlyAverage = grossAmount / monthCount
   const monthlyTax = calculatePph21Monthly(monthlyAverage, ptkpStatus)
   return Math.round(monthlyTax * monthCount)
+}
+
+export interface TaxBreakdown {
+  grossAnnual: number
+  ptkp: number
+  taxableIncome: number
+  brackets: { limit: number; rate: number; amount: number; tax: number }[]
+  annualTax: number
+  monthlyTax: number
+}
+
+export function getTaxBreakdown(grossMonthly: number, ptkpStatus: string): TaxBreakdown {
+  const ptkp = getPtkpAmount(ptkpStatus)
+  const grossAnnual = grossMonthly * 12
+  const taxableIncome = Math.max(0, grossAnnual - ptkp)
+  
+  const brackets: TaxBreakdown['brackets'] = []
+  let remainingIncome = taxableIncome
+  let previousLimit = 0
+  
+  for (const bracket of TAX_BRACKETS) {
+    if (remainingIncome <= 0) break
+    const bracketAmount = Math.min(remainingIncome, bracket.limit - previousLimit)
+    if (bracketAmount > 0) {
+      brackets.push({
+        limit: bracket.limit,
+        rate: bracket.rate,
+        amount: bracketAmount,
+        tax: Math.round(bracketAmount * bracket.rate),
+      })
+    }
+    remainingIncome -= bracketAmount
+    previousLimit = bracket.limit
+  }
+  
+  const annualTax = brackets.reduce((sum, b) => sum + b.tax, 0)
+  const monthlyTax = Math.round(annualTax / 12)
+  
+  return { grossAnnual, ptkp, taxableIncome, brackets, annualTax, monthlyTax }
 }

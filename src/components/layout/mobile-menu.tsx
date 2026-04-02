@@ -22,6 +22,7 @@ export function MobileMenu({ companyName, role }: { companyName: string; role: '
   const router = useRouter()
 
   // Close drawer on route change
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setOpen(false) }, [pathname])
 
   const logout = async () => {
@@ -96,7 +97,7 @@ export function MobileMenu({ companyName, role }: { companyName: string; role: '
             <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{companyName}</p>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{"Payslip"}</p>
                   <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>v0.1.0</p>
                 </div>
                 <button onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px 6px', borderRadius: 6, fontSize: 13, flexShrink: 0 }}>

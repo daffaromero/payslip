@@ -30,12 +30,18 @@ export default function EmployeesPage() {
     { onSuccess: (id) => setEmployees(p => p.filter(e => e.id !== id)) }
   )
 
-  const load = useCallback(async () => {
-    const res = await fetch('/api/employees')
-    if (res.ok) setEmployees((await res.json()).employees ?? [])
-    setLoading(false)
+  useEffect(() => {
+    let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true)
+    fetch('/api/employees').then(res => res.json()).then(data => {
+      if (!cancelled) {
+        setEmployees(data.employees ?? [])
+        setLoading(false)
+      }
+    })
+    return () => { cancelled = true }
   }, [])
-  useEffect(() => { load() }, [load])
 
   const confirmDelete = async () => {
     if (!pendingDelete) return

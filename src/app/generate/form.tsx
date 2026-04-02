@@ -7,12 +7,32 @@ import { Employee, Template } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 import { calculatePayslip } from '@/lib/calculations/payslip'
 import { calcProrate } from '@/lib/calculations/prorate'
-import { Download, Loader2, Plus, X, Eye, CheckCircle2, XCircle } from 'lucide-react'
+import { calculateBpjsKesehatan, calculateBpjsKetenagakerjaan } from '@/lib/calculations/bpjs'
+import { getTaxBreakdown } from '@/lib/calculations/indonesian-tax'
+import { Download, Loader2, Plus, X, Eye, CheckCircle2, XCircle, ChevronDown, ChevronRight } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { PreviewModal } from '@/components/ui/preview-modal'
 import { useAsyncOperation } from '@/lib/hooks/use-async-operation'
 import { useProrateConfig } from '@/lib/hooks/use-prorate-config'
 import { PayslipFormSchema, PayslipFormValues } from '@/lib/schemas/payslip-form'
+
+interface SalaryComponents {
+  tunjangan_jabatan: { amount: number; enabled: boolean }
+  tunjangan_luar_kota: { amount: number; enabled: boolean }
+  tunjangan_makan: { amount: number; enabled: boolean }
+  tunjangan_transport: { amount: number; enabled: boolean }
+  tunjangan_lama_bekerja: { amount: number; enabled: boolean }
+  tunjangan_pph21: { amount: number; enabled: boolean }
+}
+
+const SALARY_COMPONENT_LABELS: Record<keyof SalaryComponents, string> = {
+  tunjangan_jabatan: 'Tunjangan Jabatan',
+  tunjangan_luar_kota: 'Tunjangan Luar Kota',
+  tunjangan_makan: 'Tunjangan Makan',
+  tunjangan_transport: 'Tunjangan Transport',
+  tunjangan_lama_bekerja: 'Tunjangan Lama Kerja',
+  tunjangan_pph21: 'Tunjangan PPh 21',
+}
 
 interface Props { employees: Employee[]; templates: Template[]; defaultEmployeeId?: string }
 
@@ -75,9 +95,22 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   const [previewingSrc, setPreviewingSrc] = useState<string | null>(null)
   const [generatedId, setGeneratedId] = useState<string | null>(null)
   const [months, setMonths] = useState(1)
+  const [periodMode, setPeriodMode] = useState<'auto' | 'manual'>('auto')
   const [multiRunning, setMultiRunning] = useState(false)
   const [multiProgress, setMultiProgress] = useState(0)
   const [multiResults, setMultiResults] = useState<MultiResult[]>([])
+  const [manualPph21, setManualPph21] = useState(0)
+  const [manualBpjsKesehatan, setManualBpjsKesehatan] = useState(0)
+  const [manualBpjsTkJht, setManualBpjsTkJht] = useState(0)
+  const [manualBpjsTkJp, setManualBpjsTkJp] = useState(0)
+  const [salaryComponents, setSalaryComponents] = useState<SalaryComponents>({
+    tunjangan_jabatan: { amount: 0, enabled: false },
+    tunjangan_luar_kota: { amount: 0, enabled: false },
+    tunjangan_makan: { amount: 0, enabled: false },
+    tunjangan_transport: { amount: 0, enabled: false },
+    tunjangan_lama_bekerja: { amount: 0, enabled: false },
+    tunjangan_pph21: { amount: 0, enabled: false },
+  })
 
   const { watch, setValue, getValues } = form
   const watchedValues = watch()
@@ -115,9 +148,12 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
 
   const generateOp = useAsyncOperation(async () => {
     const vals = getValues()
+    if (!manualPph21 && !manualBpjsKesehatan && !manualBpjsTkJht && !manualBpjsTkJp) {
+      toast.error('Peringatan: PPh 21 dan BPJS masih 0. Isi manual atau abaikan jika tidak diperlukan.')
+    }
     const res = await fetch('/api/payslips', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, allowances: vals.allowances, otherDeductions: vals.deductions, notes: vals.notes }),
+      body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
     })
     if (!res.ok) throw new Error((await res.json()).error || 'Gagal membuat slip gaji')
     return (await res.json()).payslipId as string
@@ -133,7 +169,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     const vals = getValues()
     const res = await fetch('/api/preview-payslip', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, allowances: vals.allowances, otherDeductions: vals.deductions, notes: vals.notes }),
+      body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Gagal membuat preview')
@@ -164,6 +200,16 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
       const full = Number(emp.baseSalary) || 0
       setValue('basePay', prorateFactor !== null ? Math.round(full * prorateFactor) : full)
       setValue('hourlyRate', Number(emp.hourlyRate) || 0)
+      // Load salary components from employee defaults
+      const defaults = emp.salaryComponents || {
+        tunjangan_jabatan: { amount: 0, enabled: false },
+        tunjangan_luar_kota: { amount: 0, enabled: false },
+        tunjangan_makan: { amount: 0, enabled: false },
+        tunjangan_transport: { amount: 0, enabled: false },
+        tunjangan_lama_bekerja: { amount: 0, enabled: false },
+        tunjangan_pph21: { amount: 0, enabled: false },
+      }
+      setSalaryComponents(defaults)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId, emp])
@@ -215,7 +261,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
       try {
         const res = await fetch('/api/payslips', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: 'monthly', startDate: ms.toISOString().split('T')[0], endDate: me.toISOString().split('T')[0], basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, allowances: vals.allowances, otherDeductions: vals.deductions, notes: vals.notes }),
+          body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: 'monthly', startDate: ms.toISOString().split('T')[0], endDate: me.toISOString().split('T')[0], basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
         })
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal')
         const d = await res.json()
@@ -293,13 +339,48 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
                 <option value="annual">Tahunan</option>
               </select>
             </F>
-            <div className="form-grid-2" style={{ gap: 12 }}>
-              <F label="Mulai"><input type="date" className="input" {...form.register('startDate')} /></F>
-              {periodType === 'monthly'
-                ? <F label="Jumlah Bulan"><input type="number" className="input" min={1} max={12} value={months} onChange={e => setMonths(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))} /></F>
-                : <F label="Selesai"><input type="date" className="input" {...form.register('endDate')} /></F>
-              }
-            </div>
+            <F label="Periode">
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setPeriodMode('auto')}
+                  style={{
+                    flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid', fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                    background: periodMode === 'auto' ? 'var(--accent)' : 'var(--bg-surface)',
+                    color: periodMode === 'auto' ? '#fff' : 'var(--text-secondary)',
+                    borderColor: periodMode === 'auto' ? 'var(--accent)' : 'var(--border-strong)',
+                  }}
+                >
+                  Otomatis
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPeriodMode('manual')}
+                  style={{
+                    flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid', fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                    background: periodMode === 'manual' ? 'var(--accent)' : 'var(--bg-surface)',
+                    color: periodMode === 'manual' ? '#fff' : 'var(--text-secondary)',
+                    borderColor: periodMode === 'manual' ? 'var(--accent)' : 'var(--border-strong)',
+                  }}
+                >
+                  Manual
+                </button>
+              </div>
+            </F>
+            {periodMode === 'auto' ? (
+              <div className="form-grid-2" style={{ gap: 12 }}>
+                <F label="Mulai"><input type="date" className="input" value={startDate || ''} onChange={e => form.setValue('startDate', e.target.value)} /></F>
+                {periodType === 'monthly'
+                  ? <F label="Jumlah Bulan"><input type="number" className="input" min={1} max={12} value={months} onChange={e => setMonths(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))} /></F>
+                  : <F label="Selesai"><input type="date" className="input" value={endDate || ''} onChange={e => form.setValue('endDate', e.target.value)} /></F>
+                }
+              </div>
+            ) : (
+              <div className="form-grid-2" style={{ gap: 12 }}>
+                <F label="Mulai"><input type="date" className="input" value={startDate || ''} onChange={e => form.setValue('startDate', e.target.value)} /></F>
+                <F label="Selesai"><input type="date" className="input" value={endDate || ''} onChange={e => form.setValue('endDate', e.target.value)} /></F>
+              </div>
+            )}
           </div>
         </div>
 
@@ -322,6 +403,33 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
             <F label="THR (Hari Raya)">
               <div className="input-prefix"><span className="prefix">Rp</span><input type="number" className="input" {...form.register('thr', { valueAsNumber: true })} /></div>
             </F>
+          </div>
+
+          {/* Salary Components */}
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 12 }}>Komponen Gaji</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+              {(Object.keys(salaryComponents) as (keyof SalaryComponents)[]).map(key => (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-subtle)', borderRadius: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={salaryComponents[key].enabled}
+                    onChange={e => setSalaryComponents(p => ({ ...p, [key]: { ...p[key], enabled: e.target.checked } }))}
+                    style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer', flexShrink: 0 }}
+                  />
+                  <label style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1, minWidth: 0 }}>{SALARY_COMPONENT_LABELS[key]}</label>
+                  <input
+                    type="number"
+                    className="input"
+                    style={{ fontSize: 12, width: 100 }}
+                    value={salaryComponents[key].amount || ''}
+                    onChange={e => setSalaryComponents(p => ({ ...p, [key]: { ...p[key], amount: Number(e.target.value) || 0 } }))}
+                    placeholder="0"
+                    disabled={!salaryComponents[key].enabled}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Allowances */}
@@ -569,11 +677,64 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(calc.grossPay)}</span>
               </div>
 
-              {/* Deductions */}
+              {/* Deductions - Manual Input */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
-                {calc.pph21 > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-secondary)' }}>PPh 21</span><span style={{ color: 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(calc.pph21)}</span></div>}
-                {calc.bpjsKesehatan > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-secondary)' }}>BPJS Kesehatan</span><span style={{ color: 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(calc.bpjsKesehatan)}</span></div>}
-                {calc.bpjsKetenagakerjaan > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-secondary)' }}>BPJS Ketenagakerjaan</span><span style={{ color: 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(calc.bpjsKetenagakerjaan)}</span></div>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>PPh 21</span>
+                  <div className="input-prefix" style={{ width: 140 }}>
+                    <span className="prefix">Rp</span>
+                    <input
+                      type="number"
+                      className="input"
+                      style={{ fontSize: 12, paddingLeft: 4 }}
+                      value={manualPph21 || ''}
+                      onChange={e => setManualPph21(Number(e.target.value) || 0)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>BPJS Kesehatan</span>
+                  <div className="input-prefix" style={{ width: 140 }}>
+                    <span className="prefix">Rp</span>
+                    <input
+                      type="number"
+                      className="input"
+                      style={{ fontSize: 12, paddingLeft: 4 }}
+                      value={manualBpjsKesehatan || ''}
+                      onChange={e => setManualBpjsKesehatan(Number(e.target.value) || 0)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>BPJS TK JHT</span>
+                  <div className="input-prefix" style={{ width: 140 }}>
+                    <span className="prefix">Rp</span>
+                    <input
+                      type="number"
+                      className="input"
+                      style={{ fontSize: 12, paddingLeft: 4 }}
+                      value={manualBpjsTkJht || ''}
+                      onChange={e => setManualBpjsTkJht(Number(e.target.value) || 0)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>BPJS TK JP</span>
+                  <div className="input-prefix" style={{ width: 140 }}>
+                    <span className="prefix">Rp</span>
+                    <input
+                      type="number"
+                      className="input"
+                      style={{ fontSize: 12, paddingLeft: 4 }}
+                      value={manualBpjsTkJp || ''}
+                      onChange={e => setManualBpjsTkJp(Number(e.target.value) || 0)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
                 {deductions.filter(d=>d.amount>0).map((d,i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-secondary)' }}>{d.name||'Potongan'}</span><span style={{ color: 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(d.amount)}</span></div>
                 ))}
@@ -583,7 +744,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
               <div style={{ marginTop: 16, padding: 16, background: 'var(--accent-light)', border: '1px solid var(--accent-muted)', borderRadius: 8 }}>
                 <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent)' }}>Gaji Bersih</p>
                 <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--accent)', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>
-                  {formatCurrency(calc.netPay)}
+                  {formatCurrency(emp ? calc.netPay : 0)}
                 </p>
               </div>
             </div>

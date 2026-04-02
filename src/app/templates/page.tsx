@@ -57,6 +57,17 @@ interface FormState {
   orientation: 'portrait' | 'landscape'
   isDefault: boolean
   sections: typeof EMPTY_SECTIONS
+  header: {
+    showLogo: boolean
+    companyName: string
+    companyTagline: string
+    companyAddress: string
+  }
+  footer: {
+    showPageNumber: boolean
+    customText: string
+    showCompanyName: boolean
+  }
 }
 
 const DEFAULT_FORM: FormState = {
@@ -70,6 +81,8 @@ const DEFAULT_FORM: FormState = {
   orientation: 'portrait',
   isDefault: false,
   sections: { ...EMPTY_SECTIONS },
+  header: { showLogo: true, companyName: '', companyTagline: '', companyAddress: '' },
+  footer: { showPageNumber: true, customText: '', showCompanyName: true },
 }
 
 function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
@@ -127,6 +140,17 @@ function TemplateModal({
         orientation: editing.layout.orientation,
         isDefault: editing.isDefault,
         sections: { ...editing.sections },
+        header: {
+          showLogo: editing.header?.showLogo ?? true,
+          companyName: editing.header?.companyName ?? '',
+          companyTagline: editing.header?.companyTagline ?? '',
+          companyAddress: editing.header?.companyAddress ?? '',
+        },
+        footer: {
+          showPageNumber: editing.footer?.showPageNumber ?? true,
+          customText: editing.footer?.customText ?? '',
+          showCompanyName: editing.footer?.showCompanyName ?? true,
+        },
       })
     } else {
       setForm({ ...DEFAULT_FORM, sections: { ...EMPTY_SECTIONS } })
@@ -137,6 +161,8 @@ function TemplateModal({
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(p => ({ ...p, [k]: v }))
   const setSection = (k: string, v: boolean) => setForm(p => ({ ...p, sections: { ...p.sections, [k]: v } }))
+  const setHeader = <K extends keyof FormState['header']>(k: K, v: string | boolean) => setForm(p => ({ ...p, header: { ...p.header, [k]: v } }))
+  const setFooter = <K extends keyof FormState['footer']>(k: K, v: string | boolean) => setForm(p => ({ ...p, footer: { ...p.footer, [k]: v } }))
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -150,7 +176,8 @@ function TemplateModal({
         layout: { orientation: form.orientation, pageSize: form.pageSize, columns: 1 },
         theme: { primaryColor: form.primaryColor, secondaryColor: form.secondaryColor, fontFamily: form.fontFamily, fontSize: form.fontSize },
         sections: form.sections,
-        header: { showLogo: false, companyName: '' },
+        header: form.header,
+        footer: form.footer,
         customFields: [],
       }
       const url = editing ? `/api/templates/${editing.id}` : '/api/templates'
@@ -256,6 +283,36 @@ function TemplateModal({
                   {label}
                 </label>
               ))}
+            </div>
+          </div>
+
+          {/* Header */}
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 10 }}>Header</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
+                <input type="checkbox" checked={form.header.showLogo} onChange={e => setHeader('showLogo', e.target.checked)} style={{ width: 15, height: 15, accentColor: 'var(--accent)' }} />
+                Tampilkan logo
+              </label>
+              <input className="input" style={{ fontSize: 13 }} placeholder="Nama perusahaan (untuk header)" value={form.header.companyName} onChange={e => setHeader('companyName', e.target.value)} />
+              <input className="input" style={{ fontSize: 13 }} placeholder="Tagline (opsional)" value={form.header.companyTagline} onChange={e => setHeader('companyTagline', e.target.value)} />
+              <input className="input" style={{ fontSize: 13 }} placeholder="Alamat (opsional)" value={form.header.companyAddress} onChange={e => setHeader('companyAddress', e.target.value)} />
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 10 }}>Footer</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
+                <input type="checkbox" checked={form.footer.showPageNumber} onChange={e => setFooter('showPageNumber', e.target.checked)} style={{ width: 15, height: 15, accentColor: 'var(--accent)' }} />
+                Tampilkan nomor halaman
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-primary)' }}>
+                <input type="checkbox" checked={form.footer.showCompanyName} onChange={e => setFooter('showCompanyName', e.target.checked)} style={{ width: 15, height: 15, accentColor: 'var(--accent)' }} />
+                Tampilkan nama perusahaan
+              </label>
+              <input className="input" style={{ fontSize: 13 }} placeholder="Teks kustom footer (opsional)" value={form.footer.customText} onChange={e => setFooter('customText', e.target.value)} />
             </div>
           </div>
 

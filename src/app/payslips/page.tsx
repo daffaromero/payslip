@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, FileText, Trash2, Download, Loader2, Mail, MessageCircle, Filter, Eye } from 'lucide-react'
+import { Plus, FileText, Trash2, Download, Loader2, Mail, MessageCircle, Filter, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -32,13 +32,15 @@ const MONTHS = [
   { value: '10', label: 'Oktober' }, { value: '11', label: 'November' }, { value: '12', label: 'Desember' },
 ]
 
+const LIMIT = 20
+
 export default function PayslipsPage() {
   const isAdmin = useRole() === 'admin'
   const [payslips, setPayslips] = useState<Payslip[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [employees, setEmployees] = useState<Employee[]>([])
-  const { filterEmployee, filterYear, filterMonth, setFilterEmployee, setFilterYear, setFilterMonth, clearFilters, hasFilter } = usePayslipFilters()
+  const { filterEmployee, filterYear, filterMonth, filterPeriodType, page, setFilterEmployee, setFilterYear, setFilterMonth, setFilterPeriodType, setPage, clearFilters, hasFilter } = usePayslipFilters()
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
   const [previewSrc, setPreviewSrc] = useState<string | null>(null)
   const [previewFilename, setPreviewFilename] = useState('')
@@ -119,23 +121,27 @@ export default function PayslipsPage() {
   )
 
   useEffect(() => {
-    fetch('/api/employees').then(r => r.ok ? r.json() : null).then(d => {
+    fetch('/api/employees?limit=200').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.employees) setEmployees(d.employees)
     })
   }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
-    const qs = new URLSearchParams({ limit: '50' })
+    const qs = new URLSearchParams({ limit: String(LIMIT), page: String(page) })
     if (filterEmployee) qs.set('employeeId', filterEmployee)
     if (filterYear) qs.set('year', filterYear)
     if (filterYear && filterMonth) qs.set('month', filterMonth)
+    if (filterPeriodType) qs.set('periodType', filterPeriodType)
     const res = await fetch(`/api/payslips?${qs}`)
     if (res.ok) { const d = await res.json(); setPayslips(d.payslips ?? []); setTotal(d.total ?? 0) }
     setLoading(false)
-  }, [filterEmployee, filterYear, filterMonth])
+  }, [filterEmployee, filterYear, filterMonth, filterPeriodType, page])
 
   useEffect(() => { load() }, [load])
+
+  // Reset to page 1 when filters change
+  const handleFilterChange = (setter: (v: string) => void) => (v: string) => { setter(v); setPage(1) }
 
   const confirmDelete = async () => {
     if (!pendingDelete) return
@@ -146,18 +152,12 @@ export default function PayslipsPage() {
     }
   }
 
-  const sendEmail = (id: string) => emailOp.execute(id)
-
-  const sendWhatsApp = (id: string) => whatsappOp.execute(id)
-
-  const download = (id: string, name: string, date: string) => downloadOp.execute({ id, name, date })
-
-  const preview = (id: string, name: string, date: string) => previewOp.execute({ id, name, date })
-
   const closePreview = () => {
     if (previewSrc) URL.revokeObjectURL(previewSrc)
     setPreviewSrc(null)
   }
+
+  const totalPages = Math.ceil(total / LIMIT)
 
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
@@ -192,33 +192,40 @@ export default function PayslipsPage() {
 
       <div style={{ padding: 12 }}>
         {/* Filter bar */}
-        <div className="card" style={{ padding: '12px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div className="card" style={{ padding: '12px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <Filter style={{ width: 14, height: 14, color: 'var(--text-tertiary)', flexShrink: 0 }} />
           <select
             value={filterEmployee}
-            onChange={e => setFilterEmployee(e.target.value)}
-            className="input"
-            style={{ fontSize: 13, height: 32, flex: '1 1 180px', minWidth: 0 }}
+            onChange={e => { setFilterEmployee(e.target.value); setPage(1) }}
+            style={{ fontSize: 13, height: 34, flex: '1 1 200px', minWidth: 0, appearance: 'none', paddingRight: 28, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23737373' d='M6 8.5L1.5 4h9z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius)', paddingLeft: 12, backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', cursor: 'pointer' }}
           >
             <option value="">Semua Karyawan</option>
             {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employeeId})</option>)}
           </select>
+          <select
+            value={filterPeriodType}
+            onChange={e => { setFilterPeriodType(e.target.value); setPage(1) }}
+            style={{ fontSize: 13, height: 34, flex: '1 1 140px', minWidth: 0, appearance: 'none', paddingRight: 28, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23737373' d='M6 8.5L1.5 4h9z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius)', paddingLeft: 12, backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', cursor: 'pointer' }}
+          >
+            <option value="">Semua Tipe</option>
+            {Object.entries(PERIOD).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
           <input
             type="number"
             value={filterYear}
-            onChange={e => { setFilterYear(e.target.value); if (!e.target.value) setFilterMonth('') }}
+            onChange={e => { handleFilterChange(setFilterYear)(e.target.value); if (!e.target.value) handleFilterChange(setFilterMonth)('') }}
             className="input"
-            style={{ fontSize: 13, height: 32, width: 80, flexShrink: 0 }}
+            style={{ fontSize: 13, height: 34, width: 90, flexShrink: 0 }}
             placeholder="Tahun"
             min="2000" max="2099"
           />
           <select
             value={filterMonth}
-            onChange={e => setFilterMonth(e.target.value)}
-            className="input"
-            style={{ fontSize: 13, height: 32, flex: '1 1 130px', minWidth: 0 }}
+            onChange={e => { setFilterMonth(e.target.value); setPage(1) }}
             disabled={!filterYear}
+            style={{ fontSize: 13, height: 34, flex: '1 1 140px', minWidth: 0, appearance: 'none', paddingRight: 28, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23737373' d='M6 8.5L1.5 4h9z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius)', paddingLeft: 12, backgroundColor: 'var(--bg-surface)', color: filterYear ? 'var(--text-primary)' : 'var(--text-disabled)', cursor: filterYear ? 'pointer' : 'not-allowed' }}
           >
+            <option value="">Semua Bulan</option>
             {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
           {hasFilter && (
@@ -254,78 +261,99 @@ export default function PayslipsPage() {
             </div>
           ) : (
             <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Karyawan</th>
-                  <th>Periode</th>
-                  <th>Tipe</th>
-                  <th style={{ textAlign: 'right' }}>Gaji Kotor</th>
-                  <th style={{ textAlign: 'right' }}>Gaji Bersih</th>
-                  <th style={{ width: '96px' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {payslips.map(p => (
-                  <tr key={p.id} className="group">
-                    <td>
-                      <div className="flex items-center gap-3" style={{ gap: 12 }}>
-                        <div className="avatar avatar-sm avatar-blue">{p.employee.name.charAt(0).toUpperCase()}</div>
-                        <div>
-                          <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{p.employee.name}</p>
-                          <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>{p.employee.employeeId}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <p style={{ fontSize: 15, color: 'var(--text-primary)' }}>
-                        {formatDate(p.startDate)} — {formatDate(p.endDate)}
-                      </p>
-                      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>{formatDate(p.generatedAt)}</p>
-                    </td>
-                    <td><span className="badge badge-gray">{PERIOD[p.periodType] ?? p.periodType}</span></td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: 15, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
-                        {formatCurrency(Number(p.grossPay))}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-                        {formatCurrency(Number(p.netPay))}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: 4 }}>
-                        <button onClick={() => sendWhatsApp(p.id)} disabled={whatsappOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke WhatsApp" style={{ color: '#16a34a' }}>
-                          {whatsappOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <MessageCircle style={{ width: 14, height: 14 }} />}
-                        </button>
-                        <button onClick={() => sendEmail(p.id)} disabled={emailOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke Email">
-                          {emailOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Mail style={{ width: 14, height: 14 }} />}
-                        </button>
-                        <button onClick={() => preview(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={previewOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Preview PDF">
-                          {previewOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Eye style={{ width: 14, height: 14 }} />}
-                        </button>
-                        <button onClick={() => download(p.id, p.employee.name, p.startDate.slice(0, 10))} disabled={downloadOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Download PDF">
-                          {downloadOp.isLoading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Download style={{ width: 14, height: 14 }} />}
-                        </button>
-                        {isAdmin && (
-                          <button onClick={() => setPendingDelete({ id: p.id, name: p.employee.name })} disabled={deleteOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Hapus" style={{ color: 'var(--text-tertiary)' }}>
-                            <Trash2 style={{ width: 14, height: 14 }} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Karyawan</th>
+                    <th>Periode</th>
+                    <th>Tipe</th>
+                    <th style={{ textAlign: 'right' }}>Gaji Kotor</th>
+                    <th style={{ textAlign: 'right' }}>Gaji Bersih</th>
+                    <th style={{ width: '96px' }}></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {payslips.map(p => (
+                    <tr key={p.id} className="group">
+                      <td>
+                        <div className="flex items-center gap-3" style={{ gap: 12 }}>
+                          <div className="avatar avatar-sm avatar-blue">{p.employee.name.charAt(0).toUpperCase()}</div>
+                          <div>
+                            <Link href={`/employees/${p.employee.id}`} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>{p.employee.name}</Link>
+                            <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>{p.employee.employeeId}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <p style={{ fontSize: 15, color: 'var(--text-primary)' }}>
+                          {formatDate(p.startDate)} — {formatDate(p.endDate)}
+                        </p>
+                        <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>{formatDate(p.generatedAt)}</p>
+                      </td>
+                      <td><span className="badge badge-gray">{PERIOD[p.periodType] ?? p.periodType}</span></td>
+                      <td style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 15, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                          {formatCurrency(Number(p.grossPay))}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                          {formatCurrency(Number(p.netPay))}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: 4 }}>
+                          <button onClick={() => whatsappOp.execute(p.id)} disabled={whatsappOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke WhatsApp" style={{ color: '#16a34a' }}>
+                            {whatsappOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <MessageCircle style={{ width: 14, height: 14 }} />}
+                          </button>
+                          <button onClick={() => emailOp.execute(p.id)} disabled={emailOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke Email">
+                            {emailOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Mail style={{ width: 14, height: 14 }} />}
+                          </button>
+                          <button onClick={() => previewOp.execute({ id: p.id, name: p.employee.name, date: p.startDate.slice(0, 10) })} disabled={previewOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Preview PDF">
+                            {previewOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Eye style={{ width: 14, height: 14 }} />}
+                          </button>
+                          <button onClick={() => downloadOp.execute({ id: p.id, name: p.employee.name, date: p.startDate.slice(0, 10) })} disabled={downloadOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Download PDF">
+                            {downloadOp.isLoading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Download style={{ width: 14, height: 14 }} />}
+                          </button>
+                          {isAdmin && (
+                            <button onClick={() => setPendingDelete({ id: p.id, name: p.employee.name })} disabled={deleteOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Hapus" style={{ color: 'var(--text-tertiary)' }}>
+                              <Trash2 style={{ width: 14, height: 14 }} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
+
+          {/* Footer: count + pagination */}
           {payslips.length > 0 && (
-            <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)' }}>
-              <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
-                Menampilkan {payslips.length} dari {total} slip gaji
+            <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+                {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} dari {total} slip gaji
               </p>
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <button
+                    onClick={() => setPage(p => p - 1)} disabled={page <= 1}
+                    className="btn btn-ghost btn-icon btn-sm"
+                  >
+                    <ChevronLeft style={{ width: 14, height: 14 }} />
+                  </button>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '0 8px' }}>
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}
+                    className="btn btn-ghost btn-icon btn-sm"
+                  >
+                    <ChevronRight style={{ width: 14, height: 14 }} />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

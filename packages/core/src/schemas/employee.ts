@@ -6,6 +6,20 @@ const PPH21_STATUSES = [
   'K/I/0', 'K/I/1', 'K/I/2', 'K/I/3',
 ] as const
 
+const SalaryComponentSchema = z.object({
+  amount: z.number().nonnegative(),
+  enabled: z.boolean(),
+})
+
+export const SalaryComponentsSchema = z.object({
+  tunjangan_jabatan: SalaryComponentSchema,
+  tunjangan_luar_kota: SalaryComponentSchema,
+  tunjangan_makan: SalaryComponentSchema,
+  tunjangan_transport: SalaryComponentSchema,
+  tunjangan_lama_bekerja: SalaryComponentSchema,
+  tunjangan_pph21: SalaryComponentSchema,
+})
+
 export const EmployeeSchema = z.object({
   employeeId: z.string().min(1),
   name: z.string().min(1),
@@ -20,6 +34,7 @@ export const EmployeeSchema = z.object({
   hourlyRate: z.number().nonnegative().nullable().optional(),
   pph21Status: z.enum(PPH21_STATUSES).default('TK/0'),
   isActive: z.boolean().optional(),
+  salaryComponents: SalaryComponentsSchema.optional().nullable(),
 })
 
 export const EmployeePatchSchema = EmployeeSchema.partial()

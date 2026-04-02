@@ -22,8 +22,10 @@ describe('calculatePayslip', () => {
 
       // BPJS Ketenagakerjaan: JHT(2%) + JP(1%) of baseSalary (capped at 10M)
       const ketenaga = calculateBpjsKetenagakerjaan(10000000)
-      const expectedBpjsKetenagakerjaan = ketenaga.jht.employee + ketenaga.jp.employee
-      expect(result.bpjsKetenagakerjaan).toBe(expectedBpjsKetenagakerjaan)
+      const expectedBpjsTkJht = ketenaga.jht.employee
+      const expectedBpjsTkJp = ketenaga.jp.employee
+      expect(result.bpjsTkJht).toBe(expectedBpjsTkJht)
+      expect(result.bpjsTkJp).toBe(expectedBpjsTkJp)
 
       // PPh 21: based on grossPay (which is just baseSalary here)
       const expectedPph21 = calculatePph21Monthly(10000000, 'TK/0')
@@ -33,7 +35,7 @@ describe('calculatePayslip', () => {
       expect(result.otherDeductions).toEqual([])
 
       // Total deductions
-      const expectedTotalDeductions = expectedPph21 + expectedBpjsKesehatan + expectedBpjsKetenagakerjaan
+      const expectedTotalDeductions = expectedPph21 + expectedBpjsKesehatan + expectedBpjsTkJht + expectedBpjsTkJp
       expect(result.totalDeductions).toBe(expectedTotalDeductions)
 
       // Net pay
@@ -170,7 +172,7 @@ describe('calculatePayslip', () => {
       const result = calculatePayslip(input)
 
       expect(result.otherDeductions).toEqual([{ name: 'Union Dues', amount: 50000 }])
-      expect(result.totalDeductions).toBeGreaterThan(result.pph21 + result.bpjsKesehatan + result.bpjsKetenagakerjaan)
+      expect(result.totalDeductions).toBeGreaterThan(result.pph21 + result.bpjsKesehatan + result.bpjsTkJht + result.bpjsTkJp)
     })
 
     it('calculates correctly with multiple other deductions', () => {
@@ -202,7 +204,7 @@ describe('calculatePayslip', () => {
       const result = calculatePayslip(input)
 
       const expectedTotalDeductions =
-        result.pph21 + result.bpjsKesehatan + result.bpjsKetenagakerjaan + otherDeductionTotal
+        result.pph21 + result.bpjsKesehatan + result.bpjsTkJht + result.bpjsTkJp + otherDeductionTotal
       expect(result.totalDeductions).toBe(expectedTotalDeductions)
     })
   })
@@ -224,10 +226,12 @@ describe('calculatePayslip', () => {
       // BPJS should be calculated from baseSalary only, not including THR
       const bpjsKesehatan = calculateBpjsKesehatan(10000000).employee
       const ketenaga = calculateBpjsKetenagakerjaan(10000000)
-      const bpjsKetenagakerjaan = ketenaga.jht.employee + ketenaga.jp.employee
+      const expectedBpjsTkJht = ketenaga.jht.employee
+      const expectedBpjsTkJp = ketenaga.jp.employee
 
       expect(result.bpjsKesehatan).toBe(bpjsKesehatan)
-      expect(result.bpjsKetenagakerjaan).toBe(bpjsKetenagakerjaan)
+      expect(result.bpjsTkJht).toBe(expectedBpjsTkJht)
+      expect(result.bpjsTkJp).toBe(expectedBpjsTkJp)
     })
   })
 
@@ -305,7 +309,8 @@ describe('calculatePayslip', () => {
       expect(result.grossPay).toBe(0)
       expect(result.pph21).toBe(0)
       expect(result.bpjsKesehatan).toBe(0)
-      expect(result.bpjsKetenagakerjaan).toBe(0)
+      expect(result.bpjsTkJht).toBe(0)
+      expect(result.bpjsTkJp).toBe(0)
       expect(result.netPay).toBe(0)
     })
 
@@ -332,8 +337,10 @@ describe('calculatePayslip', () => {
       // BPJS Kesehatan capped at 12M: 1% = 120000
       expect(result.bpjsKesehatan).toBe(120000)
 
-      // BPJS Ketenagakerjaan JHT+JP capped at 10M: 2% + 1% = 300000
-      expect(result.bpjsKetenagakerjaan).toBe(300000)
+      // BPJS TK JHT: 2% of 10M = 200000
+      expect(result.bpjsTkJht).toBe(200000)
+      // BPJS TK JP: 1% of 10M = 100000
+      expect(result.bpjsTkJp).toBe(100000)
     })
   })
 
@@ -377,7 +384,8 @@ describe('calculatePayslip', () => {
       const expectedTotalDeductions =
         result.pph21 +
         result.bpjsKesehatan +
-        result.bpjsKetenagakerjaan +
+        result.bpjsTkJht +
+        result.bpjsTkJp +
         result.otherDeductions.reduce((sum, d) => sum + d.amount, 0)
 
       expect(result.totalDeductions).toBe(expectedTotalDeductions)

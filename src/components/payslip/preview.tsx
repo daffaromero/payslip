@@ -23,7 +23,7 @@ export function PayslipPreview({ html, loading }: PayslipPreviewProps) {
       <Card>
         <CardContent className="flex items-center justify-center h-96">
           <p className="text-gray-500 text-center">
-            Klik "Preview" untuk melihat<br />tampilan slip gaji
+            Klik &quot;Preview&quot; untuk melihat<br />tampilan slip gaji
           </p>
         </CardContent>
       </Card>

@@ -3,6 +3,7 @@ import type { PeriodType, Employee } from './index'
 export interface Allowance {
   name: string
   amount: number
+  component?: string
 }
 
 export interface Deduction {
@@ -30,7 +31,8 @@ export interface PayslipData {
   // Deductions
   pph21: number
   bpjsKesehatan: number
-  bpjsKetenagakerjaan: number
+  bpjsTkJht: number
+  bpjsTkJp: number
   otherDeductions: Deduction[]
 
   // Totals

@@ -1,11 +1,11 @@
 import { Hono } from 'hono'
-import { prisma } from '@/lib/db'
-import { calculatePayslip, getPeriodMonths } from '@/lib/calculations/payslip'
-import { PayslipPatchSchema, BulkPayslipSchema } from '@/lib/api/schemas/payslip'
-import { deserializeTemplate, type RawTemplate } from '@/lib/api/template-serializer'
-import { generatePayslipPDF } from '@/lib/pdf/generator'
-import { sendPayslipEmail } from '@/lib/email/sender'
-import { sendDocument } from '@/lib/whatsapp/client'
+import { prisma } from '../../../../src/lib/db'
+import { calculatePayslip, getPeriodMonths } from '../../../../packages/core/src/calculations/payslip'
+import { PayslipPatchSchema, BulkPayslipSchema } from '../../../../packages/core/src/schemas/payslip'
+import { deserializeTemplate, type RawTemplate } from '../../../../src/lib/api/template-serializer'
+import { generatePayslipPDF } from '../../../../src/lib/pdf/generator'
+import { sendPayslipEmail } from '../../../../src/lib/email/sender'
+import { sendDocument } from '../../../../src/lib/whatsapp/client'
 import { parse } from '../lib/validate'
 import * as XLSX from 'xlsx'
 import { requireAdmin } from '../middleware/admin'
@@ -25,6 +25,7 @@ router.get('/', async (c) => {
     const employeeId = c.req.query('employeeId') ?? undefined
     const year = c.req.query('year') ? Number(c.req.query('year')) : undefined
     const month = c.req.query('month') ? Number(c.req.query('month')) : undefined
+    const periodType = c.req.query('periodType') ?? undefined
     const page = Math.max(1, Number(c.req.query('page') ?? '1'))
     const limit = Math.min(100, Math.max(1, Number(c.req.query('limit') ?? '20')))
     const skip = (page - 1) * limit
@@ -32,6 +33,7 @@ router.get('/', async (c) => {
     const where = {
       companyId: cid,
       ...(employeeId ? { employeeId } : {}),
+      ...(periodType ? { periodType } : {}),
       ...(year && month
         ? { startDate: { gte: new Date(year, month - 1, 1), lt: new Date(year, month, 1) } }
         : year
@@ -67,11 +69,39 @@ router.post('/', async (c) => {
     const employee = await prisma.employee.findFirst({ where: { id: data.employeeId, companyId: cid } })
     if (!employee) return c.json({ error: 'Karyawan tidak ditemukan' }, 404)
 
+    // Build allowances from salary components
+    const defaultComponents = employee.salaryComponents ? JSON.parse(employee.salaryComponents) : null
+    const overrides = data.salaryComponents || {}
+    
+    const allowances: { name: string; amount: number; component?: string }[] = []
+    
+    const componentKeys = ['tunjangan_jabatan', 'tunjangan_luar_kota', 'tunjangan_makan', 'tunjangan_transport', 'tunjangan_lama_bekerja', 'tunjangan_pph21'] as const
+    for (const key of componentKeys) {
+      const enabled = overrides[key]?.enabled ?? defaultComponents?.[key]?.enabled ?? false
+      const amount = overrides[key]?.amount ?? defaultComponents?.[key]?.amount ?? 0
+      if (enabled && amount > 0) {
+        const labels: Record<string, string> = {
+          tunjangan_jabatan: 'Tunjangan Jabatan',
+          tunjangan_luar_kota: 'Tunjangan Luar Kota',
+          tunjangan_makan: 'Tunjangan Makan',
+          tunjangan_transport: 'Tunjangan Transport',
+          tunjangan_lama_bekerja: 'Tunjangan Lama Kerja',
+          tunjangan_pph21: 'Tunjangan PPh 21',
+        }
+        allowances.push({ name: labels[key], amount, component: key })
+      }
+    }
+    
+    // Add custom allowances from request
+    if (data.allowances?.length) {
+      allowances.push(...data.allowances.map((a: { name: string; amount: number }) => ({ ...a, component: 'custom' })))
+    }
+
     const monthCount = getPeriodMonths(data.periodType || 'monthly')
     const calculations = calculatePayslip({
       baseSalary: data.basePay || Number(employee.baseSalary),
       overtimeHours: data.overtimeHours, hourlyRate: data.hourlyRate || Number(employee.hourlyRate),
-      bonus: data.bonus, thr: data.thr, allowances: data.allowances, otherDeductions: data.otherDeductions,
+      bonus: data.bonus, thr: data.thr, allowances, otherDeductions: data.otherDeductions,
       pph21Status: employee.pph21Status, monthCount,
     })
 
@@ -90,7 +120,16 @@ router.post('/', async (c) => {
     const overtimePay = calculations.grossPay
       - (data.basePay || Number(employee.baseSalary))
       - (data.bonus || 0) - (data.thr || 0)
-      - (data.allowances?.reduce((a: number, al: { amount?: number }) => a + (al.amount || 0), 0) || 0)
+      - (allowances.reduce((a: number, al: { amount?: number }) => a + (al.amount || 0), 0) || 0)
+
+    const manualPph21 = data.pph21 ?? calculations.pph21
+    const manualBpjsKesehatan = data.bpjsKesehatan ?? calculations.bpjsKesehatan
+    const manualBpjsTkJht = data.bpjsTkJht ?? calculations.bpjsTkJht
+    const manualBpjsTkJp = data.bpjsTkJp ?? calculations.bpjsTkJp
+
+    const otherDeductionsTotal = (data.otherDeductions || []).reduce((sum: number, d: { amount?: number }) => sum + (d.amount || 0), 0)
+    const totalDeductions = manualPph21 + manualBpjsKesehatan + manualBpjsTkJht + manualBpjsTkJp + otherDeductionsTotal
+    const netPay = calculations.grossPay - totalDeductions
 
     const payslip = await prisma.payslip.create({
       data: {
@@ -100,14 +139,14 @@ router.post('/', async (c) => {
         basePay: data.basePay || Number(employee.baseSalary),
         overtimeHours: data.overtimeHours || 0, overtimePay,
         bonus: data.bonus || 0, thr: data.thr || 0,
-        allowances: JSON.stringify(data.allowances || []),
-        pph21: calculations.pph21, bpjsKesehatan: calculations.bpjsKesehatan,
-        bpjsKetenagakerjaan: calculations.bpjsKetenagakerjaan,
+        allowances: JSON.stringify(allowances),
+        pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan,
+        bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp,
         otherDeductions: JSON.stringify(data.otherDeductions || []),
-        grossPay: calculations.grossPay, totalDeductions: calculations.totalDeductions,
-        netPay: calculations.netPay,
+        grossPay: calculations.grossPay, totalDeductions,
+        netPay,
         ytdGross: previousYtdGross + calculations.grossPay,
-        ytdPph21: previousYtdPph21 + calculations.pph21,
+        ytdPph21: previousYtdPph21 + manualPph21,
         notes: data.notes,
       },
     })
@@ -175,7 +214,7 @@ router.post('/bulk', async (c) => {
             basePay, overtimeHours: overtimeHours ?? 0, overtimePay: ovPay,
             bonus: bonus ?? 0, thr: 0, allowances: '[]',
             pph21: calculations.pph21, bpjsKesehatan: calculations.bpjsKesehatan,
-            bpjsKetenagakerjaan: calculations.bpjsKetenagakerjaan,
+            bpjsTkJht: calculations.bpjsTkJht, bpjsTkJp: calculations.bpjsTkJp,
             otherDeductions: '[]',
             grossPay: calculations.grossPay, totalDeductions: calculations.totalDeductions,
             netPay: calculations.netPay,
@@ -219,7 +258,7 @@ router.get('/export', async (c) => {
     'Periode Akhir': new Date(p.endDate).toLocaleDateString('id-ID'), 'Tipe': p.periodType,
     'Gaji Pokok': p.basePay, 'Lembur': p.overtimePay, 'Bonus': p.bonus, 'THR': p.thr,
     'Gaji Kotor': p.grossPay, 'PPh21': p.pph21, 'BPJS Kesehatan': p.bpjsKesehatan,
-    'BPJS TK': p.bpjsKetenagakerjaan, 'Total Potongan': p.totalDeductions, 'Gaji Bersih': p.netPay,
+    'BPJS TK JHT': p.bpjsTkJht, 'BPJS TK JP': p.bpjsTkJp, 'Total Potongan': p.totalDeductions, 'Gaji Bersih': p.netPay,
   }))
 
   const ws = XLSX.utils.json_to_sheet(rows)
@@ -228,7 +267,7 @@ router.get('/export', async (c) => {
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
   const filename = month ? `slip-gaji-${month}.xlsx` : 'slip-gaji-semua.xlsx'
 
-  return new Response(buf, {
+  return new Response(new Uint8Array(buf), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${filename}"`,
@@ -298,7 +337,7 @@ router.patch('/:id', async (c) => {
       computedFields = {
         overtimePay, pph21: calculations.pph21,
         bpjsKesehatan: calculations.bpjsKesehatan,
-        bpjsKetenagakerjaan: calculations.bpjsKetenagakerjaan,
+        bpjsTkJht: calculations.bpjsTkJht, bpjsTkJp: calculations.bpjsTkJp,
         grossPay: calculations.grossPay,
         totalDeductions: calculations.totalDeductions,
         netPay: calculations.netPay,

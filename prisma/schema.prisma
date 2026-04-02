@@ -57,6 +57,7 @@ model Employee {
   joinedAt        DateTime  @default(now())
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  salaryComponents String?   // JSON: { tunjangan_jabatan, tunjangan_luar_kota, tunjangan_makan, tunjangan_transport, tunjangan_lama_bekerja }
   
   company         Company   @relation(fields: [companyId], references: [id])
   payslips        Payslip[]
@@ -75,6 +76,7 @@ model Template {
   theme           String    // JSON string: { primaryColor, secondaryColor, fontFamily, fontSize }
   sections        String    // JSON string: { companyHeader, employeeInfo, earnings, ... }
   header          String    // JSON string: { showLogo, logoUrl, companyName, ... }
+  footer          String?   // JSON string: { showPageNumber, customText, showCompanyName }
   customFields    String?   // JSON string: Array of custom field definitions
   customCss       String?
   language        String    @default("id") // id, en
@@ -107,7 +109,8 @@ model Payslip {
   // Deductions
   pph21               Float     @default(0)
   bpjsKesehatan       Float     @default(0)
-  bpjsKetenagakerjaan Float     @default(0)
+  bpjsTkJht           Float     @default(0)
+  bpjsTkJp            Float     @default(0)
   otherDeductions     String    // JSON string: [{ name, amount }, ...]
   
   // Totals

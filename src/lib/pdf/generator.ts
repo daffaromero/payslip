@@ -35,7 +35,9 @@ export async function generatePayslipPDF(options: GeneratePdfOptions): Promise<B
 
   try {
     const page = await browser.newPage()
-    const html = generatePayslipHTML({ payslip, employee, template, company })
+    const baseUrl = process.env.PDF_BASE_URL || 'http://localhost:3000'
+    let html = generatePayslipHTML({ payslip, employee, template, company })
+    html = html.replace('<head>', `<head><base href="${baseUrl}">`)
     await page.setContent(html, { waitUntil: 'domcontentloaded' })
     const pdf = await page.pdf({
       format: template.layout.pageSize === 'letter' ? 'Letter' : 'A4',
@@ -250,16 +252,16 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
 
   ${template.sections.companyHeader ? `
   <div class="header">
-    ${template.header.showLogo && template.header.logoUrl ? `<img src="${escapeHtml(template.header.logoUrl)}" alt="Logo" style="max-height:56px;margin-bottom:8px;"><br>` : ''}
+    ${company.logoUrl ? `<img src="${escapeHtml(company.logoUrl)}" alt="Logo" style="max-height:56px;margin-bottom:8px;"><br>` : ''}
     <div class="company-name">${escapeHtml(company.name)}</div>
-    ${template.header.companyAddress ? `<div class="company-info">${escapeHtml(template.header.companyAddress)}</div>` : ''}
-    ${template.header.companyPhone || template.header.companyEmail ? `
+    ${company.address ? `<div class="company-info">${escapeHtml(company.address)}</div>` : ''}
+    ${(company.phone || company.email) ? `
     <div class="company-info">
-      ${template.header.companyPhone ? `Telp: ${escapeHtml(template.header.companyPhone)}` : ''}
-      ${template.header.companyPhone && template.header.companyEmail ? ' &nbsp;|&nbsp; ' : ''}
-      ${template.header.companyEmail ? `Email: ${escapeHtml(template.header.companyEmail)}` : ''}
+      ${company.phone ? `Telp: ${escapeHtml(company.phone)}` : ''}
+      ${company.phone && company.email ? ' &nbsp;|&nbsp; ' : ''}
+      ${company.email ? `Email: ${escapeHtml(company.email)}` : ''}
     </div>` : ''}
-    ${template.header.companyTaxId ? `<div class="company-info">NPWP: ${escapeHtml(template.header.companyTaxId)}</div>` : ''}
+    ${company.taxId ? `<div class="company-info">NPWP: ${escapeHtml(company.taxId)}</div>` : ''}
     <div class="payslip-title">${t('Slip Gaji Karyawan', 'Employee Payslip')}</div>
     <div class="payslip-period">${t('Periode', 'Period')}: ${formatMonth(payslip.startDate)}</div>
   </div>
@@ -288,7 +290,15 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
         ${payslip.overtimePay > 0 ? `<tr><td>${t('Lembur', 'Overtime')}</td><td class="amount">${formatCurrency(payslip.overtimePay)}</td></tr>` : ''}
         ${payslip.bonus > 0 ? `<tr><td>${t('Bonus', 'Bonus')}</td><td class="amount">${formatCurrency(payslip.bonus)}</td></tr>` : ''}
         ${payslip.thr > 0 ? `<tr><td>THR</td><td class="amount">${formatCurrency(payslip.thr)}</td></tr>` : ''}
-        ${(payslip.allowances || []).map(a => `<tr><td>${escapeHtml(a.name)}</td><td class="amount">${formatCurrency(a.amount)}</td></tr>`).join('')}
+        ${(() => {
+          const salaryComps = (payslip.allowances || []).filter(a => a.component && a.component !== 'custom')
+          const customAllows = (payslip.allowances || []).filter(a => a.component === 'custom')
+          return [
+            ...salaryComps.map(a => `<tr><td>${escapeHtml(a.name)}</td><td class="amount">${formatCurrency(a.amount)}</td></tr>`),
+            ...(customAllows.length > 0 ? [`<tr style="background:#f9f9f9"><td colspan="2" style="font-size:10px;font-weight:600;color:#888;padding-top:10px;">${t('Tunjangan Lain', 'Other Allowances')}</td></tr>`] : []),
+            ...customAllows.map(a => `<tr><td>${escapeHtml(a.name)}</td><td class="amount">${formatCurrency(a.amount)}</td></tr>`),
+          ].join('')
+        })()}
         <tr class="total-row"><td>${t('Total Penerimaan', 'Total Earnings')}</td><td class="amount">${formatCurrency(payslip.grossPay)}</td></tr>
       </table>
     </div>
@@ -300,7 +310,8 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       <table class="amount-table">
         ${payslip.pph21 > 0 ? `<tr><td>PPh 21</td><td class="amount">${formatCurrency(payslip.pph21)}</td></tr>` : ''}
         ${payslip.bpjsKesehatan > 0 ? `<tr><td>BPJS Kesehatan</td><td class="amount">${formatCurrency(payslip.bpjsKesehatan)}</td></tr>` : ''}
-        ${payslip.bpjsKetenagakerjaan > 0 ? `<tr><td>BPJS Ketenagakerjaan</td><td class="amount">${formatCurrency(payslip.bpjsKetenagakerjaan)}</td></tr>` : ''}
+        ${payslip.bpjsTkJht > 0 ? `<tr><td>BPJS TK JHT</td><td class="amount">${formatCurrency(payslip.bpjsTkJht)}</td></tr>` : ''}
+        ${payslip.bpjsTkJp > 0 ? `<tr><td>BPJS TK JP</td><td class="amount">${formatCurrency(payslip.bpjsTkJp)}</td></tr>` : ''}
         ${(payslip.otherDeductions || []).map(d => `<tr><td>${escapeHtml(d.name)}</td><td class="amount">${formatCurrency(d.amount)}</td></tr>`).join('')}
         <tr class="total-row"><td>${t('Total Potongan', 'Total Deductions')}</td><td class="amount">${formatCurrency(payslip.totalDeductions)}</td></tr>
       </table>

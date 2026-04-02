@@ -27,10 +27,17 @@ export interface TemplateHeader {
   showLogo: boolean
   logoUrl?: string
   companyName: string
+  companyTagline?: string
   companyAddress?: string
   companyTaxId?: string
   companyPhone?: string
   companyEmail?: string
+}
+
+export interface TemplateFooter {
+  showPageNumber: boolean
+  customText?: string
+  showCompanyName: boolean
 }
 
 export interface CustomField {
@@ -51,6 +58,7 @@ export interface Template {
   theme: TemplateTheme
   sections: TemplateSections
   header: TemplateHeader
+  footer: TemplateFooter
   customFields: CustomField[]
   customCss?: string
   language: 'id' | 'en'

@@ -51,6 +51,7 @@ export async function connect(): Promise<void> {
 
   await fs.mkdir(SESSION_DIR, { recursive: true })
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- baileys supports non-component usage
   const { state: authState, saveCreds } = await useMultiFileAuthState(SESSION_DIR)
   const { version } = await fetchLatestBaileysVersion()
 

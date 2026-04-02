@@ -33,7 +33,7 @@ router.post('/generate-pdf', async (c) => {
         bonus: Number(payslip.bonus), thr: Number(payslip.thr),
         allowances: JSON.parse(payslip.allowances as string),
         pph21: Number(payslip.pph21), bpjsKesehatan: Number(payslip.bpjsKesehatan),
-        bpjsKetenagakerjaan: Number(payslip.bpjsKetenagakerjaan),
+        bpjsTkJht: Number(payslip.bpjsTkJht), bpjsTkJp: Number(payslip.bpjsTkJp),
         otherDeductions: JSON.parse(payslip.otherDeductions as string),
         grossPay: Number(payslip.grossPay), totalDeductions: Number(payslip.totalDeductions),
         netPay: Number(payslip.netPay), ytdGross: Number(payslip.ytdGross),
@@ -88,16 +88,23 @@ router.post('/preview-payslip', async (c) => {
       pph21Status: employee.pph21Status, monthCount,
     })
 
+    const manualPph21 = data.pph21 ?? calculations.pph21
+    const manualBpjsKesehatan = data.bpjsKesehatan ?? calculations.bpjsKesehatan
+    const manualBpjsTkJht = data.bpjsTkJht ?? calculations.bpjsTkJht
+    const manualBpjsTkJp = data.bpjsTkJp ?? calculations.bpjsTkJp
+    const otherDeductionsTotal = (data.otherDeductions || []).reduce((sum: number, d: { amount?: number }) => sum + (d.amount || 0), 0)
+    const totalDeductions = manualPph21 + manualBpjsKesehatan + manualBpjsTkJht + manualBpjsTkJp + otherDeductionsTotal
+
     const payslipData = {
       id: 'preview', companyId: cid, employeeId: employee.id, templateId: template.id,
       periodType: data.periodType || 'monthly',
       startDate: new Date(data.startDate || new Date()), endDate: new Date(data.endDate || new Date()),
       basePay: data.basePay || Number(employee.baseSalary), overtimeHours: data.overtimeHours || 0, overtimePay: 0,
       bonus: data.bonus || 0, thr: data.thr || 0, allowances: data.allowances || [],
-      pph21: calculations.pph21, bpjsKesehatan: calculations.bpjsKesehatan,
-      bpjsKetenagakerjaan: calculations.bpjsKetenagakerjaan, otherDeductions: data.otherDeductions || [],
-      grossPay: calculations.grossPay, totalDeductions: calculations.totalDeductions, netPay: calculations.netPay,
-      ytdGross: calculations.grossPay, ytdPph21: calculations.pph21, notes: data.notes, generatedAt: new Date(),
+      pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan,
+      bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, otherDeductions: data.otherDeductions || [],
+      grossPay: calculations.grossPay, totalDeductions, netPay: calculations.grossPay - totalDeductions,
+      ytdGross: calculations.grossPay, ytdPph21: manualPph21, notes: data.notes, generatedAt: new Date(),
     }
 
     const html = generatePayslipHTML({
@@ -106,7 +113,7 @@ router.post('/preview-payslip', async (c) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       employee: { ...employee, pph21Status: employee.pph21Status as any },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      template: template as any,
+      template: deserializeTemplate(template as unknown as RawTemplate) as any,
       company: company || { id: cid, name: '', address: null, taxId: null, phone: null, email: null, logoUrl: null, createdAt: new Date(), updatedAt: new Date() },
     })
 

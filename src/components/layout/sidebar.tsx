@@ -95,7 +95,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {companyName}
+              {"Payslip"}
             </p>
             <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '2px 0 0' }}>v0.1.0</p>
           </div>
