@@ -10,10 +10,21 @@ import { useAdminGuard } from '@/lib/hooks/use-role'
 interface Employee { id: string; name: string; employeeId: string; baseSalary: number; email: string | null; whatsappNumber: string | null }
 interface Template { id: string; name: string; isDefault: boolean }
 
-type ResultItem = { employee: Employee; ok: boolean; payslipId?: string; error?: string }
+type ResultItem = { employee: Employee; period: string; ok: boolean; payslipId?: string; error?: string }
 
 const SPIN = { animation: 'spin 1s linear infinite' } as const
 const PERIOD: Record<string, string> = { weekly: 'Mingguan', monthly: 'Bulanan', quarterly: '3 Bulanan', 'semi-annual': '6 Bulanan', annual: 'Tahunan' }
+const ID_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
+function monthRange(year: number, month: number) {
+  const start = new Date(year, month, 1)
+  const end = new Date(year, month + 1, 0)
+  return {
+    startDate: start.toISOString().split('T')[0],
+    endDate: end.toISOString().split('T')[0],
+    label: `${ID_MONTHS[month]} ${year}`,
+  }
+}
 
 export default function BulkGeneratePage() {
   const role = useAdminGuard()
@@ -26,6 +37,7 @@ export default function BulkGeneratePage() {
   const [periodType, setPeriodType] = useState('monthly')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [months, setMonths] = useState(1)
 
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -54,42 +66,75 @@ export default function BulkGeneratePage() {
   }, [])
 
   useEffect(() => {
-    const s = new Date()
+    const now = new Date()
     switch (periodType) {
-      case 'weekly': s.setDate(s.getDate() - 7); setStartDate(s.toISOString().split('T')[0]); setEndDate(new Date().toISOString().split('T')[0]); break
-      case 'quarterly': { const q = Math.floor(new Date().getMonth() / 3); const qs = new Date(new Date().getFullYear(), q * 3, 1); const qe = new Date(new Date().getFullYear(), (q + 1) * 3, 0); setStartDate(qs.toISOString().split('T')[0]); setEndDate(qe.toISOString().split('T')[0]); break }
-      default: { const ms = new Date(new Date().getFullYear(), new Date().getMonth(), 1); const me = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0); setStartDate(ms.toISOString().split('T')[0]); setEndDate(me.toISOString().split('T')[0]) }
+      case 'weekly': {
+        const s = new Date(); s.setDate(s.getDate() - 7)
+        setStartDate(s.toISOString().split('T')[0]); setEndDate(now.toISOString().split('T')[0]); break
+      }
+      case 'quarterly': {
+        const q = Math.floor(now.getMonth() / 3)
+        const qs = new Date(now.getFullYear(), q * 3, 1)
+        const qe = new Date(now.getFullYear(), (q + 1) * 3, 0)
+        setStartDate(qs.toISOString().split('T')[0]); setEndDate(qe.toISOString().split('T')[0]); break
+      }
+      default: {
+        const ms = new Date(now.getFullYear(), now.getMonth(), 1)
+        const me = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        setStartDate(ms.toISOString().split('T')[0]); setEndDate(me.toISOString().split('T')[0])
+      }
     }
+    if (periodType !== 'monthly') setMonths(1)
   }, [periodType])
+
+  // Build list of periods to generate
+  function buildPeriods() {
+    if (periodType !== 'monthly' || months <= 1) {
+      return [{ startDate, endDate, label: PERIOD[periodType] ?? periodType }]
+    }
+    const base = new Date(startDate)
+    return Array.from({ length: months }, (_, i) =>
+      monthRange(base.getFullYear(), base.getMonth() + i)
+    )
+  }
+
+  const total = buildPeriods().length * employees.length
 
   const generate = async () => {
     if (!templateId) { toast.error('Pilih template terlebih dahulu'); return }
+    const periods = buildPeriods()
     setRunning(true); setDone(false); setResults([]); setProgress(0)
 
     const out: ResultItem[] = []
-    for (let i = 0; i < employees.length; i++) {
-      const emp = employees[i]
-      try {
-        const res = await fetch('/api/payslips', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            employeeId: emp.id, templateId, periodType, startDate, endDate,
-            basePay: Number(emp.baseSalary), overtimeHours: 0,
-            hourlyRate: 0, bonus: 0, thr: 0, allowances: [], otherDeductions: [], notes: '',
-          }),
-        })
-        if (!res.ok) throw new Error((await res.json()).error || 'Gagal')
-        const d = await res.json()
-        out.push({ employee: emp, ok: true, payslipId: d.payslipId })
-      } catch (err) {
-        out.push({ employee: emp, ok: false, error: err instanceof Error ? err.message : 'Error' })
+    let count = 0
+
+    for (const period of periods) {
+      for (const emp of employees) {
+        try {
+          const res = await fetch('/api/payslips', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              employeeId: emp.id, templateId, periodType,
+              startDate: period.startDate, endDate: period.endDate,
+              basePay: Number(emp.baseSalary), overtimeHours: 0,
+              hourlyRate: 0, bonus: 0, thr: 0, allowances: [], otherDeductions: [], notes: '',
+            }),
+          })
+          if (!res.ok) throw new Error((await res.json()).error || 'Gagal')
+          const d = await res.json()
+          out.push({ employee: emp, period: period.label, ok: true, payslipId: d.payslipId })
+        } catch (err) {
+          out.push({ employee: emp, period: period.label, ok: false, error: err instanceof Error ? err.message : 'Error' })
+        }
+        count++
+        setProgress(count)
+        setResults([...out])
       }
-      setProgress(i + 1)
-      setResults([...out])
     }
+
     setRunning(false); setDone(true)
     const ok = out.filter(r => r.ok).length
-    toast.success(`${ok} dari ${employees.length} slip gaji berhasil dibuat`)
+    toast.success(`${ok} dari ${total} slip gaji berhasil dibuat`)
   }
 
   const sendAll = async (channel: 'email' | 'whatsapp') => {
@@ -108,6 +153,10 @@ export default function BulkGeneratePage() {
 
   const succeeded = results.filter(r => r.ok).length
   const failed = results.filter(r => !r.ok).length
+
+  // Group results by period for the table header
+  const periods = [...new Set(results.map(r => r.period))]
+  const multiPeriod = periods.length > 1
 
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
@@ -136,14 +185,32 @@ export default function BulkGeneratePage() {
                   {Object.entries(PERIOD).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Tanggal Mulai</label>
-                <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Tanggal Selesai</label>
-                <input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} />
-              </div>
+              {periodType === 'monthly' ? (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Bulan Mulai</label>
+                    <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Jumlah Bulan</label>
+                    <input
+                      type="number" className="input" min={1} max={12} value={months}
+                      onChange={e => setMonths(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Tanggal Mulai</label>
+                    <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Tanggal Selesai</label>
+                    <input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -151,25 +218,25 @@ export default function BulkGeneratePage() {
             <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>
                 <Users style={{ width: 13, height: 13, display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />
-                {employees.length} karyawan aktif
+                {total} slip gaji ({employees.length} karyawan{months > 1 ? ` × ${months} bulan` : ''})
               </span>
               <button onClick={generate} disabled={running || done} className="btn btn-primary">
                 {running && <Loader2 style={{ width: 14, height: 14, ...SPIN }} />}
-                {running ? `Memproses... (${progress}/${employees.length})` : done ? 'Selesai' : 'Generate Semua'}
+                {running ? `Memproses... (${progress}/${total})` : done ? 'Selesai' : 'Generate Semua'}
               </button>
             </div>
           )}
         </div>
 
         {/* Progress bar */}
-        {(running || done) && employees.length > 0 && (
+        {(running || done) && total > 0 && (
           <div className="card" style={{ padding: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>Progress</p>
-              <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{progress}/{employees.length}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{progress}/{total}</span>
             </div>
             <div style={{ height: 6, background: 'var(--bg-subtle)', borderRadius: 99, overflow: 'hidden' }}>
-              <div style={{ height: '100%', borderRadius: 99, background: 'var(--accent)', width: `${(progress / employees.length) * 100}%`, transition: 'width 0.2s ease' }} />
+              <div style={{ height: '100%', borderRadius: 99, background: 'var(--accent)', width: `${(progress / total) * 100}%`, transition: 'width 0.2s ease' }} />
             </div>
             {done && (
               <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
@@ -205,13 +272,14 @@ export default function BulkGeneratePage() {
               <thead>
                 <tr>
                   <th>Karyawan</th>
+                  {multiPeriod && <th>Periode</th>}
                   <th style={{ textAlign: 'right' }}>Gaji Pokok</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {results.map(r => (
-                  <tr key={r.employee.id}>
+                {results.map((r, i) => (
+                  <tr key={i}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div className="avatar avatar-sm avatar-blue">{r.employee.name.charAt(0).toUpperCase()}</div>
@@ -221,6 +289,9 @@ export default function BulkGeneratePage() {
                         </div>
                       </div>
                     </td>
+                    {multiPeriod && (
+                      <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{r.period}</td>
+                    )}
                     <td style={{ textAlign: 'right' }}>
                       <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
                         {formatCurrency(Number(r.employee.baseSalary))}
