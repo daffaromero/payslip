@@ -251,7 +251,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
   ${template.sections.companyHeader ? `
   <div class="header">
     ${template.header.showLogo && template.header.logoUrl ? `<img src="${escapeHtml(template.header.logoUrl)}" alt="Logo" style="max-height:56px;margin-bottom:8px;"><br>` : ''}
-    <div class="company-name">${escapeHtml(template.header.companyName || company.name)}</div>
+    <div class="company-name">${escapeHtml(company.name)}</div>
     ${template.header.companyAddress ? `<div class="company-info">${escapeHtml(template.header.companyAddress)}</div>` : ''}
     ${template.header.companyPhone || template.header.companyEmail ? `
     <div class="company-info">
