@@ -254,7 +254,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         onClose={closePreview}
       />
     )}
-    <div className="generate-layout" style={{ gap: 24 }}>
+    <div className="generate-layout">
       {/* Form */}
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Download button shown after successful generation */}
