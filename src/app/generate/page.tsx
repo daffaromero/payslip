@@ -16,6 +16,7 @@ export default async function GeneratePage({
   const token = cookieStore.get(COOKIE)?.value
   const claims = token ? await verifyToken(token) : null
   if (!claims) redirect('/login')
+  if (claims.role !== 'admin') redirect('/')
 
   const { companyId } = claims
   const { employeeId } = await searchParams

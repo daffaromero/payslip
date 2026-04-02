@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { Loader2, CheckCircle2, XCircle, Mail, MessageCircle, Users } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { useAdminGuard } from '@/lib/hooks/use-role'
 
 interface Employee { id: string; name: string; employeeId: string; baseSalary: number; email: string | null; whatsappNumber: string | null }
 interface Template { id: string; name: string; isDefault: boolean }
@@ -15,6 +16,7 @@ const SPIN = { animation: 'spin 1s linear infinite' } as const
 const PERIOD: Record<string, string> = { weekly: 'Mingguan', monthly: 'Bulanan', quarterly: '3 Bulanan', 'semi-annual': '6 Bulanan', annual: 'Tahunan' }
 
 export default function BulkGeneratePage() {
+  const role = useAdminGuard()
   const toast = useToast()
   const [employees, setEmployees] = useState<Employee[]>([])
   const [templates, setTemplates] = useState<Template[]>([])

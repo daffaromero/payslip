@@ -6,6 +6,7 @@ import { FileText, Star, Layout, Eye, Plus, Trash2, Loader2, Pencil } from 'luci
 import Link from 'next/link'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import type { Template } from '@/types'
+import { useAdminGuard } from '@/lib/hooks/use-role'
 
 const SECTION_LABELS: Record<string, string> = {
   companyHeader: 'Header Perusahaan',
@@ -284,6 +285,7 @@ function TemplateModal({
 }
 
 export default function TemplatesPage() {
+  const role = useAdminGuard()
   const toast = useToast()
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)

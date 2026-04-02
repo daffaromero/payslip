@@ -7,17 +7,17 @@ import { useRouter } from 'next/navigation'
 import { LayoutDashboard, Users, FileText, PanelTop, Receipt, Settings, LogOut, ArrowUpDown, Copy } from 'lucide-react'
 
 const nav = [
-  { href: '/',              label: 'Dashboard',      icon: LayoutDashboard, exact: true  },
-  { href: '/employees',     label: 'Karyawan',        icon: Users                        },
-  { href: '/payslips',      label: 'Slip Gaji',       icon: Receipt                      },
-  { href: '/generate',      label: 'Buat Slip Gaji',  icon: FileText,        exact: true  },
-  { href: '/generate/bulk', label: 'Generate Massal', icon: Copy },
-  { href: '/data',          label: 'Import / Export', icon: ArrowUpDown                  },
-  { href: '/templates',     label: 'Template',        icon: PanelTop                     },
-  { href: '/settings',      label: 'Pengaturan',      icon: Settings                     },
+  { href: '/',              label: 'Dashboard',      icon: LayoutDashboard, exact: true, adminOnly: false },
+  { href: '/employees',     label: 'Karyawan',        icon: Users,                        adminOnly: false },
+  { href: '/payslips',      label: 'Slip Gaji',       icon: Receipt,                      adminOnly: false },
+  { href: '/generate',      label: 'Buat Slip Gaji',  icon: FileText,        exact: true,  adminOnly: true  },
+  { href: '/generate/bulk', label: 'Generate Massal', icon: Copy,                          adminOnly: true  },
+  { href: '/data',          label: 'Import / Export', icon: ArrowUpDown,                   adminOnly: true  },
+  { href: '/templates',     label: 'Template',        icon: PanelTop,                      adminOnly: true  },
+  { href: '/settings',      label: 'Pengaturan',      icon: Settings,                      adminOnly: false },
 ]
 
-export function Sidebar({ companyName }: { companyName: string }) {
+export function Sidebar({ companyName, role }: { companyName: string; role: 'admin' | 'viewer' }) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -78,7 +78,7 @@ export function Sidebar({ companyName }: { companyName: string }) {
         gap: 2,
         overflowY: 'auto',
       }}>
-        {nav.map(({ href, label, icon: Icon, exact }) => {
+        {nav.filter(item => !item.adminOnly || role === 'admin').map(({ href, label, icon: Icon, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href)
           return (
             <NavItem key={href} href={href} label={label} icon={Icon} active={active} />
@@ -99,8 +99,9 @@ export function Sidebar({ companyName }: { companyName: string }) {
             </p>
             <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '2px 0 0' }}>v0.1.0</p>
           </div>
-          <button onClick={logout} title="Keluar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 4, display: 'flex', flexShrink: 0 }}>
-            <LogOut style={{ width: 15, height: 15 }} />
+          <button onClick={logout} title="Keluar" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px 6px', borderRadius: 6, fontSize: 13, flexShrink: 0 }}>
+            <LogOut style={{ width: 14, height: 14 }} />
+            Keluar
           </button>
         </div>
       </div>

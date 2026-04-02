@@ -11,9 +11,10 @@ interface TopBarProps {
   companyLogoUrl?: string | null
   userName?: string | null
   userEmail?: string | null
+  role?: 'admin' | 'viewer'
 }
 
-export function TopBar({ companyName, userInitials, companyLogoUrl, userName, userEmail }: TopBarProps) {
+export function TopBar({ companyName, userInitials, companyLogoUrl, userName, userEmail, role = 'viewer' }: TopBarProps) {
   const [open, setOpen] = useState(false)
   const displayName = userName || userEmail?.split('@')[0] || userInitials
 
@@ -32,7 +33,7 @@ export function TopBar({ companyName, userInitials, companyLogoUrl, userName, us
       flexShrink: 0,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <MobileMenu companyName={companyName} />
+        <MobileMenu companyName={companyName} role={role} />
         <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
           {companyName}
         </span>

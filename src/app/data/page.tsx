@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { useImportWizard, PreviewRow } from '@/lib/hooks/use-import-wizard'
+import { useAdminGuard } from '@/lib/hooks/use-role'
 
 const EMPLOYEE_FIELDS = [
   { value: '',             label: '— tidak dipetakan —' },
@@ -433,6 +434,7 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DataPage() {
+  const role = useAdminGuard()
   const toast = useToast()
 
   return (

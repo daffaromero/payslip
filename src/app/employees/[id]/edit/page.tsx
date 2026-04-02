@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useAdminGuard } from '@/lib/hooks/use-role'
 
 const PPH21 = ['TK/0','TK/1','TK/2','TK/3','K/0','K/1','K/2','K/3','K/I/0','K/I/1','K/I/2','K/I/3']
 
@@ -21,6 +22,7 @@ function F({ label, hint, required, children }: { label: string; hint?: string; 
 }
 
 export default function EditEmployeePage() {
+  useAdminGuard()
   const router = useRouter()
   const { id } = useParams() as { id: string }
   const [loading, setLoading] = useState(true)

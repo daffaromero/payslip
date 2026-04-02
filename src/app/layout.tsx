@@ -23,6 +23,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   let companyLogoUrl: string | null = null
   let userName: string | null = null
   let userEmail: string | null = null
+  let userRole: 'admin' | 'viewer' = 'viewer'
 
   if (claims) {
     const [company, user] = await Promise.all([
@@ -32,7 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       }),
       prisma.user.findUnique({
         where: { id: claims.userId },
-        select: { email: true, name: true },
+        select: { email: true, name: true, role: true },
       }),
     ])
     if (company) {
@@ -42,6 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     if (user) {
       userEmail = user.email
       userName = user.name?.trim() || null
+      userRole = (user.role === 'admin' ? 'admin' : 'viewer')
       const source = userName || user.email.split('@')[0]
       const parts = source.split(/[\s._-]/).filter(Boolean)
       userInitials = parts.length >= 2
@@ -54,9 +56,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="id" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="font-sans antialiased">
         <div className="flex min-h-screen bg-[--bg-app]">
-          <Sidebar companyName={companyName} />
+          <Sidebar companyName={companyName} role={userRole} />
           <main className="flex flex-col flex-1 min-h-screen" style={{ paddingLeft: 'var(--sidebar-width)' }}>
-            <TopBar companyName={companyName} userInitials={userInitials} companyLogoUrl={companyLogoUrl} userName={userName} userEmail={userEmail} />
+            <TopBar companyName={companyName} userInitials={userInitials} companyLogoUrl={companyLogoUrl} userName={userName} userEmail={userEmail} role={userRole} />
             <div className="flex-1">{children}</div>
           </main>
         </div>
