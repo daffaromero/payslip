@@ -7,6 +7,8 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { Users, FileText, TrendingUp, Plus, Banknote, CalendarDays, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
+import { PayrollChart } from '@/components/dashboard/payroll-chart'
+import type { ChartPoint } from '@/components/dashboard/payroll-chart'
 
 export default async function DashboardPage() {
   const cookieStore = await cookies()
@@ -19,7 +21,9 @@ export default async function DashboardPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const yearStart  = new Date(now.getFullYear(), 0, 1)
 
-  const [totalEmployees, totalPayslips, recentPayslips, thisMonthPayslips, thisMonthPayroll, ytdPayroll, avgNetPay] = await Promise.all([
+  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+
+  const [totalEmployees, totalPayslips, recentPayslips, thisMonthPayslips, thisMonthPayroll, ytdPayroll, avgNetPay, rawMonthlyPayslips] = await Promise.all([
     prisma.employee.count({ where: { companyId, isActive: true } }),
     prisma.payslip.count({ where: { companyId } }),
     prisma.payslip.findMany({
@@ -43,7 +47,24 @@ export default async function DashboardPage() {
       where: { companyId },
       _avg: { netPay: true },
     }),
+    prisma.payslip.findMany({
+      where: { companyId, startDate: { gte: twelveMonthsAgo } },
+      select: { startDate: true, netPay: true },
+    }),
   ])
+
+  // Aggregate into monthly buckets
+  const totals = new Map<string, number>()
+  for (const p of rawMonthlyPayslips) {
+    const d = new Date(p.startDate)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    totals.set(key, (totals.get(key) ?? 0) + Number(p.netPay))
+  }
+  const chartData: ChartPoint[] = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    return { month: key, total: totals.get(key) ?? 0 }
+  })
 
   const countStats = [
     { label: 'Karyawan Aktif',  value: String(totalEmployees),    icon: Users,      href: '/employees', color: '#0066ff', bg: '#eff6ff' },
@@ -103,6 +124,20 @@ export default async function DashboardPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Payroll trend chart */}
+        <div className="card" style={{ padding: 20, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Tren Payroll</p>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>Total net pay per bulan (12 bulan terakhir)</p>
+            </div>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BarChart3 style={{ width: 16, height: 16, color: '#0066ff' }} />
+            </div>
+          </div>
+          <PayrollChart data={chartData} />
         </div>
 
         {/* Recent payslips */}
