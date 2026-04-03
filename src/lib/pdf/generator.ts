@@ -95,9 +95,18 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
 
     /* ── Header ── */
     .header {
-      padding-bottom: 16px;
-      border-bottom: 3px solid ${template.theme.primaryColor};
-      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid ${template.theme.primaryColor};
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header-logo {
+      flex-shrink: 0;
+    }
+    .header-info {
+      flex: 1;
       text-align: center;
     }
     .company-name {
@@ -110,10 +119,10 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
     .company-info {
       font-size: 11px;
       color: #666;
-      margin-top: 2px;
+      margin-top: 1px;
     }
     .payslip-title {
-      margin-top: 12px;
+      margin-top: 6px;
       font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.08em;
@@ -123,7 +132,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
     .payslip-period {
       font-size: 11px;
       color: #555;
-      margin-top: 3px;
+      margin-top: 2px;
     }
 
     /* ── Sections ── */
@@ -252,30 +261,34 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
 
   ${template.sections.companyHeader ? `
   <div class="header">
-    ${company.logoUrl ? `<img src="${escapeHtml(company.logoUrl)}" alt="Logo" style="max-height:56px;margin-bottom:8px;"><br>` : ''}
-    <div class="company-name">${escapeHtml(company.name)}</div>
-    ${company.address ? `<div class="company-info">${escapeHtml(company.address)}</div>` : ''}
-    ${(company.phone || company.email) ? `
-    <div class="company-info">
-      ${company.phone ? `Telp: ${escapeHtml(company.phone)}` : ''}
-      ${company.phone && company.email ? ' &nbsp;|&nbsp; ' : ''}
-      ${company.email ? `Email: ${escapeHtml(company.email)}` : ''}
-    </div>` : ''}
-    ${company.taxId ? `<div class="company-info">NPWP: ${escapeHtml(company.taxId)}</div>` : ''}
-    <div class="payslip-title">${t('Slip Gaji Karyawan', 'Employee Payslip')}</div>
-    <div class="payslip-period">${t('Periode', 'Period')}: ${formatMonth(payslip.startDate)}</div>
+    ${company.logoUrl ? `<div class="header-logo"><img src="${escapeHtml(company.logoUrl)}" alt="Logo" style="max-height:56px;"></div>` : ''}
+    <div class="header-info">
+      <div class="company-name">${escapeHtml(company.name)}</div>
+      ${company.address ? `<div class="company-info">${escapeHtml(company.address)}</div>` : ''}
+      ${(company.phone || company.email) ? `
+      <div class="company-info">
+        ${company.phone ? `Telp: ${escapeHtml(company.phone)}` : ''}
+        ${company.phone && company.email ? ' &nbsp;|&nbsp; ' : ''}
+        ${company.email ? `Email: ${escapeHtml(company.email)}` : ''}
+      </div>` : ''}
+      ${company.taxId ? `<div class="company-info">NPWP: ${escapeHtml(company.taxId)}</div>` : ''}
+      <div class="payslip-title">${t('Slip Gaji Karyawan', 'Employee Payslip')}</div>
+      <div class="payslip-period">${t('Periode', 'Period')}: ${formatMonth(payslip.startDate)}</div>
+    </div>
   </div>
   ` : ''}
 
   ${template.sections.employeeInfo ? `
   <div class="section">
-    <div class="section-title">${t('Informasi Karyawan', 'Employee Information')}</div>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>${t('Informasi Karyawan', 'Employee Information')}</span>
+      ${employee.site ? `<span style="font-weight:500;letter-spacing:0;">${t('Site', 'Site')}: ${escapeHtml(employee.site)}</span>` : ''}
+    </div>
     <div class="info-grid">
       <div class="info-row"><span class="info-label">${t('Nama', 'Name')}</span><span class="info-value">${escapeHtml(employee.name)}</span></div>
       <div class="info-row"><span class="info-label">${t('ID Karyawan', 'Employee ID')}</span><span class="info-value">${escapeHtml(employee.employeeId)}</span></div>
-      <div class="info-row"><span class="info-label">${t('Departemen', 'Department')}</span><span class="info-value">${escapeHtml(employee.department) || '—'}</span></div>
+      <div class="info-row"><span class="info-label">${t('Divisi', 'Division')}</span><span class="info-value">${escapeHtml(employee.department) || '—'}</span></div>
       <div class="info-row"><span class="info-label">${t('Jabatan', 'Position')}</span><span class="info-value">${escapeHtml(employee.position) || '—'}</span></div>
-      ${(employee as { site?: string | null }).site ? `<div class="info-row"><span class="info-label">${t('Site', 'Site')}</span><span class="info-value">${escapeHtml((employee as { site?: string | null }).site!)}</span></div>` : ''}
       <div class="info-row"><span class="info-label">NPWP</span><span class="info-value">${escapeHtml(employee.npwp) || '—'}</span></div>
       <div class="info-row"><span class="info-label">${t('Status PTKP', 'Tax Status')}</span><span class="info-value">${escapeHtml(employee.pph21Status)}</span></div>
     </div>

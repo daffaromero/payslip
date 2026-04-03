@@ -148,9 +148,6 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
 
   const generateOp = useAsyncOperation(async () => {
     const vals = getValues()
-    if (!manualPph21 && !manualBpjsKesehatan && !manualBpjsTkJht && !manualBpjsTkJp) {
-      toast.error('Peringatan: PPh 21 dan BPJS masih 0. Isi manual atau abaikan jika tidak diperlukan.')
-    }
     const res = await fetch('/api/payslips', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
@@ -408,25 +405,30 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
           {/* Salary Components */}
           <div style={{ marginTop: 20 }}>
             <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 12 }}>Komponen Gaji</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
               {(Object.keys(salaryComponents) as (keyof SalaryComponents)[]).map(key => (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-subtle)', borderRadius: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={salaryComponents[key].enabled}
-                    onChange={e => setSalaryComponents(p => ({ ...p, [key]: { ...p[key], enabled: e.target.checked } }))}
-                    style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer', flexShrink: 0 }}
-                  />
-                  <label style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1, minWidth: 0 }}>{SALARY_COMPONENT_LABELS[key]}</label>
-                  <input
-                    type="number"
-                    className="input"
-                    style={{ fontSize: 12, width: 100 }}
-                    value={salaryComponents[key].amount || ''}
-                    onChange={e => setSalaryComponents(p => ({ ...p, [key]: { ...p[key], amount: Number(e.target.value) || 0 } }))}
-                    placeholder="0"
-                    disabled={!salaryComponents[key].enabled}
-                  />
+                <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={salaryComponents[key].enabled}
+                      onChange={e => setSalaryComponents(p => ({ ...p, [key]: { ...p[key], enabled: e.target.checked } }))}
+                      style={{ width: 15, height: 15, accentColor: 'var(--accent)', cursor: 'pointer', flexShrink: 0 }}
+                    />
+                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>{SALARY_COMPONENT_LABELS[key]}</span>
+                  </label>
+                  <div className="input-prefix">
+                    <span className="prefix">Rp</span>
+                    <input
+                      type="number"
+                      className="input"
+                      style={{ fontSize: 13, height: 34 }}
+                      value={salaryComponents[key].amount || ''}
+                      onChange={e => setSalaryComponents(p => ({ ...p, [key]: { ...p[key], amount: Number(e.target.value) || 0 } }))}
+                      placeholder="0"
+                      disabled={!salaryComponents[key].enabled}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -679,62 +681,27 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
 
               {/* Deductions - Manual Input */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>PPh 21</span>
-                  <div className="input-prefix" style={{ width: 140 }}>
-                    <span className="prefix">Rp</span>
-                    <input
-                      type="number"
-                      className="input"
-                      style={{ fontSize: 12, paddingLeft: 4 }}
-                      value={manualPph21 || ''}
-                      onChange={e => setManualPph21(Number(e.target.value) || 0)}
-                      placeholder="0"
-                    />
+                {([
+                  { label: 'PPh 21', value: manualPph21, set: setManualPph21 },
+                  { label: 'BPJS Kesehatan', value: manualBpjsKesehatan, set: setManualBpjsKesehatan },
+                  { label: 'BPJS TK JHT', value: manualBpjsTkJht, set: setManualBpjsTkJht },
+                  { label: 'BPJS TK JP', value: manualBpjsTkJp, set: setManualBpjsTkJp },
+                ] as const).map(({ label, value, set }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{label}</span>
+                    <div className="input-prefix" style={{ width: 140 }}>
+                      <span className="prefix">Rp</span>
+                      <input
+                        type="number"
+                        className="input"
+                        style={{ fontSize: 12 }}
+                        value={value || ''}
+                        onChange={e => set(Number(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>BPJS Kesehatan</span>
-                  <div className="input-prefix" style={{ width: 140 }}>
-                    <span className="prefix">Rp</span>
-                    <input
-                      type="number"
-                      className="input"
-                      style={{ fontSize: 12, paddingLeft: 4 }}
-                      value={manualBpjsKesehatan || ''}
-                      onChange={e => setManualBpjsKesehatan(Number(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>BPJS TK JHT</span>
-                  <div className="input-prefix" style={{ width: 140 }}>
-                    <span className="prefix">Rp</span>
-                    <input
-                      type="number"
-                      className="input"
-                      style={{ fontSize: 12, paddingLeft: 4 }}
-                      value={manualBpjsTkJht || ''}
-                      onChange={e => setManualBpjsTkJht(Number(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>BPJS TK JP</span>
-                  <div className="input-prefix" style={{ width: 140 }}>
-                    <span className="prefix">Rp</span>
-                    <input
-                      type="number"
-                      className="input"
-                      style={{ fontSize: 12, paddingLeft: 4 }}
-                      value={manualBpjsTkJp || ''}
-                      onChange={e => setManualBpjsTkJp(Number(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
+                ))}
                 {deductions.filter(d=>d.amount>0).map((d,i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-secondary)' }}>{d.name||'Potongan'}</span><span style={{ color: 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(d.amount)}</span></div>
                 ))}
@@ -744,7 +711,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
               <div style={{ marginTop: 16, padding: 16, background: 'var(--accent-light)', border: '1px solid var(--accent-muted)', borderRadius: 8 }}>
                 <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent)' }}>Gaji Bersih</p>
                 <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--accent)', fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>
-                  {formatCurrency(emp ? calc.netPay : 0)}
+                  {formatCurrency(emp && calc ? calc.grossPay - manualPph21 - manualBpjsKesehatan - manualBpjsTkJht - manualBpjsTkJp - deductions.filter(d => d.amount > 0).reduce((s, d) => s + d.amount, 0) : 0)}
                 </p>
               </div>
             </div>

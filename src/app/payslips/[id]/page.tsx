@@ -189,7 +189,7 @@ export default function PayslipDetailPage() {
               </div>
             </div>
             <Row label="Jabatan" value={payslip.employee.position ?? '-'} />
-            <Row label="Departemen" value={payslip.employee.department ?? '-'} />
+            <Row label="Divisi" value={payslip.employee.department ?? '-'} />
             <Row label="Email" value={payslip.employee.email ?? '-'} />
             <Row label="WhatsApp" value={payslip.employee.whatsappNumber ?? '-'} />
             <Row label="NPWP" value={payslip.employee.npwp ?? '-'} />

@@ -314,7 +314,7 @@ export default function EmployeeDetailPage() {
             {isEditing && form ? (
               <>
                 <F label="Jabatan"><input className="input" style={{ fontSize: 13 }} value={form.position} onChange={e => set('position', e.target.value)} /></F>
-                <F label="Departemen"><input className="input" style={{ fontSize: 13 }} value={form.department} onChange={e => set('department', e.target.value)} /></F>
+                <F label="Divisi"><input className="input" style={{ fontSize: 13 }} value={form.department} onChange={e => set('department', e.target.value)} /></F>
                 <F label="Site"><input className="input" style={{ fontSize: 13 }} placeholder="Yogyakarta" value={form.site} onChange={e => set('site', e.target.value)} /></F>
                 <F label="Email"><input type="email" className="input" style={{ fontSize: 13 }} value={form.email} onChange={e => set('email', e.target.value)} /></F>
                 <F label="WhatsApp"><input className="input" style={{ fontSize: 13 }} placeholder="628xxx" value={form.whatsappNumber} onChange={e => set('whatsappNumber', e.target.value)} /></F>
@@ -323,7 +323,7 @@ export default function EmployeeDetailPage() {
             ) : (
               <>
                 <InfoRow label="Jabatan" value={employee.position} />
-                <InfoRow label="Departemen" value={employee.department} />
+                <InfoRow label="Divisi" value={employee.department} />
                 <InfoRow label="Site" value={employee.site} />
                 <InfoRow label="Email" value={employee.email} />
                 <InfoRow label="WhatsApp" value={employee.whatsappNumber} />

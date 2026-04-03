@@ -76,7 +76,7 @@ export default function NewEmployeePage() {
                 <F label="NPWP">
                   <input className="input" placeholder="09.123.456.7-123.000" value={form.npwp} onChange={e => set('npwp', e.target.value)} />
                 </F>
-                <F label="Departemen">
+                <F label="Divisi">
                   <input className="input" placeholder="Engineering, Finance..." value={form.department} onChange={e => set('department', e.target.value)} />
                 </F>
                 <F label="Jabatan">

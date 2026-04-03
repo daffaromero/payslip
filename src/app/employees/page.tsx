@@ -114,7 +114,7 @@ export default function EmployeesPage() {
               <thead>
                 <tr>
                   <th>Karyawan</th>
-                  <th>Departemen / Jabatan</th>
+                  <th>Divisi / Jabatan</th>
                   <th>Status PTKP</th>
                   <th style={{ textAlign: 'right' }}>Gaji Pokok</th>
                   <th style={{ width: '100px' }}></th>

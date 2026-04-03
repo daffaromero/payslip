@@ -211,9 +211,6 @@ export default function BulkGeneratePage() {
 
   const generate = async () => {
     if (!templateId) { toast.error('Pilih template terlebih dahulu'); return }
-    if (!manualPph21 && !manualBpjsKesehatan && !manualBpjsTkJht && !manualBpjsTkJp) {
-      toast.error('Peringatan: PPh 21 dan BPJS masih 0. Isi manual atau abaikan jika tidak diperlukan.')
-    }
     const periods = buildPeriods()
     setRunning(true); setDone(false); setResults([]); setProgress(0)
 
@@ -400,23 +397,27 @@ export default function BulkGeneratePage() {
         {!loading && employees.length > 0 && (
           <div className="card" style={{ padding: 20 }}>
             <p className="section-label" style={{ marginBottom: 12 }}>Potongan Manual</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1 }}>PPh 21</label>
-                <input type="number" className="input" style={{ fontSize: 12, width: 100 }} value={manualPph21 || ''} onChange={e => setManualPph21(Number(e.target.value) || 0)} placeholder="0" />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1 }}>BPJS Kesehatan</label>
-                <input type="number" className="input" style={{ fontSize: 12, width: 100 }} value={manualBpjsKesehatan || ''} onChange={e => setManualBpjsKesehatan(Number(e.target.value) || 0)} placeholder="0" />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1 }}>BPJS TK JHT</label>
-                <input type="number" className="input" style={{ fontSize: 12, width: 100 }} value={manualBpjsTkJht || ''} onChange={e => setManualBpjsTkJht(Number(e.target.value) || 0)} placeholder="0" />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <label style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1 }}>BPJS TK JP</label>
-                <input type="number" className="input" style={{ fontSize: 12, width: 100 }} value={manualBpjsTkJp || ''} onChange={e => setManualBpjsTkJp(Number(e.target.value) || 0)} placeholder="0" />
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              {([
+                { label: 'PPh 21', value: manualPph21, set: setManualPph21 },
+                { label: 'BPJS Kesehatan', value: manualBpjsKesehatan, set: setManualBpjsKesehatan },
+                { label: 'BPJS TK JHT', value: manualBpjsTkJht, set: setManualBpjsTkJht },
+                { label: 'BPJS TK JP', value: manualBpjsTkJp, set: setManualBpjsTkJp },
+              ] as const).map(({ label, value, set }) => (
+                <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{label}</label>
+                  <div className="input-prefix">
+                    <span className="prefix">Rp</span>
+                    <input
+                      type="number"
+                      className="input"
+                      value={value || ''}
+                      onChange={e => set(Number(e.target.value) || 0)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -531,38 +532,36 @@ export default function BulkGeneratePage() {
                       {override?.expanded && (
                         <tr key={`${emp.id}-expanded`}>
                           <td colSpan={5} style={{ background: 'var(--bg-subtle)', padding: '12px 20px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                               {(Object.keys(defaultOverride()) as (keyof SalaryComponentsOverride)[]).map(key => {
-                                const isOverride = globalOverrides[key].override
+                                const canEdit = globalOverrides[key].override
                                 const empVal = employeeOverrides[emp.id]?.[key]
-                                const effectiveEnabled = isOverride ? empVal?.enabled ?? false : (emp.salaryComponents?.[key]?.enabled ?? false)
-                                const effectiveAmount = isOverride ? empVal?.amount ?? 0 : (emp.salaryComponents?.[key]?.amount ?? 0)
+                                const effectiveEnabled = canEdit ? (empVal?.enabled ?? false) : (emp.salaryComponents?.[key]?.enabled ?? false)
+                                const effectiveAmount = canEdit ? (empVal?.amount ?? 0) : (emp.salaryComponents?.[key]?.amount ?? 0)
                                 return (
-                                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--bg-surface)', borderRadius: 6 }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={effectiveEnabled}
-                                      onChange={e => {
-                                        if (isOverride) setEmployeeOverride(emp.id, key, 'enabled', e.target.checked)
-                                      }}
-                                      disabled={isOverride}
-                                      style={{ width: 14, height: 14, accentColor: 'var(--accent)', cursor: isOverride ? 'pointer' : 'not-allowed', opacity: isOverride ? 1 : 0.5 }}
-                                    />
-                                    <label style={{ fontSize: 11, color: 'var(--text-primary)', flex: 1, minWidth: 0 }}>{SALARY_COMPONENT_LABELS[key]}</label>
-                                    {isOverride && (
+                                  <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: canEdit ? 'pointer' : 'default' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={effectiveEnabled}
+                                        onChange={e => { if (canEdit) setEmployeeOverride(emp.id, key, 'enabled', e.target.checked) }}
+                                        disabled={!canEdit}
+                                        style={{ width: 15, height: 15, accentColor: 'var(--accent)', cursor: canEdit ? 'pointer' : 'default', flexShrink: 0 }}
+                                      />
+                                      <span style={{ fontSize: 12, fontWeight: 500, color: canEdit ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>{SALARY_COMPONENT_LABELS[key]}</span>
+                                    </label>
+                                    <div className="input-prefix">
+                                      <span className="prefix">Rp</span>
                                       <input
                                         type="number"
                                         className="input"
-                                        style={{ fontSize: 11, width: 80 }}
+                                        style={{ fontSize: 13, height: 34 }}
                                         value={effectiveAmount || ''}
-                                        onChange={e => setEmployeeOverride(emp.id, key, 'amount', Number(e.target.value) || 0)}
+                                        onChange={e => { if (canEdit) setEmployeeOverride(emp.id, key, 'amount', Number(e.target.value) || 0) }}
                                         placeholder="0"
+                                        disabled={!canEdit}
                                       />
-                                    )}
-                                    {!isOverride && (
-                                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{formatCurrency(effectiveAmount)}</span>
-                                    )}
-                                    {isOverride && <span style={{ fontSize: 10, color: 'var(--accent)' }}>override</span>}
+                                    </div>
                                   </div>
                                 )
                               })}
