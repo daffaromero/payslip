@@ -1,3 +1,4 @@
+import { apiError } from '../lib/api-error'
 import { Hono } from 'hono'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { signToken, verifyToken, COOKIE } from '@/lib/auth'
@@ -30,7 +31,7 @@ router.post('/login', async (c) => {
     return c.json({ ok: true })
   } catch (e) {
     console.error('Login error:', e)
-    return c.json({ error: 'Terjadi kesalahan' }, 500)
+    return c.json(apiError('Terjadi kesalahan', e), 500)
   }
 })
 
@@ -50,7 +51,7 @@ router.get('/me', async (c) => {
     if (!user) return c.json({ error: 'Unauthorized' }, 401)
     return c.json({ user })
   } catch (e) {
-    return c.json({ error: 'Terjadi kesalahan' }, 500)
+    return c.json(apiError('Terjadi kesalahan', e), 500)
   }
 })
 
@@ -67,7 +68,7 @@ router.patch('/me', async (c) => {
     return c.json({ user })
   } catch (e) {
     console.error('Update profile error:', e)
-    return c.json({ error: 'Gagal memperbarui profil' }, 500)
+    return c.json(apiError('Gagal memperbarui profil', e), 500)
   }
 })
 
@@ -95,7 +96,7 @@ router.post('/change-password', async (c) => {
     return c.json({ message: 'Password berhasil diubah' })
   } catch (e) {
     console.error('Change password error:', e)
-    return c.json({ error: 'Gagal mengubah password' }, 500)
+    return c.json(apiError('Gagal mengubah password', e), 500)
   }
 })
 

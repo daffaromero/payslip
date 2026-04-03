@@ -20,6 +20,15 @@ import healthRouter from './routes/health'
 const app = new Hono()
 
 app.use('*', logger())
+
+// In development, attach real error details to every 5xx response
+if (process.env.NODE_ENV !== 'production') {
+  app.onError((err, c) => {
+    console.error('[unhandled]', err)
+    return c.json({ error: err.message || 'Internal server error', stack: err.stack }, 500)
+  })
+}
+
 app.use('*', cors({
   origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
   credentials: true,

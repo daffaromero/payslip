@@ -1,3 +1,4 @@
+import { apiError } from '../lib/api-error'
 import { Hono } from 'hono'
 import { prisma } from '@/lib/db'
 import {
@@ -64,7 +65,7 @@ router.get('/', async (c) => {
     return c.json({ templates: templates.map(t => deserializeTemplate(t as unknown as RawTemplate)) })
   } catch (e) {
     console.error('Error fetching templates:', e)
-    return c.json({ error: 'Gagal memuat template' }, 500)
+    return c.json(apiError('Gagal memuat template', e), 500)
   }
 })
 
@@ -90,7 +91,7 @@ router.post('/', async (c) => {
     return c.json({ template: deserializeTemplate(template as unknown as RawTemplate) }, 201)
   } catch (e) {
     console.error('Error creating template:', e)
-    return c.json({ error: 'Gagal membuat template' }, 500)
+    return c.json(apiError('Gagal membuat template', e), 500)
   }
 })
 
@@ -103,7 +104,7 @@ router.get('/:id', async (c) => {
     return c.json({ template: deserializeTemplate(template as unknown as RawTemplate) })
   } catch (e) {
     console.error('Error fetching template:', e)
-    return c.json({ error: 'Gagal memuat template' }, 500)
+    return c.json(apiError('Gagal memuat template', e), 500)
   }
 })
 
@@ -148,7 +149,7 @@ router.patch('/:id', async (c) => {
     return c.json({ template: deserializeTemplate(template as unknown as RawTemplate) })
   } catch (e) {
     console.error('Error updating template:', e)
-    return c.json({ error: 'Gagal memperbarui template' }, 500)
+    return c.json(apiError('Gagal memperbarui template', e), 500)
   }
 })
 
@@ -168,7 +169,7 @@ router.delete('/:id', async (c) => {
     return c.json({ success: true })
   } catch (e) {
     console.error('Error deleting template:', e)
-    return c.json({ error: 'Gagal menghapus template' }, 500)
+    return c.json(apiError('Gagal menghapus template', e), 500)
   }
 })
 
@@ -185,7 +186,7 @@ router.get('/:id/preview', async (c) => {
     return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
   } catch (e) {
     console.error(e)
-    return c.json({ error: 'Preview failed' }, 500)
+    return c.json(apiError('Preview failed', e), 500)
   }
 })
 

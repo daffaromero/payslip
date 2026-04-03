@@ -1,3 +1,4 @@
+import { apiError } from '../lib/api-error'
 import { Hono } from 'hono'
 import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/crypto'
@@ -20,7 +21,7 @@ router.get('/', async (c) => {
     return c.json({ users })
   } catch (e) {
     console.error('Error fetching users:', e)
-    return c.json({ error: 'Gagal memuat data pengguna' }, 500)
+    return c.json(apiError('Gagal memuat data pengguna', e), 500)
   }
 })
 
@@ -44,7 +45,7 @@ router.post('/', async (c) => {
     return c.json({ user }, 201)
   } catch (e) {
     console.error('Error creating user:', e)
-    return c.json({ error: 'Gagal membuat pengguna' }, 500)
+    return c.json(apiError('Gagal membuat pengguna', e), 500)
   }
 })
 
@@ -77,7 +78,7 @@ router.patch('/:id', async (c) => {
     return c.json({ user })
   } catch (e) {
     console.error('Error updating user:', e)
-    return c.json({ error: 'Gagal memperbarui pengguna' }, 500)
+    return c.json(apiError('Gagal memperbarui pengguna', e), 500)
   }
 })
 
@@ -101,7 +102,7 @@ router.delete('/:id', async (c) => {
     return c.json({ ok: true })
   } catch (e) {
     console.error('Error deleting user:', e)
-    return c.json({ error: 'Gagal menghapus pengguna' }, 500)
+    return c.json(apiError('Gagal menghapus pengguna', e), 500)
   }
 })
 

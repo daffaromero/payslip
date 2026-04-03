@@ -1,3 +1,4 @@
+import { apiError } from '../lib/api-error'
 import { Hono } from 'hono'
 import { prisma } from '../../../../src/lib/db'
 import { calculatePayslip, getPeriodMonths } from '../../../../packages/core/src/calculations/payslip'
@@ -56,7 +57,7 @@ router.get('/', async (c) => {
     return c.json({ payslips, total, page, limit })
   } catch (e) {
     console.error('Error fetching payslips:', e)
-    return c.json({ error: 'Gagal memuat data slip gaji' }, 500)
+    return c.json(apiError('Gagal memuat data slip gaji', e), 500)
   }
 })
 
@@ -154,7 +155,7 @@ router.post('/', async (c) => {
     return c.json({ success: true, payslipId: payslip.id }, 201)
   } catch (e) {
     console.error('Create payslip error:', e)
-    return c.json({ error: 'Gagal membuat slip gaji' }, 500)
+    return c.json(apiError('Gagal membuat slip gaji', e), 500)
   }
 })
 
@@ -230,7 +231,7 @@ router.post('/bulk', async (c) => {
     return c.json({ success: true, created: payslipIds.length, payslipIds }, 201)
   } catch (e) {
     console.error('Bulk payslip error:', e)
-    return c.json({ error: 'Gagal membuat slip gaji massal' }, 500)
+    return c.json(apiError('Gagal membuat slip gaji massal', e), 500)
   }
 })
 
@@ -289,7 +290,7 @@ router.get('/:id', async (c) => {
     return c.json({ payslip: deserializePayslip(payslip as Parameters<typeof deserializePayslip>[0]) })
   } catch (e) {
     console.error('Error fetching payslip:', e)
-    return c.json({ error: 'Gagal memuat slip gaji' }, 500)
+    return c.json(apiError('Gagal memuat slip gaji', e), 500)
   }
 })
 
@@ -363,7 +364,7 @@ router.patch('/:id', async (c) => {
     return c.json({ payslip: deserializePayslip(payslip as Parameters<typeof deserializePayslip>[0]) })
   } catch (e) {
     console.error('Error updating payslip:', e)
-    return c.json({ error: 'Gagal memperbarui slip gaji' }, 500)
+    return c.json(apiError('Gagal memperbarui slip gaji', e), 500)
   }
 })
 
@@ -378,7 +379,7 @@ router.delete('/:id', async (c) => {
     return c.json({ success: true })
   } catch (e) {
     console.error('Error deleting payslip:', e)
-    return c.json({ error: 'Gagal menghapus slip gaji' }, 500)
+    return c.json(apiError('Gagal menghapus slip gaji', e), 500)
   }
 })
 

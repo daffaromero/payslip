@@ -1,3 +1,4 @@
+import { apiError } from '../lib/api-error'
 import { Hono } from 'hono'
 import { prisma } from '@/lib/db'
 import { parseExcelFile, autoMapColumns } from '@/lib/excel/parser'
@@ -45,7 +46,7 @@ router.post('/', async (c) => {
     })
   } catch (e) {
     console.error('Import error:', e)
-    return c.json({ error: 'Gagal memproses file' }, 500)
+    return c.json(apiError('Gagal memproses file', e), 500)
   }
 })
 
@@ -68,7 +69,7 @@ router.put('/', async (c) => {
     })
   } catch (e) {
     console.error('Preview error:', e)
-    return c.json({ error: 'Gagal membuat preview' }, 500)
+    return c.json(apiError('Gagal membuat preview', e), 500)
   }
 })
 
@@ -125,7 +126,7 @@ router.post('/commit', async (c) => {
     return c.json({ success: true, created: created.length, skipped: invalid.length, errors: skipInvalid ? errors : [] }, 201)
   } catch (e) {
     console.error('Import commit error:', e)
-    return c.json({ error: 'Gagal menyimpan data karyawan' }, 500)
+    return c.json(apiError('Gagal menyimpan data karyawan', e), 500)
   }
 })
 

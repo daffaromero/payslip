@@ -1,3 +1,4 @@
+import { apiError } from '../lib/api-error'
 import { Hono } from 'hono'
 import { prisma } from '@/lib/db'
 import { EmployeePatchSchema } from '@/lib/api/schemas/employee'
@@ -26,7 +27,7 @@ router.get('/', async (c) => {
     return c.json({ employees: employees.map(parseEmployee) })
   } catch (e) {
     console.error('Error fetching employees:', e)
-    return c.json({ error: 'Gagal memuat data karyawan' }, 500)
+    return c.json(apiError('Gagal memuat data karyawan', e), 500)
   }
 })
 
@@ -57,7 +58,7 @@ router.post('/', async (c) => {
     return c.json({ employee: parseEmployee(employee) }, 201)
   } catch (e) {
     console.error('Error creating employee:', e)
-    return c.json({ error: 'Gagal membuat karyawan' }, 500)
+    return c.json(apiError('Gagal membuat karyawan', e), 500)
   }
 })
 
@@ -131,7 +132,7 @@ router.get('/:id', async (c) => {
     return c.json({ employee: parseEmployee(employee) })
   } catch (e) {
     console.error('Error fetching employee:', e)
-    return c.json({ error: 'Gagal memuat data karyawan' }, 500)
+    return c.json(apiError('Gagal memuat data karyawan', e), 500)
   }
 })
 
@@ -152,7 +153,7 @@ router.patch('/:id', async (c) => {
     return c.json({ employee: parseEmployee(employee) })
   } catch (e) {
     console.error('Error updating employee:', e)
-    return c.json({ error: 'Gagal memperbarui karyawan' }, 500)
+    return c.json(apiError('Gagal memperbarui karyawan', e), 500)
   }
 })
 
@@ -167,7 +168,7 @@ router.delete('/:id', async (c) => {
     return c.json({ success: true })
   } catch (e) {
     console.error('Error deleting employee:', e)
-    return c.json({ error: 'Gagal menghapus karyawan' }, 500)
+    return c.json(apiError('Gagal menghapus karyawan', e), 500)
   }
 })
 

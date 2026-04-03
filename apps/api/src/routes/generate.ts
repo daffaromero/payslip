@@ -1,3 +1,4 @@
+import { apiError } from '../lib/api-error'
 import { Hono } from 'hono'
 import { prisma } from '@/lib/db'
 import { generatePayslipPDF, generatePayslipHTML } from '@/lib/pdf/generator'
@@ -61,7 +62,7 @@ router.post('/generate-pdf', async (c) => {
     })
   } catch (e) {
     console.error('PDF generation error:', e)
-    return c.json({ error: 'Gagal generate PDF' }, 500)
+    return c.json(apiError('Gagal generate PDF', e), 500)
   }
 })
 
@@ -120,7 +121,7 @@ router.post('/preview-payslip', async (c) => {
     return c.json({ success: true, html })
   } catch (e) {
     console.error('Preview error:', e)
-    return c.json({ error: 'Gagal membuat preview' }, 500)
+    return c.json(apiError('Gagal membuat preview', e), 500)
   }
 })
 

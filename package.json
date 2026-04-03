@@ -9,8 +9,8 @@
   "scripts": {
     "dev": "next dev",
     "dev:api": "bun run --watch apps/api/src/index.ts",
-    "build": "prisma migrate deploy && next build",
-    "start": "next start",
+    "build": "next build",
+    "start": "prisma migrate deploy && next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

@@ -1,3 +1,4 @@
+import { apiError } from '../lib/api-error'
 import { Hono } from 'hono'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
@@ -30,7 +31,7 @@ router.get('/', async (c) => {
     return c.json({ company })
   } catch (e) {
     console.error(e)
-    return c.json({ error: 'Gagal memuat data perusahaan' }, 500)
+    return c.json(apiError('Gagal memuat data perusahaan', e), 500)
   }
 })
 
@@ -44,7 +45,7 @@ router.patch('/', async (c) => {
     return c.json({ company })
   } catch (e) {
     console.error(e)
-    return c.json({ error: 'Gagal menyimpan data perusahaan' }, 500)
+    return c.json(apiError('Gagal menyimpan data perusahaan', e), 500)
   }
 })
 
@@ -73,7 +74,7 @@ router.post('/logo', async (c) => {
     return c.json({ logoUrl })
   } catch (e) {
     console.error(e)
-    return c.json({ error: 'Gagal mengunggah logo' }, 500)
+    return c.json(apiError('Gagal mengunggah logo', e), 500)
   }
 })
 
