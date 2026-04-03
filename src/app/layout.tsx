@@ -55,13 +55,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="id" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="font-sans antialiased">
-        <div className="flex min-h-screen bg-[--bg-app]">
-          <Sidebar companyName={companyName} role={userRole} />
-          <main className="flex flex-col flex-1 min-h-screen" style={{ paddingLeft: 'var(--sidebar-width)' }}>
-            <TopBar companyName={companyName} userInitials={userInitials} companyLogoUrl={companyLogoUrl} userName={userName} userEmail={userEmail} role={userRole} />
-            <div className="flex-1">{children}</div>
-          </main>
-        </div>
+        {claims ? (
+          <div className="flex min-h-screen bg-[--bg-app]">
+            <Sidebar companyName={companyName} role={userRole} />
+            <main className="flex flex-col flex-1 min-h-screen" style={{ paddingLeft: 'var(--sidebar-width)' }}>
+              <TopBar companyName={companyName} userInitials={userInitials} companyLogoUrl={companyLogoUrl} userName={userName} userEmail={userEmail} role={userRole} />
+              <div className="flex-1">{children}</div>
+            </main>
+          </div>
+        ) : (
+          <div className="flex min-h-screen bg-[--bg-app]">{children}</div>
+        )}
       </body>
     </html>
   )
