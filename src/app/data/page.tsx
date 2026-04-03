@@ -9,16 +9,20 @@ import { useImportWizard, PreviewRow } from '@/lib/hooks/use-import-wizard'
 import { useAdminGuard } from '@/lib/hooks/use-role'
 
 const EMPLOYEE_FIELDS = [
-  { value: '',             label: '— tidak dipetakan —' },
-  { value: 'name',         label: 'Nama' },
-  { value: 'employeeId',   label: 'ID Karyawan' },
-  { value: 'email',        label: 'Email' },
-  { value: 'department',   label: 'Departemen' },
-  { value: 'position',     label: 'Jabatan' },
-  { value: 'baseSalary',   label: 'Gaji Pokok' },
-  { value: 'npwp',         label: 'NPWP' },
-  { value: 'bankAccount',  label: 'No Rekening' },
-  { value: 'bankName',     label: 'Nama Bank' },
+  { value: '',               label: '— tidak dipetakan —' },
+  { value: 'name',           label: 'Nama' },
+  { value: 'employeeId',     label: 'ID Karyawan' },
+  { value: 'email',          label: 'Email' },
+  { value: 'whatsappNumber', label: 'WhatsApp' },
+  { value: 'department',     label: 'Divisi' },
+  { value: 'position',       label: 'Jabatan' },
+  { value: 'site',           label: 'Site' },
+  { value: 'baseSalary',     label: 'Gaji Pokok' },
+  { value: 'hourlyRate',     label: 'Tarif Lembur / Jam' },
+  { value: 'pph21Status',    label: 'Status PPh21' },
+  { value: 'npwp',           label: 'NPWP' },
+  { value: 'bankAccount',    label: 'No Rekening' },
+  { value: 'bankName',       label: 'Nama Bank' },
 ]
 
 // ─── Shared toast type ────────────────────────────────────────────────────────
@@ -27,22 +31,34 @@ type ToastHandle = ReturnType<typeof useToast>
 
 // ─── Export Section ───────────────────────────────────────────────────────────
 
-function ExportSection() {
+function ExportSection({ toast }: { toast: ToastHandle }) {
   const [payslipMonth, setPayslipMonth] = useState('')
   const [dlEmployee, setDlEmployee] = useState(false)
   const [dlPayslip, setDlPayslip] = useState(false)
 
-  const download = useCallback((url: string, filename: string, setLoading: (v: boolean) => void) => {
+  const download = useCallback(async (url: string, filename: string, setLoading: (v: boolean) => void) => {
     setLoading(true)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    // give a moment for the download to initiate before resetting
-    setTimeout(() => setLoading(false), 1200)
-  }, [])
+    try {
+      const res = await fetch(url)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Gagal mengunduh file')
+        return
+      }
+      const blob = await res.blob()
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(a.href)
+    } catch {
+      toast.error('Gagal mengunduh file')
+    } finally {
+      setLoading(false)
+    }
+  }, [toast])
 
   return (
     <div className="card" style={{ padding: 24, marginBottom: 12 }}>
@@ -66,7 +82,7 @@ function ExportSection() {
           <button
             className="btn btn-secondary btn-sm"
             disabled={dlEmployee}
-            onClick={() => download('/api/export/employees', 'karyawan.xlsx', setDlEmployee)}
+            onClick={() => download('/api/employees/export', 'karyawan.xlsx', setDlEmployee)}
             style={{ width: '100%', justifyContent: 'center' }}
           >
             {dlEmployee
@@ -101,7 +117,7 @@ function ExportSection() {
               onClick={() => {
                 const qs = payslipMonth ? `?month=${payslipMonth}` : ''
                 const name = payslipMonth ? `slip-gaji-${payslipMonth}.xlsx` : 'slip-gaji-semua.xlsx'
-                download(`/api/export/payslips${qs}`, name, setDlPayslip)
+                download(`/api/payslips/export${qs}`, name, setDlPayslip)
               }}
               style={{ flexShrink: 0 }}
             >
@@ -238,11 +254,21 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
           </p>
         </div>
 
-        <div style={{ marginTop: 16, padding: 12, background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: '0 0 6px' }}>Kolom yang disarankan:</p>
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
-            ID Karyawan, Nama, Email, Departemen, Jabatan, Gaji Pokok, NPWP, Nama Bank, No Rekening
-          </p>
+        <div style={{ marginTop: 16, padding: 12, background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: '0 0 4px' }}>Kolom yang didukung:</p>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
+              ID Karyawan, Nama, Email, WhatsApp, Divisi, Jabatan, Site, Gaji Pokok, Tarif Lembur / Jam, Status PPh21, NPWP, Nama Bank, No Rekening
+            </p>
+          </div>
+          <a
+            href="/api/employees/import-template"
+            download="template-import-karyawan.xlsx"
+            className="btn btn-secondary btn-sm"
+            style={{ flexShrink: 0 }}
+          >
+            <Download style={{ width: 13, height: 13 }} /> Unduh Template
+          </a>
         </div>
       </div>
     )
@@ -344,7 +370,7 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', width: 32 }}></th>
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>ID</th>
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Nama</th>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Departemen</th>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Divisi</th>
                 <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Gaji Pokok</th>
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Masalah</th>
               </tr>
@@ -442,7 +468,7 @@ export default function DataPage() {
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       <PageHeader title="Data" subtitle="Import dan export data karyawan & slip gaji" />
       <div style={{ padding: 12, maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 0 }}>
-        <ExportSection />
+        <ExportSection toast={toast} />
         <ImportSection toast={toast} />
       </div>
     </div>

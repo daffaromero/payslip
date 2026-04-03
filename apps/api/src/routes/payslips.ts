@@ -254,7 +254,7 @@ router.get('/export', async (c) => {
 
   const rows = payslips.map(p => ({
     'ID Karyawan': p.employee.employeeId, 'Nama': p.employee.name,
-    'Departemen': p.employee.department ?? '', 'Periode Mulai': new Date(p.startDate).toLocaleDateString('id-ID'),
+    'Divisi': p.employee.department ?? '', 'Periode Mulai': new Date(p.startDate).toLocaleDateString('id-ID'),
     'Periode Akhir': new Date(p.endDate).toLocaleDateString('id-ID'), 'Tipe': p.periodType,
     'Gaji Pokok': p.basePay, 'Lembur': p.overtimePay, 'Bonus': p.bonus, 'THR': p.thr,
     'Gaji Kotor': p.grossPay, 'PPh21': p.pph21, 'BPJS Kesehatan': p.bpjsKesehatan,
@@ -262,6 +262,7 @@ router.get('/export', async (c) => {
   }))
 
   const ws = XLSX.utils.json_to_sheet(rows)
+  ws['!cols'] = Object.keys(rows[0] ?? {}).map(() => ({ wch: 18 }))
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Slip Gaji')
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer

@@ -23,6 +23,7 @@ export interface Employee {
   email: string | null
   department: string | null
   position: string | null
+  site: string | null
   npwp: string | null
   bankAccount: string | null
   bankName: string | null

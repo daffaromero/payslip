@@ -74,9 +74,13 @@ export function autoMapColumns(headers: string[]): Map<string, string> {
     'baseSalary': [/gaji pokok/i, /base salary/i, /gaji/i, /salary/i, /upah/i],
     'overtimeHours': [/jam lembur/i, /overtime hours/i, /lembur/i, /ot hours/i],
     'bonus': [/bonus/i, /tunjangan/i, /insentif/i, /allowance/i],
+    'whatsappNumber': [/whatsapp/i, /wa number/i, /no wa/i, /nomor wa/i, /telepon/i, /phone/i],
+    'pph21Status': [/status pph/i, /pph21/i, /ptkp/i, /tax status/i],
+    'hourlyRate': [/tarif lembur/i, /hourly rate/i, /upah per jam/i],
     'npwp': [/npwp/i, /tax id/i, /nomor pokok wajib pajak/i],
     'bankAccount': [/rekening/i, /bank account/i, /no rekening/i, /account number/i],
     'bankName': [/nama bank/i, /bank name/i, /bank$/i],
+    'site': [/site/i, /lokasi/i, /location/i, /cabang/i],
   }
   
   for (const header of headers) {

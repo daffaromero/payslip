@@ -9,6 +9,13 @@ import type { Env } from '../types'
 const router = new Hono<Env>()
 router.on(['POST', 'PATCH', 'PUT', 'DELETE'], '*', requireAdmin)
 
+function parseEmployee(e: { salaryComponents?: string | null; [key: string]: unknown }) {
+  return {
+    ...e,
+    salaryComponents: e.salaryComponents ? JSON.parse(e.salaryComponents as string) : null,
+  }
+}
+
 router.get('/', async (c) => {
   const cid = c.get('companyId')
   try {
@@ -16,7 +23,7 @@ router.get('/', async (c) => {
       where: { companyId: cid, isActive: true },
       orderBy: { name: 'asc' },
     })
-    return c.json({ employees })
+    return c.json({ employees: employees.map(parseEmployee) })
   } catch (e) {
     console.error('Error fetching employees:', e)
     return c.json({ error: 'Gagal memuat data karyawan' }, 500)
@@ -43,14 +50,38 @@ router.post('/', async (c) => {
         baseSalary: data.baseSalary,
         hourlyRate: data.hourlyRate || null,
         pph21Status: data.pph21Status || 'TK/0',
+        salaryComponents: data.salaryComponents ? JSON.stringify(data.salaryComponents) : null,
         isActive: true,
       },
     })
-    return c.json({ employee }, 201)
+    return c.json({ employee: parseEmployee(employee) }, 201)
   } catch (e) {
     console.error('Error creating employee:', e)
     return c.json({ error: 'Gagal membuat karyawan' }, 500)
   }
+})
+
+// GET /api/employees/import-template — must be before /:id to avoid wildcard match
+router.get('/import-template', async () => {
+  const headers = [
+    'ID Karyawan', 'Nama', 'Email', 'WhatsApp', 'Divisi', 'Jabatan', 'Site',
+    'Gaji Pokok', 'Tarif Lembur / Jam', 'Status PPh21', 'NPWP', 'Nama Bank', 'No Rekening',
+  ]
+  const sample = [
+    'EMP001', 'Budi Santoso', 'budi@company.com', '628123456789', 'Engineering', 'Staff', 'Yogyakarta',
+    8000000, 50000, 'TK/0', '09.123.456.7-123.000', 'BCA', '1234567890',
+  ]
+  const ws = XLSX.utils.aoa_to_sheet([headers, sample])
+  ws['!cols'] = headers.map(() => ({ wch: 20 }))
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Karyawan')
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+  return new Response(buf, {
+    headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="template-import-karyawan.xlsx"',
+    },
+  })
 })
 
 // GET /api/employees/export — must be before /:id to avoid wildcard match
@@ -66,9 +97,11 @@ router.get('/export', async (c) => {
     'Nama': e.name,
     'Email': e.email ?? '',
     'WhatsApp': e.whatsappNumber ?? '',
-    'Departemen': e.department ?? '',
+    'Divisi': e.department ?? '',
     'Jabatan': e.position ?? '',
+    'Site': e.site ?? '',
     'Gaji Pokok': e.baseSalary,
+    'Tarif Lembur / Jam': e.hourlyRate ?? '',
     'Status PPh21': e.pph21Status,
     'NPWP': e.npwp ?? '',
     'Nama Bank': e.bankName ?? '',
@@ -76,6 +109,7 @@ router.get('/export', async (c) => {
   }))
 
   const ws = XLSX.utils.json_to_sheet(rows)
+  ws['!cols'] = Object.keys(rows[0] ?? {}).map(() => ({ wch: 20 }))
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Karyawan')
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
@@ -94,7 +128,7 @@ router.get('/:id', async (c) => {
     const id = c.req.param('id')
     const employee = await prisma.employee.findFirst({ where: { id, companyId: cid } })
     if (!employee) return c.json({ error: 'Karyawan tidak ditemukan' }, 404)
-    return c.json({ employee })
+    return c.json({ employee: parseEmployee(employee) })
   } catch (e) {
     console.error('Error fetching employee:', e)
     return c.json({ error: 'Gagal memuat data karyawan' }, 500)
@@ -112,8 +146,10 @@ router.patch('/:id', async (c) => {
     const parsed = parse(EmployeePatchSchema, body)
     if (!parsed.ok) return c.json({ error: parsed.error }, 400)
 
-    const employee = await prisma.employee.update({ where: { id }, data: parsed.data })
-    return c.json({ employee })
+    const { salaryComponents: sc, ...rest } = parsed.data
+    const updateData = { ...rest, ...(sc !== undefined ? { salaryComponents: JSON.stringify(sc) } : {}) }
+    const employee = await prisma.employee.update({ where: { id }, data: updateData })
+    return c.json({ employee: parseEmployee(employee) })
   } catch (e) {
     console.error('Error updating employee:', e)
     return c.json({ error: 'Gagal memperbarui karyawan' }, 500)
