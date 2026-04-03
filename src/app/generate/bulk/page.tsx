@@ -89,6 +89,7 @@ export default function BulkGeneratePage() {
 
   const [globalOverrides, setGlobalOverrides] = useState<SalaryComponentsOverride>(defaultOverride())
   const [employeeOverrides, setEmployeeOverrides] = useState<Record<string, SalaryComponentsOverride>>({})
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
 
   const [manualPph21, setManualPph21] = useState(0)
   const [manualBpjsKesehatan, setManualBpjsKesehatan] = useState(0)
@@ -170,10 +171,7 @@ export default function BulkGeneratePage() {
   }
 
   function toggleEmployeeExpanded(empId: string) {
-    setEmployeeOverrides(p => ({
-      ...p,
-      [empId]: { ...p[empId], expanded: !p[empId]?.expanded }
-    }))
+    setExpandedRows(p => ({ ...p, [empId]: !p[empId] }))
   }
 
   function setEmployeeOverride(empId: string, key: keyof SalaryComponentsOverride, field: 'amount' | 'enabled' | 'override', value: number | boolean) {
@@ -499,7 +497,7 @@ export default function BulkGeneratePage() {
                             className="btn btn-ghost btn-icon btn-sm"
                             style={{ color: 'var(--text-tertiary)' }}
                           >
-                            {override?.expanded ? <ChevronDown style={{ width: 14, height: 14 }} /> : <ChevronRight style={{ width: 14, height: 14 }} />}
+                            {expandedRows[emp.id] ? <ChevronDown style={{ width: 14, height: 14 }} /> : <ChevronRight style={{ width: 14, height: 14 }} />}
                           </button>
                         </td>
                         <td>
@@ -529,7 +527,7 @@ export default function BulkGeneratePage() {
                           })()}
                         </td>
                       </tr>
-                      {override?.expanded && (
+                      {expandedRows[emp.id] && (
                         <tr key={`${emp.id}-expanded`}>
                           <td colSpan={5} style={{ background: 'var(--bg-subtle)', padding: '12px 20px' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
