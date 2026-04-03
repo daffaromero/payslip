@@ -98,19 +98,20 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       padding-bottom: 10px;
       border-bottom: 2px solid ${template.theme.primaryColor};
       margin-bottom: 14px;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 14px;
+      position: relative;
+      text-align: center;
     }
     .header-logo {
-      justify-self: start;
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
     }
     .header-info {
       text-align: center;
     }
     .header-spacer {
-      /* mirrors logo column to keep info centered */
+      display: none;
     }
     .company-name {
       font-size: 17px;
