@@ -4,6 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts"
+    "start": "cd ../.. && npx prisma migrate deploy && cd apps/api && bun run src/index.ts"
   }
 }
