@@ -98,19 +98,23 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       padding-bottom: 10px;
       border-bottom: 2px solid ${template.theme.primaryColor};
       margin-bottom: 14px;
-      display: flex;
+      display: grid;
+      grid-template-columns: 96px 1fr 96px;
       align-items: center;
-      gap: 16px;
     }
     .header-logo {
-      flex-shrink: 0;
+      width: 96px;
+    }
+    .header-logo img {
+      max-height: 56px;
+      max-width: 96px;
+      display: block;
     }
     .header-info {
-      flex: 1;
       text-align: center;
     }
     .header-spacer {
-      display: none;
+      width: 96px;
     }
     .company-name {
       font-size: 17px;
@@ -268,7 +272,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
 
   ${template.sections.companyHeader ? `
   <div class="header">
-    ${company.logoUrl ? `<div class="header-logo"><img src="${escapeHtml(company.logoUrl)}" alt="Logo" style="max-height:56px;"></div>` : '<div class="header-logo"></div>'}
+    ${company.logoUrl ? `<div class="header-logo"><img src="${escapeHtml(company.logoUrl)}" alt="Logo"></div>` : '<div class="header-logo"></div>'}
     <div class="header-info">
       <div class="company-name">${escapeHtml(company.name)}</div>
       ${company.address ? `<div class="company-info">${escapeHtml(company.address)}</div>` : ''}
