@@ -189,44 +189,15 @@ export default function SettingsPage() {
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       <PageHeader title="Pengaturan" subtitle="Kelola profil perusahaan dan koneksi" />
-      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 640 }}>
+      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'start' }}>
 
-        {/* Profile */}
-        <div className="card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <UserCircle style={{ width: 20, height: 20, color: '#0284c7' }} />
-            </div>
-            <div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Profil Saya</p>
-              <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>Nama ditampilkan di avatar dan daftar tim</p>
-            </div>
-          </div>
-
-          {loadingProfile ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
-              <Loader2 style={{ width: 18, height: 18, ...SPIN, color: 'var(--text-tertiary)' }} />
-            </div>
-          ) : (
-            <form onSubmit={saveProfile} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <F label="Email">
-                <input className="input" value={profileEmail} disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} />
-              </F>
-              <F label="Nama" hint="Opsional. Jika kosong, inisial diambil dari email.">
-                <input className="input" value={profileName} onChange={e => setProfileName(e.target.value)} placeholder="Contoh: Budi Santoso" />
-              </F>
-              <button type="submit" disabled={savingProfile} className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-                {savingProfile && <Loader2 style={{ width: 14, height: 14, ...SPIN }} />}
-                {savingProfile ? 'Menyimpan...' : 'Simpan'}
-              </button>
-            </form>
-          )}
-        </div>
+        {/* ── Left column: Company + Team ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
         {/* Company */}
         <div className="card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Building2 style={{ width: 20, height: 20, color: '#2563eb' }} />
             </div>
             <div>
@@ -371,7 +342,7 @@ export default function SettingsPage() {
                         className="input"
                         value={u.role}
                         onChange={e => changeRole(u, e.target.value as 'admin' | 'viewer')}
-                        style={{ height: 30, fontSize: 12, padding: '0 8px', width: 'auto' }}
+                        style={{ height: 32, fontSize: 12, width: 90 }}
                       >
                         <option value="viewer">Viewer</option>
                         <option value="admin">Admin</option>
@@ -391,6 +362,42 @@ export default function SettingsPage() {
             )}
           </div>
         )}
+
+        </div>{/* end left column */}
+
+        {/* ── Right column: Profile + WhatsApp + Password ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Profile */}
+        <div className="card" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <UserCircle style={{ width: 20, height: 20, color: '#0284c7' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Profil Saya</p>
+              <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 2 }}>Nama ditampilkan di avatar dan daftar tim</p>
+            </div>
+          </div>
+          {loadingProfile ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+              <Loader2 style={{ width: 18, height: 18, ...SPIN, color: 'var(--text-tertiary)' }} />
+            </div>
+          ) : (
+            <form onSubmit={saveProfile} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <F label="Email">
+                <input className="input" value={profileEmail} disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} />
+              </F>
+              <F label="Nama" hint="Opsional. Jika kosong, inisial diambil dari email.">
+                <input className="input" value={profileName} onChange={e => setProfileName(e.target.value)} placeholder="Contoh: Budi Santoso" />
+              </F>
+              <button type="submit" disabled={savingProfile} className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+                {savingProfile && <Loader2 style={{ width: 14, height: 14, ...SPIN }} />}
+                {savingProfile ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </form>
+          )}
+        </div>
 
         {/* WhatsApp */}
         <div className="card" style={{ padding: 24 }}>
@@ -504,6 +511,8 @@ export default function SettingsPage() {
             </button>
           </form>
         </div>
+
+        </div>{/* end right column */}
 
       </div>
     </div>
