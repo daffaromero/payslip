@@ -98,16 +98,19 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       padding-bottom: 10px;
       border-bottom: 2px solid ${template.theme.primaryColor};
       margin-bottom: 14px;
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
       gap: 14px;
     }
     .header-logo {
-      flex-shrink: 0;
+      justify-self: start;
     }
     .header-info {
-      flex: 1;
       text-align: center;
+    }
+    .header-spacer {
+      /* mirrors logo column to keep info centered */
     }
     .company-name {
       font-size: 17px;
@@ -120,6 +123,10 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       font-size: 11px;
       color: #666;
       margin-top: 1px;
+      max-width: 260px;
+      margin-left: auto;
+      margin-right: auto;
+      word-break: break-word;
     }
     .payslip-title {
       margin-top: 6px;
@@ -261,7 +268,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
 
   ${template.sections.companyHeader ? `
   <div class="header">
-    ${company.logoUrl ? `<div class="header-logo"><img src="${escapeHtml(company.logoUrl)}" alt="Logo" style="max-height:56px;"></div>` : ''}
+    ${company.logoUrl ? `<div class="header-logo"><img src="${escapeHtml(company.logoUrl)}" alt="Logo" style="max-height:56px;"></div>` : '<div class="header-logo"></div>'}
     <div class="header-info">
       <div class="company-name">${escapeHtml(company.name)}</div>
       ${company.address ? `<div class="company-info">${escapeHtml(company.address)}</div>` : ''}
@@ -275,6 +282,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       <div class="payslip-title">${t('Slip Gaji Karyawan', 'Employee Payslip')}</div>
       <div class="payslip-period">${t('Periode', 'Period')}: ${formatMonth(payslip.startDate)}</div>
     </div>
+    <div class="header-spacer"></div>
   </div>
   ` : ''}
 
