@@ -27,6 +27,7 @@ export const EmployeeSchema = z.object({
   whatsappNumber: z.string().nullable().optional(),
   department: z.string().nullable().optional(),
   position: z.string().nullable().optional(),
+  site: z.string().nullable().optional(),
   npwp: z.string().nullable().optional(),
   bankAccount: z.string().nullable().optional(),
   bankName: z.string().nullable().optional(),

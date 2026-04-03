@@ -12,7 +12,7 @@ import { useRole } from '@/lib/hooks/use-role'
 
 interface Employee {
   id: string; employeeId: string; name: string; email: string | null; whatsappNumber: string | null
-  department: string | null; position: string | null; baseSalary: number; hourlyRate: number | null
+  department: string | null; position: string | null; site: string | null; baseSalary: number; hourlyRate: number | null
   bankName: string | null; bankAccount: string | null; npwp: string | null; pph21Status: string
   joinedAt: string; isActive: boolean
   salaryComponents?: SalaryComponents | null
@@ -68,7 +68,7 @@ function F({ label, children }: { label: string; children: React.ReactNode }) {
 
 type FormState = {
   employeeId: string; name: string; email: string; whatsappNumber: string
-  department: string; position: string; npwp: string; bankAccount: string; bankName: string
+  department: string; position: string; site: string; npwp: string; bankAccount: string; bankName: string
   baseSalary: string; hourlyRate: string; pph21Status: string
   salaryComponents: SalaryComponents
 }
@@ -84,7 +84,7 @@ function toForm(e: Employee): FormState {
   }
   return {
     employeeId: e.employeeId, name: e.name, email: e.email ?? '', whatsappNumber: e.whatsappNumber ?? '',
-    department: e.department ?? '', position: e.position ?? '', npwp: e.npwp ?? '',
+    department: e.department ?? '', position: e.position ?? '', site: e.site ?? '', npwp: e.npwp ?? '',
     bankAccount: e.bankAccount ?? '', bankName: e.bankName ?? '',
     baseSalary: String(e.baseSalary), hourlyRate: e.hourlyRate ? String(e.hourlyRate) : '',
     pph21Status: e.pph21Status,
@@ -164,6 +164,7 @@ export default function EmployeeDetailPage() {
           whatsappNumber: form.whatsappNumber || null,
           department: form.department || null,
           position: form.position || null,
+          site: form.site || null,
           npwp: form.npwp || null,
           bankAccount: form.bankAccount || null,
           bankName: form.bankName || null,
@@ -314,6 +315,7 @@ export default function EmployeeDetailPage() {
               <>
                 <F label="Jabatan"><input className="input" style={{ fontSize: 13 }} value={form.position} onChange={e => set('position', e.target.value)} /></F>
                 <F label="Departemen"><input className="input" style={{ fontSize: 13 }} value={form.department} onChange={e => set('department', e.target.value)} /></F>
+                <F label="Site"><input className="input" style={{ fontSize: 13 }} placeholder="Yogyakarta" value={form.site} onChange={e => set('site', e.target.value)} /></F>
                 <F label="Email"><input type="email" className="input" style={{ fontSize: 13 }} value={form.email} onChange={e => set('email', e.target.value)} /></F>
                 <F label="WhatsApp"><input className="input" style={{ fontSize: 13 }} placeholder="628xxx" value={form.whatsappNumber} onChange={e => set('whatsappNumber', e.target.value)} /></F>
                 <F label="NPWP"><input className="input" style={{ fontSize: 13 }} value={form.npwp} onChange={e => set('npwp', e.target.value)} /></F>
@@ -322,6 +324,7 @@ export default function EmployeeDetailPage() {
               <>
                 <InfoRow label="Jabatan" value={employee.position} />
                 <InfoRow label="Departemen" value={employee.department} />
+                <InfoRow label="Site" value={employee.site} />
                 <InfoRow label="Email" value={employee.email} />
                 <InfoRow label="WhatsApp" value={employee.whatsappNumber} />
                 <InfoRow label="Bergabung" value={formatDate(employee.joinedAt)} />

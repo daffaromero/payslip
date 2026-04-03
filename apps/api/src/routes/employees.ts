@@ -36,6 +36,7 @@ router.post('/', async (c) => {
         whatsappNumber: data.whatsappNumber || null,
         department: data.department || null,
         position: data.position || null,
+        site: data.site || null,
         npwp: data.npwp || null,
         bankAccount: data.bankAccount || null,
         bankName: data.bankName || null,

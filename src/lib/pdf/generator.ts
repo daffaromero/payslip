@@ -275,6 +275,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       <div class="info-row"><span class="info-label">${t('ID Karyawan', 'Employee ID')}</span><span class="info-value">${escapeHtml(employee.employeeId)}</span></div>
       <div class="info-row"><span class="info-label">${t('Departemen', 'Department')}</span><span class="info-value">${escapeHtml(employee.department) || '—'}</span></div>
       <div class="info-row"><span class="info-label">${t('Jabatan', 'Position')}</span><span class="info-value">${escapeHtml(employee.position) || '—'}</span></div>
+      ${(employee as { site?: string | null }).site ? `<div class="info-row"><span class="info-label">${t('Site', 'Site')}</span><span class="info-value">${escapeHtml((employee as { site?: string | null }).site!)}</span></div>` : ''}
       <div class="info-row"><span class="info-label">NPWP</span><span class="info-value">${escapeHtml(employee.npwp) || '—'}</span></div>
       <div class="info-row"><span class="info-label">${t('Status PTKP', 'Tax Status')}</span><span class="info-value">${escapeHtml(employee.pph21Status)}</span></div>
     </div>

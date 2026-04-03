@@ -47,6 +47,7 @@ model Employee {
   whatsappNumber  String?   // e.g. 628123456789 (country code, no +)
   department      String?
   position        String?
+  site            String?   // Work location, e.g. Yogyakarta, Magelang
   npwp            String?   // Tax ID
   bankAccount     String?
   bankName        String?

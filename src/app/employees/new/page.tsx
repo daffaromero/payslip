@@ -27,7 +27,7 @@ export default function NewEmployeePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    employeeId: '', name: '', email: '', whatsappNumber: '', department: '', position: '',
+    employeeId: '', name: '', email: '', whatsappNumber: '', department: '', position: '', site: '',
     npwp: '', bankAccount: '', bankName: '', baseSalary: '', hourlyRate: '', pph21Status: 'TK/0',
   })
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
@@ -37,7 +37,7 @@ export default function NewEmployeePage() {
     try {
       const res = await fetch('/api/employees', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null, email: form.email || null, whatsappNumber: form.whatsappNumber || null, department: form.department || null, position: form.position || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
+        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null, email: form.email || null, whatsappNumber: form.whatsappNumber || null, department: form.department || null, position: form.position || null, site: form.site || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
       })
       if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan')
       router.push('/employees')
@@ -81,6 +81,9 @@ export default function NewEmployeePage() {
                 </F>
                 <F label="Jabatan">
                   <input className="input" placeholder="Manager, Staff..." value={form.position} onChange={e => set('position', e.target.value)} />
+                </F>
+                <F label="Site" hint="Lokasi kerja, contoh: Yogyakarta, Magelang">
+                  <input className="input" placeholder="Yogyakarta" value={form.site} onChange={e => set('site', e.target.value)} />
                 </F>
               </div>
             </div>
