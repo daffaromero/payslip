@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Mail, MessageCircle, Download, Eye, Loader2 } from 'lucide-react'
+import { Mail, MessageCircle, Download, Eye, Loader2, Pencil, X, Check, Plus, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { PreviewModal } from '@/components/ui/preview-modal'
+import { useRole } from '@/lib/hooks/use-role'
 
 interface Allowance { name: string; amount: number }
 interface Deduction { name: string; amount: number }
@@ -21,6 +22,15 @@ interface Payslip {
   ytdGross: number; ytdPph21: number; notes: string | null
   employee: { id: string; name: string; employeeId: string; email: string | null; whatsappNumber: string | null; department: string | null; position: string | null; npwp: string | null; bankName: string | null; bankAccount: string | null }
   company: { name: string }
+}
+
+interface FormState {
+  basePay: string
+  bonus: string
+  thr: string
+  allowances: Allowance[]
+  otherDeductions: Deduction[]
+  notes: string
 }
 
 const PERIOD: Record<string, string> = {
@@ -46,12 +56,35 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
+function AmountInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+      <span style={{ fontSize: 13, color: 'var(--text-tertiary)', flexShrink: 0, marginRight: 12 }}>{label}</span>
+      <div className="input-prefix" style={{ width: 180 }}>
+        <span className="prefix">Rp</span>
+        <input
+          type="number"
+          className="input"
+          style={{ fontSize: 13 }}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          min="0"
+        />
+      </div>
+    </div>
+  )
+}
+
 export default function PayslipDetailPage() {
   const { id } = useParams() as { id: string }
   const toast = useToast()
+  const isAdmin = useRole() === 'admin'
 
   const [payslip, setPayslip] = useState<Payslip | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
+  const [form, setForm] = useState<FormState | null>(null)
+  const [saving, setSaving] = useState(false)
 
   const [emailing, setEmailing] = useState(false)
   const [whatsapping, setWhatsapping] = useState(false)
@@ -70,6 +103,50 @@ export default function PayslipDetailPage() {
   }, [id])
 
   useEffect(() => { load() }, [load])
+
+  const startEdit = () => {
+    if (!payslip) return
+    setForm({
+      basePay: String(payslip.basePay),
+      bonus: String(payslip.bonus),
+      thr: String(payslip.thr),
+      allowances: payslip.allowances.map(a => ({ ...a })),
+      otherDeductions: payslip.otherDeductions.map(d => ({ ...d })),
+      notes: payslip.notes ?? '',
+    })
+    setIsEditing(true)
+  }
+
+  const cancelEdit = () => { setIsEditing(false); setForm(null) }
+
+  const save = async () => {
+    if (!form) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/payslips/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          basePay: Number(form.basePay) || 0,
+          bonus: Number(form.bonus) || 0,
+          thr: Number(form.thr) || 0,
+          allowances: form.allowances.filter(a => a.name.trim()),
+          otherDeductions: form.otherDeductions.filter(d => d.name.trim()),
+          notes: form.notes || null,
+        }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan')
+      const updated = await res.json()
+      setPayslip(updated.payslip)
+      setIsEditing(false)
+      setForm(null)
+      toast.success('Slip gaji diperbarui')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Terjadi kesalahan')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const closePreview = () => {
     if (previewSrc) URL.revokeObjectURL(previewSrc)
@@ -156,27 +233,47 @@ export default function PayslipDetailPage() {
         subtitle={`${formatDate(payslip.startDate)} — ${formatDate(payslip.endDate)} · ${PERIOD[payslip.periodType] ?? payslip.periodType}`}
         back={{ href: '/payslips', label: 'Kembali ke Slip Gaji' }}
       >
-        <button onClick={sendEmail} disabled={emailing} className="btn btn-secondary">
-          {emailing ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <Mail style={{ width: 14, height: 14 }} />}
-          {emailing ? 'Mengirim...' : 'Kirim Email'}
-        </button>
-        <button onClick={sendWhatsApp} disabled={whatsapping} className="btn btn-secondary" style={{ color: '#16a34a' }}>
-          {whatsapping ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <MessageCircle style={{ width: 14, height: 14 }} />}
-          {whatsapping ? 'Mengirim...' : 'Kirim WhatsApp'}
-        </button>
-        <button onClick={preview} disabled={previewing} className="btn btn-secondary">
-          {previewing ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <Eye style={{ width: 14, height: 14 }} />}
-          {previewing ? 'Memuat...' : 'Preview PDF'}
-        </button>
-        <button onClick={download} disabled={downloading} className="btn btn-primary">
-          {downloading ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <Download style={{ width: 14, height: 14 }} />}
-          {downloading ? 'Memuat...' : 'Download PDF'}
-        </button>
+        {isAdmin && !isEditing && (
+          <button onClick={startEdit} className="btn btn-secondary">
+            <Pencil style={{ width: 14, height: 14 }} /> Edit
+          </button>
+        )}
+        {isAdmin && isEditing && (
+          <>
+            <button onClick={cancelEdit} disabled={saving} className="btn btn-secondary">
+              <X style={{ width: 14, height: 14 }} /> Batal
+            </button>
+            <button onClick={save} disabled={saving} className="btn btn-primary">
+              {saving ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <Check style={{ width: 14, height: 14 }} />}
+              {saving ? 'Menyimpan...' : 'Simpan'}
+            </button>
+          </>
+        )}
+        {!isEditing && (
+          <>
+            <button onClick={sendEmail} disabled={emailing} className="btn btn-secondary">
+              {emailing ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <Mail style={{ width: 14, height: 14 }} />}
+              {emailing ? 'Mengirim...' : 'Kirim Email'}
+            </button>
+            <button onClick={sendWhatsApp} disabled={whatsapping} className="btn btn-secondary" style={{ color: '#16a34a' }}>
+              {whatsapping ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <MessageCircle style={{ width: 14, height: 14 }} />}
+              {whatsapping ? 'Mengirim...' : 'Kirim WhatsApp'}
+            </button>
+            <button onClick={preview} disabled={previewing} className="btn btn-secondary">
+              {previewing ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <Eye style={{ width: 14, height: 14 }} />}
+              {previewing ? 'Memuat...' : 'Preview PDF'}
+            </button>
+            <button onClick={download} disabled={downloading} className="btn btn-primary">
+              {downloading ? <Loader2 style={{ width: 14, height: 14, ...SPIN }} /> : <Download style={{ width: 14, height: 14 }} />}
+              {downloading ? 'Memuat...' : 'Download PDF'}
+            </button>
+          </>
+        )}
       </PageHeader>
 
       <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '300px 1fr', gap: 12, alignItems: 'start' }}>
 
-        {/* Left — employee info */}
+        {/* Left — employee info + notes */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <Section title="Karyawan">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 12, marginBottom: 12, borderBottom: '1px solid var(--border)' }}>
@@ -207,45 +304,173 @@ export default function PayslipDetailPage() {
             <Row label="Dibuat" value={formatDate(payslip.generatedAt)} />
           </Section>
 
-          {payslip.notes && (
-            <Section title="Catatan">
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{payslip.notes}</p>
-            </Section>
-          )}
+          {/* Notes — editable */}
+          <div className="card" style={{ padding: 20 }}>
+            <p className="section-label" style={{ marginBottom: 12 }}>Catatan</p>
+            {isEditing && form ? (
+              <textarea
+                className="input"
+                style={{ fontSize: 13, minHeight: 80, resize: 'vertical' }}
+                value={form.notes}
+                onChange={e => setForm(f => f ? { ...f, notes: e.target.value } : f)}
+                placeholder="Tambahkan catatan..."
+              />
+            ) : (
+              <p style={{ fontSize: 13, color: payslip.notes ? 'var(--text-secondary)' : 'var(--text-tertiary)', whiteSpace: 'pre-wrap' }}>
+                {payslip.notes || 'Tidak ada catatan'}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Right — payslip breakdown */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
           {/* Earnings */}
-          <Section title="Pendapatan">
-            <Row label="Gaji Pokok" value={formatCurrency(payslip.basePay)} />
-            <Row label={`Lembur (${payslip.overtimeHours} jam)`} value={formatCurrency(payslip.overtimePay)} />
-            <Row label="Bonus" value={formatCurrency(payslip.bonus)} />
-            <Row label="THR" value={formatCurrency(payslip.thr)} />
-            {payslip.allowances.length > 0 && payslip.allowances.map((al, i) => (
-              <Row key={i} label={al.name} value={formatCurrency(al.amount)} />
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 0', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+          <div className="card" style={{ padding: 20 }}>
+            <p className="section-label" style={{ marginBottom: 12 }}>Pendapatan</p>
+            {isEditing && form ? (
+              <>
+                <AmountInput label="Gaji Pokok" value={form.basePay} onChange={v => setForm(f => f ? { ...f, basePay: v } : f)} />
+                <AmountInput label="Bonus" value={form.bonus} onChange={v => setForm(f => f ? { ...f, bonus: v } : f)} />
+                <AmountInput label="THR" value={form.thr} onChange={v => setForm(f => f ? { ...f, thr: v } : f)} />
+
+                {/* Editable allowances */}
+                <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '14px 0 8px' }}>Tunjangan</p>
+                {form.allowances.map((al, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <input
+                      className="input"
+                      style={{ fontSize: 13, flex: 1 }}
+                      placeholder="Nama tunjangan"
+                      value={al.name}
+                      onChange={e => setForm(f => {
+                        if (!f) return f
+                        const next = [...f.allowances]
+                        next[i] = { ...next[i], name: e.target.value }
+                        return { ...f, allowances: next }
+                      })}
+                    />
+                    <div className="input-prefix" style={{ width: 160 }}>
+                      <span className="prefix">Rp</span>
+                      <input
+                        type="number"
+                        className="input"
+                        style={{ fontSize: 13 }}
+                        placeholder="0"
+                        value={al.amount || ''}
+                        onChange={e => setForm(f => {
+                          if (!f) return f
+                          const next = [...f.allowances]
+                          next[i] = { ...next[i], amount: Number(e.target.value) || 0 }
+                          return { ...f, allowances: next }
+                        })}
+                      />
+                    </div>
+                    <button
+                      className="btn btn-ghost btn-icon btn-sm"
+                      style={{ color: 'var(--danger)', flexShrink: 0 }}
+                      onClick={() => setForm(f => f ? { ...f, allowances: f.allowances.filter((_, j) => j !== i) } : f)}
+                    >
+                      <Trash2 style={{ width: 14, height: 14 }} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: 12, color: 'var(--accent)', marginTop: 4 }}
+                  onClick={() => setForm(f => f ? { ...f, allowances: [...f.allowances, { name: '', amount: 0 }] } : f)}
+                >
+                  <Plus style={{ width: 12, height: 12 }} /> Tambah Tunjangan
+                </button>
+              </>
+            ) : (
+              <>
+                <Row label="Gaji Pokok" value={formatCurrency(payslip.basePay)} />
+                <Row label={`Lembur (${payslip.overtimeHours} jam)`} value={formatCurrency(payslip.overtimePay)} />
+                <Row label="Bonus" value={formatCurrency(payslip.bonus)} />
+                <Row label="THR" value={formatCurrency(payslip.thr)} />
+                {payslip.allowances.map((al, i) => (
+                  <Row key={i} label={al.name} value={formatCurrency(al.amount)} />
+                ))}
+              </>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Total Pendapatan</span>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(totalEarnings)}</span>
             </div>
-          </Section>
+          </div>
 
           {/* Deductions */}
-          <Section title="Potongan">
+          <div className="card" style={{ padding: 20 }}>
+            <p className="section-label" style={{ marginBottom: 12 }}>Potongan</p>
             <Row label="PPh 21" value={formatCurrency(payslip.pph21)} />
             <Row label="BPJS Kesehatan" value={formatCurrency(payslip.bpjsKesehatan)} />
             <Row label="BPJS TK JHT" value={formatCurrency(payslip.bpjsTkJht)} />
             <Row label="BPJS TK JP" value={formatCurrency(payslip.bpjsTkJp)} />
-            {payslip.otherDeductions.length > 0 && payslip.otherDeductions.map((d, i) => (
-              <Row key={i} label={d.name} value={formatCurrency(d.amount)} />
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 0', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+
+            {/* Editable other deductions */}
+            {isEditing && form ? (
+              <>
+                <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '14px 0 8px' }}>Potongan Lainnya</p>
+                {form.otherDeductions.map((d, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <input
+                      className="input"
+                      style={{ fontSize: 13, flex: 1 }}
+                      placeholder="Nama potongan"
+                      value={d.name}
+                      onChange={e => setForm(f => {
+                        if (!f) return f
+                        const next = [...f.otherDeductions]
+                        next[i] = { ...next[i], name: e.target.value }
+                        return { ...f, otherDeductions: next }
+                      })}
+                    />
+                    <div className="input-prefix" style={{ width: 160 }}>
+                      <span className="prefix">Rp</span>
+                      <input
+                        type="number"
+                        className="input"
+                        style={{ fontSize: 13 }}
+                        placeholder="0"
+                        value={d.amount || ''}
+                        onChange={e => setForm(f => {
+                          if (!f) return f
+                          const next = [...f.otherDeductions]
+                          next[i] = { ...next[i], amount: Number(e.target.value) || 0 }
+                          return { ...f, otherDeductions: next }
+                        })}
+                      />
+                    </div>
+                    <button
+                      className="btn btn-ghost btn-icon btn-sm"
+                      style={{ color: 'var(--danger)', flexShrink: 0 }}
+                      onClick={() => setForm(f => f ? { ...f, otherDeductions: f.otherDeductions.filter((_, j) => j !== i) } : f)}
+                    >
+                      <Trash2 style={{ width: 14, height: 14 }} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4 }}
+                  onClick={() => setForm(f => f ? { ...f, otherDeductions: [...f.otherDeductions, { name: '', amount: 0 }] } : f)}
+                >
+                  <Plus style={{ width: 12, height: 12 }} /> Tambah Potongan
+                </button>
+              </>
+            ) : (
+              payslip.otherDeductions.map((d, i) => (
+                <Row key={i} label={d.name} value={formatCurrency(d.amount)} />
+              ))
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Total Potongan</span>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--danger)' }}>-{formatCurrency(totalDeductions)}</span>
             </div>
-          </Section>
+          </div>
 
           {/* Summary */}
           <Section title="Ringkasan">
@@ -263,6 +488,11 @@ export default function PayslipDetailPage() {
             </div>
           </Section>
 
+          {isEditing && (
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'right' }}>
+              PPh 21 dan BPJS dihitung ulang otomatis saat disimpan.
+            </p>
+          )}
         </div>
       </div>
     </div>
