@@ -20,23 +20,23 @@ const nav = [
 const COLLAPSED_W = '56px'
 const EXPANDED_W  = '260px'
 
+function getInitialCollapsed(): boolean {
+  if (typeof window === 'undefined') return false
+  return localStorage.getItem('sidebar-collapsed') === 'true'
+}
+
 export function Sidebar({ companyName, role }: { companyName: string; role: 'admin' | 'viewer' }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem('sidebar-collapsed') === 'true'
-  })
+  const [collapsed, setCollapsed] = useState(getInitialCollapsed)
 
   useEffect(() => {
     document.documentElement.style.setProperty('--sidebar-width', collapsed ? COLLAPSED_W : EXPANDED_W)
+    localStorage.setItem('sidebar-collapsed', String(collapsed))
   }, [collapsed])
 
   const toggle = () => {
-    const next = !collapsed
-    setCollapsed(next)
-    localStorage.setItem('sidebar-collapsed', String(next))
-    document.documentElement.style.setProperty('--sidebar-width', next ? COLLAPSED_W : EXPANDED_W)
+    setCollapsed(!collapsed)
   }
 
   const logout = useCallback(async () => {
@@ -44,11 +44,13 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
     router.push('/login')
   }, [router])
 
+  const width = collapsed ? COLLAPSED_W : EXPANDED_W
+
   return (
     <aside className="desktop-only" style={{
       position: 'fixed',
       inset: '0 auto 0 0',
-      width: collapsed ? COLLAPSED_W : EXPANDED_W,
+      width,
       zIndex: 50,
       flexDirection: 'column',
       background: 'var(--bg-surface)',
@@ -61,9 +63,8 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: collapsed ? 0 : 12,
         height: 56,
-        padding: collapsed ? '0 12px' : '0 20px',
+        padding: '0 12px',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
@@ -197,9 +198,8 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        gap: collapsed ? 0 : 10,
-        padding: collapsed ? '9px 0' : '9px 12px',
+        gap: 10,
+        padding: '9px 12px',
         borderRadius: 6,
         fontSize: 14,
         fontWeight: 500,
