@@ -39,7 +39,7 @@ router.post('/', async (c) => {
     return c.json({
       success: true,
       headers: result.headers,
-      preview: result.rows.slice(0, 5),
+      rows: result.rows,
       totalRows: result.rows.length,
       autoMappings: Object.fromEntries(autoMappings),
       sheetNames: result.sheetNames,
