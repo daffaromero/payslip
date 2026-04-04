@@ -233,6 +233,69 @@ router.post('/bulk', async (c) => {
   }
 })
 
+// POST /api/payslips/bulk-send — must be before /:id to avoid wildcard match
+router.post('/bulk-send', async (c) => {
+  const cid = c.get('companyId')
+  try {
+    const body = await c.req.json()
+    const { ids, channel } = body as { ids: string[]; channel: 'email' | 'whatsapp' | 'both' }
+    if (!Array.isArray(ids) || ids.length === 0) return c.json({ error: 'IDs diperlukan' }, 400)
+    if (!['email', 'whatsapp', 'both'].includes(channel)) return c.json({ error: 'Channel tidak valid' }, 400)
+
+    const payslips = await prisma.payslip.findMany({
+      where: { id: { in: ids }, companyId: cid },
+      include: { employee: true, template: true, company: true },
+    })
+
+    let sent = 0
+    let skipped = 0
+    const errors: { id: string; name: string; error: string }[] = []
+
+    for (const payslip of payslips) {
+      const payslipData = { ...payslip, allowances: JSON.parse(payslip.allowances as string), otherDeductions: JSON.parse(payslip.otherDeductions as string) }
+      const template = deserializeTemplate(payslip.template as unknown as RawTemplate)
+      const periodLabel = new Intl.DateTimeFormat('id-ID', { year: 'numeric', month: 'long' }).format(new Date(payslip.startDate))
+      const safeName = payslip.employee.name.toLowerCase().replace(/\s+/g, '-')
+      const safeDate = new Date(payslip.startDate).toISOString().slice(0, 7)
+      const filename = `slip-gaji-${safeName}-${safeDate}.pdf`
+
+      const wantsEmail = channel === 'email' || channel === 'both'
+      const wantsWa = channel === 'whatsapp' || channel === 'both'
+      const hasEmail = !!payslip.employee.email
+      const hasWa = !!payslip.employee.whatsappNumber
+
+      if ((wantsEmail && !hasEmail) && (wantsWa && !hasWa)) { skipped++; continue }
+      if (wantsEmail && !hasEmail && !wantsWa) { skipped++; continue }
+      if (wantsWa && !hasWa && !wantsEmail) { skipped++; continue }
+
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pdfBuffer = await generatePayslipPDF({ payslip: payslipData as any, employee: payslip.employee as any, template: template as any, company: payslip.company })
+
+        if (wantsEmail && hasEmail) {
+          await sendPayslipEmail({
+            to: payslip.employee.email!, employeeName: payslip.employee.name,
+            companyName: payslip.company.name, periodLabel,
+            pdfBuffer, filename,
+          })
+        }
+        if (wantsWa && hasWa) {
+          const caption = `Yth. *${payslip.employee.name}*,\n\nTerlampir slip gaji Anda untuk periode *${periodLabel}*.\n\nSilakan simpan dokumen ini sebagai bukti penerimaan gaji.\n\n_${payslip.company.name}_`
+          await sendDocument({ to: payslip.employee.whatsappNumber!, caption, filename, buffer: pdfBuffer, mimetype: 'application/pdf' })
+        }
+        sent++
+      } catch (e) {
+        errors.push({ id: payslip.id, name: payslip.employee.name, error: e instanceof Error ? e.message : 'Gagal mengirim' })
+      }
+    }
+
+    return c.json({ sent, skipped, errors })
+  } catch (e) {
+    console.error('Bulk send error:', e)
+    return c.json(apiError('Gagal mengirim massal', e), 500)
+  }
+})
+
 // GET /api/payslips/export — must be before /:id to avoid wildcard match
 router.get('/export', async (c) => {
   const cid = c.get('companyId')

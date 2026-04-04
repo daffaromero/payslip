@@ -23,7 +23,7 @@ export default async function DashboardPage() {
 
   const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
 
-  const [totalEmployees, totalPayslips, recentPayslips, thisMonthPayslips, thisMonthPayroll, ytdPayroll, avgNetPay, rawMonthlyPayslips] = await Promise.all([
+  const [totalEmployees, totalPayslips, recentPayslips, thisMonthPayslips, thisMonthPayroll, ytdPayroll, avgNetPay, rawMonthlyPayslips, deptPayslips, deptEmployees] = await Promise.all([
     prisma.employee.count({ where: { companyId, isActive: true } }),
     prisma.payslip.count({ where: { companyId } }),
     prisma.payslip.findMany({
@@ -51,6 +51,17 @@ export default async function DashboardPage() {
       where: { companyId, startDate: { gte: twelveMonthsAgo } },
       select: { startDate: true, netPay: true },
     }),
+    // Department payroll breakdown (current month)
+    prisma.payslip.findMany({
+      where: { companyId, startDate: { gte: monthStart } },
+      select: { netPay: true, employee: { select: { department: true } } },
+    }),
+    // Active employees per department
+    prisma.employee.groupBy({
+      by: ['department'],
+      where: { companyId, isActive: true },
+      _count: { id: true },
+    }),
   ])
 
   // Aggregate into monthly buckets
@@ -65,6 +76,18 @@ export default async function DashboardPage() {
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     return { month: key, total: totals.get(key) ?? 0 }
   })
+
+  // Build department breakdown
+  const deptMap = new Map<string, { payroll: number; count: number }>()
+  for (const p of deptPayslips) {
+    const dept = p.employee.department ?? '(Tidak ada divisi)'
+    const prev = deptMap.get(dept) ?? { payroll: 0, count: 0 }
+    deptMap.set(dept, { payroll: prev.payroll + Number(p.netPay), count: prev.count + 1 })
+  }
+  const empByDept = new Map(deptEmployees.map(d => [d.department ?? '(Tidak ada divisi)', d._count.id]))
+  const deptBreakdown = Array.from(deptMap.entries())
+    .map(([dept, { payroll, count }]) => ({ dept, payroll, slips: count, employees: empByDept.get(dept) ?? 0 }))
+    .sort((a, b) => b.payroll - a.payroll)
 
   const countStats = [
     { label: 'Karyawan Aktif',  value: String(totalEmployees),    icon: Users,      href: '/employees', color: '#0066ff', bg: '#eff6ff' },
@@ -139,6 +162,40 @@ export default async function DashboardPage() {
           </div>
           <PayrollChart data={chartData} />
         </div>
+
+        {/* Department breakdown */}
+        {deptBreakdown.length > 0 && (
+          <div className="card overflow-hidden" style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Breakdown per Divisi</p>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>Payroll bulan ini</p>
+              </div>
+            </div>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Divisi</th>
+                  <th style={{ textAlign: 'right' }}>Karyawan Aktif</th>
+                  <th style={{ textAlign: 'right' }}>Slip Gaji</th>
+                  <th style={{ textAlign: 'right' }}>Total Payroll</th>
+                  <th style={{ textAlign: 'right' }}>Rata-rata</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deptBreakdown.map(({ dept, payroll, slips, employees }) => (
+                  <tr key={dept}>
+                    <td style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>{dept}</td>
+                    <td style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-secondary)' }}>{employees}</td>
+                    <td style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-secondary)' }}>{slips}</td>
+                    <td style={{ textAlign: 'right', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(payroll)}</td>
+                    <td style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(slips > 0 ? payroll / slips : 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Recent payslips */}
         <div className="card overflow-hidden">

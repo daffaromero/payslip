@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Plus, FileText, Trash2, Download, Loader2, Mail, MessageCircle, Filter, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, FileText, Trash2, Download, Loader2, Mail, MessageCircle, Filter, Eye, ChevronLeft, ChevronRight, Send } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -44,6 +44,9 @@ export default function PayslipsPage() {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
   const [previewSrc, setPreviewSrc] = useState<string | null>(null)
   const [previewFilename, setPreviewFilename] = useState('')
+  const [bulkSendOpen, setBulkSendOpen] = useState(false)
+  const [bulkChannel, setBulkChannel] = useState<'email' | 'whatsapp' | 'both'>('email')
+  const [bulkSending, setBulkSending] = useState(false)
   const toast = useToast()
 
   const deleteOp = useAsyncOperation(
@@ -157,6 +160,29 @@ export default function PayslipsPage() {
     setPreviewSrc(null)
   }
 
+  const bulkSend = async () => {
+    if (payslips.length === 0) return
+    setBulkSending(true)
+    try {
+      const res = await fetch('/api/payslips/bulk-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: payslips.map(p => p.id), channel: bulkChannel }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Gagal mengirim')
+      const parts = [`${d.sent} slip gaji terkirim`]
+      if (d.skipped > 0) parts.push(`${d.skipped} dilewati (tidak ada kontak)`)
+      if (d.errors?.length > 0) parts.push(`${d.errors.length} gagal`)
+      toast.success(parts.join(', '))
+      setBulkSendOpen(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal mengirim')
+    } finally {
+      setBulkSending(false)
+    }
+  }
+
   const totalPages = Math.ceil(total / LIMIT)
 
   return (
@@ -182,7 +208,46 @@ export default function PayslipsPage() {
         />
       )}
 
+      {/* Bulk send modal */}
+      {bulkSendOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)' }}
+          onClick={e => { if (e.target === e.currentTarget) setBulkSendOpen(false) }}>
+          <div className="card" style={{ padding: 24, width: 400, maxWidth: 'calc(100vw - 32px)' }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Kirim Massal</p>
+            <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginBottom: 20 }}>
+              Mengirim {total} slip gaji sesuai filter aktif saat ini.
+            </p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>Kirim via</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              {(['email', 'whatsapp', 'both'] as const).map(ch => (
+                <label key={ch} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: `1px solid ${bulkChannel === ch ? 'var(--accent)' : 'var(--border)'}`, background: bulkChannel === ch ? 'var(--accent-light)' : 'var(--bg-surface)', cursor: 'pointer' }}>
+                  <input type="radio" name="channel" value={ch} checked={bulkChannel === ch} onChange={() => setBulkChannel(ch)} style={{ accentColor: 'var(--accent)' }} />
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                    {ch === 'email' ? 'Email saja' : ch === 'whatsapp' ? 'WhatsApp saja' : 'Email & WhatsApp'}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>
+              Slip gaji tanpa kontak yang sesuai akan dilewati secara otomatis.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary" onClick={() => setBulkSendOpen(false)} disabled={bulkSending}>Batal</button>
+              <button className="btn btn-primary" onClick={bulkSend} disabled={bulkSending || payslips.length === 0}>
+                {bulkSending ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Send style={{ width: 14, height: 14 }} />}
+                {bulkSending ? 'Mengirim...' : `Kirim ${total} Slip Gaji`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <PageHeader title="Slip Gaji" subtitle={loading ? '' : `${total} slip gaji ditemukan`}>
+        {isAdmin && total > 0 && (
+          <button className="btn btn-secondary" onClick={() => setBulkSendOpen(true)}>
+            <Send className="h-3.5 w-3.5" /> Kirim Massal
+          </button>
+        )}
         {isAdmin && (
           <Link href="/generate" className="btn btn-primary">
             <Plus className="h-3.5 w-3.5" /> Buat Slip Gaji
