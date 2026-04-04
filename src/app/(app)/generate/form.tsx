@@ -204,6 +204,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         tunjangan_makan: { amount: 0, enabled: false },
         tunjangan_transport: { amount: 0, enabled: false },
         tunjangan_lama_bekerja: { amount: 0, enabled: false },
+        insentif: { amount: 0, enabled: false },
         tunjangan_pph21: { amount: 0, enabled: false },
       }
       setSalaryComponents(defaults)
