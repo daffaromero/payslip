@@ -65,7 +65,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         alignItems: 'center',
         gap: 12,
         height: 56,
-        padding: '0 16px',
+        padding: '0 12px',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
@@ -99,7 +99,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       {/* Nav */}
       <nav style={{
         flex: 1,
-        padding: '12px 10px',
+        padding: '12px 0',
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
@@ -127,7 +127,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-end',
-            padding: '10px 16px',
+            padding: collapsed ? '10px 0' : '10px 12px',
             background: 'none',
             border: 'none',
             borderBottom: '1px solid var(--border)',
@@ -151,7 +151,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
 
         {/* Logout */}
         <div style={{ 
-          padding: collapsed ? '10px' : '10px 20px', 
+          padding: collapsed ? '10px 0' : '10px 12px', 
           display: 'flex', 
           justifyContent: collapsed ? 'center' : 'space-between', 
           alignItems: 'center' 
