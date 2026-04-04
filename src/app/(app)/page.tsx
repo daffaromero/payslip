@@ -135,7 +135,7 @@ export default async function DashboardPage() {
         {/* Payroll stats */}
         <div className="stat-grid" style={{ gap: 10, marginBottom: 10 }}>
           {payrollStats.map(({ label, value, icon: Icon, color, bg }) => (
-            <div key={label} className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div key={label} className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, minHeight: 88 }}>
               <div style={{ background: bg, width: 40, height: 40, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon style={{ color, width: 18, height: 18 }} />
               </div>
