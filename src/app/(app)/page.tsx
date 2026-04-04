@@ -51,9 +51,9 @@ export default async function DashboardPage() {
       where: { companyId, startDate: { gte: twelveMonthsAgo } },
       select: { startDate: true, netPay: true },
     }),
-    // Department payroll breakdown (current month)
+    // Department payroll breakdown (YTD)
     prisma.payslip.findMany({
-      where: { companyId, startDate: { gte: monthStart } },
+      where: { companyId, startDate: { gte: yearStart } },
       select: { netPay: true, employee: { select: { department: true } } },
     }),
     // Active employees per department
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Breakdown per Divisi</p>
-                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>Payroll bulan ini</p>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>Payroll tahun ini (YTD)</p>
               </div>
             </div>
             <table className="data-table">
