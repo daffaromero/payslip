@@ -17,7 +17,7 @@ const nav = [
   { href: '/settings',      label: 'Pengaturan',      icon: Settings,                      adminOnly: false },
 ]
 
-const COLLAPSED_W = '56px'
+const COLLAPSED_W = '64px'
 const EXPANDED_W  = '260px'
 
 function getInitialCollapsed(): boolean {
@@ -63,8 +63,9 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       <div style={{
         display: 'flex',
         alignItems: 'center',
+        gap: 12,
         height: 56,
-        padding: '0 12px',
+        padding: collapsed ? '0 16px' : '0 20px',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
@@ -199,7 +200,7 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        padding: '9px 12px',
+        padding: collapsed ? '9px 22px' : '9px 12px',
         borderRadius: 6,
         fontSize: 14,
         fontWeight: 500,
