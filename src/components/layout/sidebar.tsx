@@ -65,9 +65,9 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: collapsed ? 0 : 12,
         height: 56,
-        padding: '0 20px',
+        padding: collapsed ? '0 12px' : '0 20px',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
@@ -90,6 +90,8 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             color: 'var(--text-primary)',
             letterSpacing: '-0.02em',
             whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}>
             Payslip
           </span>
