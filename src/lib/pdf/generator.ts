@@ -128,6 +128,11 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       color: #666;
       margin-top: 1px;
     }
+    .company-address {
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+    }
     .payslip-title {
       margin-top: 6px;
       font-size: 14px;
@@ -271,7 +276,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
     ${company.logoUrl ? `<div class="header-logo"><img src="${escapeHtml(company.logoUrl)}" alt="Logo"></div>` : '<div class="header-logo"></div>'}
     <div class="header-info">
       <div class="company-name">${escapeHtml(company.name)}</div>
-      ${company.address ? `<div class="company-info">${escapeHtml(company.address)}</div>` : ''}
+      ${company.address ? `<div class="company-info company-address">${escapeHtml(company.address)}</div>` : ''}
       ${(company.phone || company.email) ? `
       <div class="company-info">
         ${company.phone ? `Telp: ${escapeHtml(company.phone)}` : ''}
