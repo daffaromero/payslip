@@ -63,9 +63,10 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       <div style={{
         display: 'flex',
         alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
         gap: 12,
         height: 56,
-        padding: '0 12px',
+        padding: collapsed ? '0' : '0 16px',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
@@ -205,8 +206,9 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
       style={{
         display: 'flex',
         alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
         gap: 10,
-        padding: '9px 12px',
+        padding: collapsed ? '9px 0' : '9px 12px',
         borderRadius: 6,
         fontSize: 14,
         fontWeight: 500,
