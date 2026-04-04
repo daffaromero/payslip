@@ -65,7 +65,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         alignItems: 'center',
         gap: 12,
         height: 56,
-        padding: collapsed ? '0 16px' : '0 20px',
+        padding: '0 16px',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
@@ -126,7 +126,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             width: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-end',
+            justifyContent: collapsed ? 'center' : 'flex-end',
             padding: '10px 16px',
             background: 'none',
             border: 'none',
@@ -150,7 +150,12 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         </button>
 
         {/* Logout */}
-        <div style={{ padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ 
+          padding: collapsed ? '10px' : '10px 20px', 
+          display: 'flex', 
+          justifyContent: collapsed ? 'center' : 'space-between', 
+          alignItems: 'center' 
+        }}>
           {!collapsed && (
             <div style={{ minWidth: 0 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -165,6 +170,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: collapsed ? 0 : 6,
               background: 'none',
               border: 'none',
@@ -200,7 +206,7 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        padding: collapsed ? '9px 22px' : '9px 12px',
+        padding: '9px 12px',
         borderRadius: 6,
         fontSize: 14,
         fontWeight: 500,
