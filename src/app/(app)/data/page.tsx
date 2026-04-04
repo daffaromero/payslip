@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
-import { Download, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, Users, Receipt } from 'lucide-react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { Download, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, Users, Receipt, FileInput } from 'lucide-react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
@@ -456,6 +456,273 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
   return null
 }
 
+// ─── Payslip Import Section ──────────────────────────────────────────────────
+
+type PayslipPreviewRow = {
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+  row: Record<string, string | number | null>
+  employee: { id: string; employeeId: string; name: string } | null
+  payslip: { basePay: number; bonus: number; thr: number; pph21: number; grossPay: number; netPay: number } | null
+}
+
+function PayslipImportSection({ toast }: { toast: ToastHandle }) {
+  const [step, setStep] = useState<'upload' | 'configure' | 'preview' | 'done'>('upload')
+  const [loading, setLoading] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const [rows, setRows] = useState<Record<string, string | number | null>[]>([])
+  const [totalRows, setTotalRows] = useState(0)
+  const [templates, setTemplates] = useState<{ id: string; name: string }[]>([])
+  const [templateId, setTemplateId] = useState('')
+  const [periodType, setPeriodType] = useState('monthly')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [preview, setPreview] = useState<PayslipPreviewRow[]>([])
+  const [totalValid, setTotalValid] = useState(0)
+  const [totalInvalid, setTotalInvalid] = useState(0)
+  const [totalWarnings, setTotalWarnings] = useState(0)
+  const [result, setResult] = useState<{ created: number; skipped: number; errors: { row: number; error: string }[] } | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    fetch('/api/templates').then(r => r.json()).then(d => {
+      setTemplates(d.templates ?? [])
+      if (d.templates?.length) setTemplateId(d.templates.find((t: { isDefault: boolean }) => t.isDefault)?.id ?? d.templates[0].id)
+    }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (periodType === 'monthly') {
+      const now = new Date()
+      const s = new Date(now.getFullYear(), now.getMonth(), 1)
+      const e = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      setStartDate(s.toISOString().split('T')[0])
+      setEndDate(e.toISOString().split('T')[0])
+    }
+  }, [periodType])
+
+  const processFile = useCallback(async (file: File) => {
+    if (!file.name.match(/\.(xlsx|xls|csv)$/i)) { toast.error('Format file harus .xlsx, .xls, atau .csv'); return }
+    setLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/payslips/import', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Gagal memproses file'); return }
+      setRows(data.rows)
+      setTotalRows(data.totalRows)
+      setStep('configure')
+    } finally { setLoading(false) }
+  }, [toast])
+
+  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (f) processFile(f); e.target.value = ''
+  }
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f) processFile(f)
+  }
+
+  const loadPreview = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/payslips/import/preview', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows, templateId, periodType, startDate, endDate }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Gagal membuat preview'); return }
+      setPreview(data.preview)
+      setTotalValid(data.totalValid)
+      setTotalInvalid(data.totalInvalid)
+      setTotalWarnings(data.totalWarnings)
+      setStep('preview')
+    } finally { setLoading(false) }
+  }, [rows, templateId, periodType, startDate, endDate, toast])
+
+  const commit = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/payslips/import/commit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows, templateId, periodType, startDate, endDate, skipDuplicates: true }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Gagal menyimpan slip gaji'); return }
+      setResult(data)
+      setStep('done')
+    } finally { setLoading(false) }
+  }, [rows, templateId, periodType, startDate, endDate, toast])
+
+  const reset = () => {
+    setStep('upload'); setRows([]); setPreview([]); setResult(null)
+  }
+
+  const formatCurrency = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+
+  if (step === 'upload') return (
+    <div className="card" style={{ padding: 24 }}>
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px' }}>Import Slip Gaji</h2>
+      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: '0 0 20px' }}>
+        Upload file Excel dengan data slip gaji. Karyawan harus sudah terdaftar di sistem.
+      </p>
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        onClick={() => fileRef.current?.click()}
+        style={{ border: `2px dashed ${dragging ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 10, padding: '48px 24px', textAlign: 'center', cursor: 'pointer', background: dragging ? 'var(--accent-light)' : 'var(--bg-subtle)', transition: 'border-color 150ms, background 150ms' }}
+      >
+        <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={onFileInput} />
+        {loading
+          ? <Loader2 style={{ width: 32, height: 32, color: 'var(--accent)', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
+          : <FileInput style={{ width: 32, height: 32, color: 'var(--text-tertiary)', margin: '0 auto 12px' }} />
+        }
+        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+          {loading ? 'Memproses file...' : 'Klik atau drag & drop file di sini'}
+        </p>
+        <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>Format: .xlsx, .xls, .csv</p>
+      </div>
+      <div style={{ marginTop: 16, padding: 12, background: 'var(--bg-subtle)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div>
+          <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: '0 0 4px' }}>Kolom yang didukung:</p>
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
+            ID Karyawan (wajib), Gaji Pokok, Bonus, THR, PPh21, BPJS Kesehatan, BPJS TK JHT, BPJS TK JP, Catatan
+          </p>
+        </div>
+        <a href="/api/payslips/import/template" download="template-import-slip-gaji.xlsx" className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>
+          <Download style={{ width: 13, height: 13 }} /> Unduh Template
+        </a>
+      </div>
+    </div>
+  )
+
+  if (step === 'configure') return (
+    <div className="card" style={{ padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Konfigurasi Periode</h2>
+        <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{totalRows} baris ditemukan</span>
+      </div>
+      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: '0 0 20px' }}>
+        Tentukan periode dan template untuk semua slip gaji yang akan diimpor.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 480 }}>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Template</label>
+          <select className="input" value={templateId} onChange={e => setTemplateId(e.target.value)} style={{ fontSize: 13 }}>
+            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Tipe Periode</label>
+          <select className="input" value={periodType} onChange={e => setPeriodType(e.target.value)} style={{ fontSize: 13 }}>
+            <option value="weekly">Mingguan</option>
+            <option value="monthly">Bulanan</option>
+            <option value="quarterly">3 Bulanan</option>
+            <option value="semi-annual">6 Bulanan</option>
+            <option value="annual">Tahunan</option>
+          </select>
+        </div>
+        <div className="form-grid-2" style={{ gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Tanggal Mulai</label>
+            <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ fontSize: 13 }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Tanggal Selesai</label>
+            <input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ fontSize: 13 }} />
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 24 }}>
+        <button className="btn btn-secondary" onClick={reset}>Batal</button>
+        <button className="btn btn-primary" onClick={loadPreview} disabled={loading || !templateId || !startDate || !endDate}>
+          {loading && <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />}
+          Lihat Preview
+        </button>
+      </div>
+    </div>
+  )
+
+  if (step === 'preview') return (
+    <div className="card" style={{ padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Preview Import Slip Gaji</h2>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <span style={{ fontSize: 12, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 5, padding: '3px 10px' }}>{totalValid} valid</span>
+          {totalInvalid > 0 && <span style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 5, padding: '3px 10px' }}>{totalInvalid} error</span>}
+          {totalWarnings > 0 && <span style={{ fontSize: 12, color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 5, padding: '3px 10px' }}>{totalWarnings} duplikat</span>}
+        </div>
+      </div>
+      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: '0 0 20px' }}>
+        Periode: {startDate} s/d {endDate}. Duplikat akan dilewati.
+      </p>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'auto', marginBottom: 20 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg-subtle)' }}>
+              {['', 'ID', 'Nama', 'Gaji Pokok', 'Gaji Kotor', 'Gaji Bersih', 'Keterangan'].map(h => (
+                <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Gaji Pokok' || h === 'Gaji Kotor' || h === 'Gaji Bersih' ? 'right' : 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {preview.map((p, i) => (
+              <tr key={i} style={{ borderBottom: i < preview.length - 1 ? '1px solid var(--border)' : 'none', background: !p.valid ? '#fff8f8' : p.warnings?.length ? '#fffbeb' : undefined }}>
+                <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                  {p.valid
+                    ? p.warnings?.length ? <AlertCircle style={{ width: 14, height: 14, color: '#d97706' }} /> : <CheckCircle2 style={{ width: 14, height: 14, color: '#16a34a' }} />
+                    : <XCircle style={{ width: 14, height: 14, color: '#dc2626' }} />
+                  }
+                </td>
+                <td style={{ padding: '10px 12px', color: 'var(--text-tertiary)', fontFamily: 'monospace', fontSize: 12 }}>{p.employee?.employeeId ?? String(p.row['ID Karyawan'] ?? '—')}</td>
+                <td style={{ padding: '10px 12px', color: 'var(--text-primary)', fontWeight: 500 }}>{p.employee?.name ?? '—'}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{p.payslip ? formatCurrency(p.payslip.basePay) : '—'}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{p.payslip ? formatCurrency(p.payslip.grossPay) : '—'}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{p.payslip ? formatCurrency(p.payslip.netPay) : '—'}</td>
+                <td style={{ padding: '10px 12px', fontSize: 12 }}>
+                  {p.errors?.length ? <span style={{ color: '#dc2626' }}>{p.errors.join(', ')}</span>
+                    : p.warnings?.length ? <span style={{ color: '#d97706' }}>{p.warnings.join(', ')}</span>
+                    : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button className="btn btn-secondary" onClick={() => setStep('configure')}>Kembali</button>
+        <button className="btn btn-primary" onClick={commit} disabled={loading || totalValid === 0}>
+          {loading && <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />}
+          Import {totalValid} Slip Gaji
+        </button>
+      </div>
+    </div>
+  )
+
+  if (step === 'done' && result) return (
+    <div className="card" style={{ padding: 24, textAlign: 'center' }}>
+      <CheckCircle2 style={{ width: 40, height: 40, color: '#16a34a', margin: '0 auto 16px' }} />
+      <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px' }}>Import Selesai</h2>
+      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: '0 0 20px' }}>
+        {result.created} slip gaji berhasil dibuat{result.skipped > 0 ? `, ${result.skipped} duplikat dilewati` : ''}.
+      </p>
+      {result.errors.length > 0 && (
+        <div style={{ textAlign: 'left', marginBottom: 16, padding: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
+          {result.errors.map((e, i) => <p key={i} style={{ fontSize: 12, color: '#dc2626', margin: '2px 0' }}>Baris {e.row}: {e.error}</p>)}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <Link href="/payslips" className="btn btn-secondary">Lihat Slip Gaji</Link>
+        <button className="btn btn-primary" onClick={reset}>Import Lagi</button>
+      </div>
+    </div>
+  )
+
+  return null
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DataPage() {
@@ -469,6 +736,7 @@ export default function DataPage() {
       <div style={{ padding: 12, maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 0 }}>
         <ExportSection toast={toast} />
         <ImportSection toast={toast} />
+        <PayslipImportSection toast={toast} />
       </div>
     </div>
   )

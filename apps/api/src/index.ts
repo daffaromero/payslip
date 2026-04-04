@@ -9,6 +9,7 @@ import employeesRouter from './routes/employees'
 import companyRouter from './routes/company'
 import templatesRouter from './routes/templates'
 import payslipsRouter from './routes/payslips'
+import payslipsImportRouter from './routes/payslips-import'
 import generateRouter from './routes/generate'
 import importRouter from './routes/import'
 import whatsappRouter from './routes/whatsapp'
@@ -41,6 +42,7 @@ app.route('/api/employees', employeesRouter)
 app.route('/api/company', companyRouter)
 app.route('/api/templates', templatesRouter)
 app.route('/api/payslips', payslipsRouter)
+app.route('/api/payslips/import', payslipsImportRouter)
 app.route('/api', generateRouter)
 app.route('/api/import-excel', importRouter)
 app.route('/api/whatsapp', whatsappRouter)
