@@ -269,7 +269,7 @@ export default function PayslipsPage() {
                     <th>Tipe</th>
                     <th style={{ textAlign: 'right' }}>Gaji Kotor</th>
                     <th style={{ textAlign: 'right' }}>Gaji Bersih</th>
-                    <th style={{ width: '96px' }}></th>
+                    <th style={{ width: '180px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -302,7 +302,7 @@ export default function PayslipsPage() {
                         </span>
                       </td>
                       <td>
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ gap: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
                           <button onClick={() => whatsappOp.execute(p.id)} disabled={whatsappOp.isLoading} className="btn btn-ghost btn-icon btn-sm" title="Kirim ke WhatsApp" style={{ color: '#16a34a' }}>
                             {whatsappOp.isLoading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <MessageCircle style={{ width: 14, height: 14 }} />}
                           </button>
@@ -320,6 +320,7 @@ export default function PayslipsPage() {
                               <Trash2 style={{ width: 14, height: 14 }} />
                             </button>
                           )}
+                          <Link href={`/payslips/${p.id}`} className="btn btn-secondary btn-sm" style={{ fontSize: 12 }}>Lihat</Link>
                         </div>
                       </td>
                     </tr>

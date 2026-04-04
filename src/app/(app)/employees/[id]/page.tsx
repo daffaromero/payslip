@@ -290,7 +290,7 @@ export default function EmployeeDetailPage() {
       <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '280px 1fr', gap: 12, alignItems: 'start' }}>
 
         {/* Left — profile */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 12, maxHeight: 'calc(100vh - 80px)', overflowY: 'auto' }}>
 
           {/* Identity card */}
           <div className="card" style={{ padding: 20 }}>
@@ -444,7 +444,7 @@ export default function EmployeeDetailPage() {
                   <th>Tipe</th>
                   <th style={{ textAlign: 'right' }}>Gaji Kotor</th>
                   <th style={{ textAlign: 'right' }}>Gaji Bersih</th>
-                  <th style={{ width: 100 }}></th>
+                  <th style={{ width: 160 }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -464,7 +464,7 @@ export default function EmployeeDetailPage() {
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(Number(p.netPay))}</span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, opacity: 0 }} className="group-hover:opacity-100 transition-opacity">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
                         <button onClick={() => sendWa(p.id)} disabled={whatsappingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Kirim WhatsApp" style={{ color: '#16a34a' }}>
                           {whatsappingId === p.id ? <Loader2 style={{ width: 13, height: 13, ...SPIN }} /> : <MessageCircle style={{ width: 13, height: 13 }} />}
                         </button>
@@ -477,6 +477,7 @@ export default function EmployeeDetailPage() {
                         <button onClick={() => download(p.id, p.startDate.slice(0, 7))} disabled={downloadingId === p.id} className="btn btn-ghost btn-icon btn-sm" title="Download PDF">
                           {downloadingId === p.id ? <Loader2 style={{ width: 13, height: 13, ...SPIN }} /> : <Download style={{ width: 13, height: 13 }} />}
                         </button>
+                        <Link href={`/payslips/${p.id}`} className="btn btn-secondary btn-sm" style={{ fontSize: 12 }}>Lihat</Link>
                       </div>
                     </td>
                   </tr>

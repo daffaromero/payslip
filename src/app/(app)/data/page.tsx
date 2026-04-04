@@ -60,7 +60,7 @@ function ExportSection({ toast }: { toast: ToastHandle }) {
   }, [toast])
 
   return (
-    <div className="card" style={{ padding: 24, marginBottom: 12 }}>
+    <div className="card" style={{ padding: 24 }}>
       <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px' }}>
         Export Data
       </h2>
@@ -732,7 +732,7 @@ export default function DataPage() {
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       <PageHeader title="Data" subtitle="Import dan export data karyawan & slip gaji" />
-      <div style={{ padding: 12, maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ padding: 12, maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <ExportSection toast={toast} />
         <ImportSection toast={toast} />
         <PayslipImportSection toast={toast} />
