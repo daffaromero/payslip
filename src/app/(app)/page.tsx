@@ -110,29 +110,43 @@ export default async function DashboardPage() {
       </PageHeader>
 
       <div style={{ padding: 12 }}>
-        {/* Stats — single row of 6 */}
-        <div className="stat-grid" style={{ gap: 8, marginBottom: 12, gridTemplateColumns: 'repeat(6, 1fr)' }}>
-          {[...countStats, ...payrollStats].map(({ label, value, icon: Icon, color, bg, ...rest }) => {
-            const href = 'href' in rest ? rest.href as string | null : null
-            return (
-              <div key={label} className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ background: bg, width: 34, height: 34, borderRadius: 8, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon style={{ color, width: 16, height: 16 }} />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</p>
-                  <p style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
-                    {value}
-                  </p>
-                  {href && (
-                    <Link href={href} className="inline-flex items-center font-medium transition-opacity hover:opacity-70" style={{ color, marginTop: 4, fontSize: 11, gap: 3 }}>
-                      Lihat semua →
-                    </Link>
-                  )}
-                </div>
+        {/* Count stats */}
+        <div className="stat-grid" style={{ gap: 10, marginBottom: 10 }}>
+          {countStats.map(({ label, value, icon: Icon, href, color, bg }) => (
+            <div key={label} className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ background: bg, width: 40, height: 40, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon style={{ color, width: 18, height: 18 }} />
               </div>
-            )
-          })}
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{label}</p>
+                <p style={{ color: 'var(--text-primary)', fontSize: 24, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1, marginTop: 2 }}>
+                  {value}
+                </p>
+                {href && (
+                  <Link href={href} className="inline-flex items-center font-medium transition-opacity hover:opacity-70" style={{ color, marginTop: 5, fontSize: 12, gap: 3 }}>
+                    Lihat semua →
+                  </Link>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Payroll stats */}
+        <div className="stat-grid" style={{ gap: 10, marginBottom: 10 }}>
+          {payrollStats.map(({ label, value, icon: Icon, color, bg }) => (
+            <div key={label} className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ background: bg, width: 40, height: 40, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon style={{ color, width: 18, height: 18 }} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{label}</p>
+                <p style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+                  {value}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Payroll trend chart */}
