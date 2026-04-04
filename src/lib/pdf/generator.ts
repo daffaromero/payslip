@@ -99,22 +99,22 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       border-bottom: 2px solid ${template.theme.primaryColor};
       margin-bottom: 14px;
       display: grid;
-      grid-template-columns: 96px 1fr 96px;
+      grid-template-columns: 120px 1fr 120px;
       align-items: center;
     }
     .header-logo {
-      width: 96px;
+      width: 120px;
     }
     .header-logo img {
-      max-height: 56px;
-      max-width: 96px;
+      max-height: 72px;
+      max-width: 120px;
       display: block;
     }
     .header-info {
       text-align: center;
     }
     .header-spacer {
-      width: 96px;
+      width: 120px;
     }
     .company-name {
       font-size: 17px;
