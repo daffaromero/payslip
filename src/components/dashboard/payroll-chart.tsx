@@ -33,7 +33,7 @@ export function PayrollChart({ data }: { data: ChartPoint[] }) {
     <div style={{ position: 'relative' }}>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: '100%', height: 'auto', display: 'block' }}
+        style={{ width: '100%', height: 'auto', maxHeight: 200, display: 'block' }}
         aria-label="Grafik payroll bulanan"
       >
         {/* Grid lines */}
