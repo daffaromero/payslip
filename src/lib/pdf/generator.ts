@@ -127,10 +127,6 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       font-size: 11px;
       color: #666;
       margin-top: 1px;
-      max-width: 260px;
-      margin-left: auto;
-      margin-right: auto;
-      word-break: break-word;
     }
     .payslip-title {
       margin-top: 6px;
@@ -151,7 +147,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       margin-bottom: 18px;
     }
     .section-title {
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       letter-spacing: 0.07em;
       text-transform: uppercase;
@@ -172,8 +168,8 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       justify-content: space-between;
       gap: 8px;
     }
-    .info-label { color: #666; }
-    .info-value { font-weight: 500; text-align: right; }
+    .info-label { color: #666; font-size: 12px; }
+    .info-value { font-weight: 500; text-align: right; font-size: 12px; }
 
     /* ── Earnings / Deductions ── */
     .two-columns {
@@ -191,7 +187,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       padding: 6px 4px;
       color: ${template.theme.secondaryColor};
       font-weight: 600;
-      font-size: 10px;
+      font-size: 11px;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-bottom: 1px solid #ddd;
