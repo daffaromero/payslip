@@ -18,7 +18,6 @@ const EMPLOYEE_FIELDS = [
   { value: 'position',       label: 'Jabatan' },
   { value: 'site',           label: 'Site' },
   { value: 'baseSalary',     label: 'Gaji Pokok' },
-  { value: 'hourlyRate',     label: 'Tarif Lembur / Jam' },
   { value: 'pph21Status',    label: 'Status PPh21' },
   { value: 'npwp',           label: 'NPWP' },
   { value: 'bankAccount',    label: 'No Rekening' },
@@ -258,7 +257,7 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
           <div>
             <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: '0 0 4px' }}>Kolom yang didukung:</p>
             <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
-              ID Karyawan, Nama, Email, WhatsApp, Divisi, Jabatan, Site, Gaji Pokok, Tarif Lembur / Jam, Status PPh21, NPWP, Nama Bank, No Rekening
+              ID Karyawan, Nama, Email, WhatsApp, Divisi, Jabatan, Site, Gaji Pokok, Status PPh21, NPWP, Nama Bank, No Rekening
             </p>
           </div>
           <a

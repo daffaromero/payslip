@@ -55,7 +55,6 @@ export interface PayslipWithEmployee extends PayslipData {
 export interface PayslipCalculationInput {
   baseSalary: number
   overtimeHours?: number
-  hourlyRate?: number
   bonus?: number
   thr?: number
   allowances?: Allowance[]

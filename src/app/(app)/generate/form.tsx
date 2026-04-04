@@ -65,7 +65,6 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
       endDate: '',
       basePay: 0,
       overtimeHours: 0,
-      hourlyRate: 0,
       bonus: 0,
       thr: 0,
       allowances: [],
@@ -121,7 +120,6 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
   const endDate = watchedValues.endDate
   const basePay = watchedValues.basePay
   const overtimeHours = watchedValues.overtimeHours
-  const hourlyRate = watchedValues.hourlyRate
   const bonus = watchedValues.bonus
   const thr = watchedValues.thr
   const allowances = watchedValues.allowances
@@ -150,7 +148,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     const vals = getValues()
     const res = await fetch('/api/payslips', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
+      body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
     })
     if (!res.ok) throw new Error((await res.json()).error || 'Gagal membuat slip gaji')
     return (await res.json()).payslipId as string
@@ -166,7 +164,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     const vals = getValues()
     const res = await fetch('/api/preview-payslip', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
+      body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: vals.periodType, startDate: vals.startDate, endDate: vals.endDate, basePay: vals.basePay, overtimeHours: vals.overtimeHours, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Gagal membuat preview')
@@ -196,7 +194,6 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     if (emp) {
       const full = Number(emp.baseSalary) || 0
       setValue('basePay', prorateFactor !== null ? Math.round(full * prorateFactor) : full)
-      setValue('hourlyRate', Number(emp.hourlyRate) || 0)
       // Load salary components from employee defaults
       const defaults = emp.salaryComponents || {
         tunjangan_jabatan: { amount: 0, enabled: false },
@@ -217,7 +214,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     setValue('basePay', prorateFactor !== null ? Math.round(full * prorateFactor) : full)
   }, [prorateFactor, emp, setValue])
 
-  const calc = emp ? calculatePayslip({ baseSalary: basePay, overtimeHours, hourlyRate, bonus, thr, allowances, otherDeductions: deductions, pph21Status: emp.pph21Status || 'TK/0', monthCount: periodType === 'quarterly' ? 3 : periodType === 'semi-annual' ? 6 : periodType === 'annual' ? 12 : 1 }) : null
+  const calc = emp ? calculatePayslip({ baseSalary: basePay, overtimeHours, bonus, thr, allowances, otherDeductions: deductions, pph21Status: emp.pph21Status || 'TK/0', monthCount: periodType === 'quarterly' ? 3 : periodType === 'semi-annual' ? 6 : periodType === 'annual' ? 12 : 1 }) : null
 
   const downloadPdf = async () => {
     if (!generatedId) return
@@ -258,7 +255,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
       try {
         const res = await fetch('/api/payslips', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: 'monthly', startDate: ms.toISOString().split('T')[0], endDate: me.toISOString().split('T')[0], basePay: vals.basePay, overtimeHours: vals.overtimeHours, hourlyRate: vals.hourlyRate, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
+          body: JSON.stringify({ employeeId: vals.employeeId, templateId: vals.templateId, periodType: 'monthly', startDate: ms.toISOString().split('T')[0], endDate: me.toISOString().split('T')[0], basePay: vals.basePay, overtimeHours: vals.overtimeHours, bonus: vals.bonus, thr: vals.thr, salaryComponents, allowances: vals.allowances, otherDeductions: vals.deductions, pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan, bpjsTkJht: manualBpjsTkJht, bpjsTkJp: manualBpjsTkJp, notes: vals.notes }),
         })
         if (!res.ok) throw new Error((await res.json()).error || 'Gagal')
         const d = await res.json()
@@ -393,9 +390,6 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
             </F>
             <F label="Jam Lembur">
               <input type="number" step="0.5" className="input" {...form.register('overtimeHours', { valueAsNumber: true })} />
-            </F>
-            <F label="Tarif Lembur / Jam">
-              <div className="input-prefix"><span className="prefix">Rp</span><input type="number" className="input" {...form.register('hourlyRate', { valueAsNumber: true })} /></div>
             </F>
             <F label="THR (Hari Raya)">
               <div className="input-prefix"><span className="prefix">Rp</span><input type="number" className="input" {...form.register('thr', { valueAsNumber: true })} /></div>

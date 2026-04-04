@@ -28,7 +28,6 @@ export interface Employee {
   bankAccount: string | null
   bankName: string | null
   baseSalary: number
-  hourlyRate: number | null
   pph21Status: Pph21Status
   isActive: boolean
   joinedAt: Date

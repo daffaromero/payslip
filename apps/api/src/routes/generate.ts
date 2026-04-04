@@ -111,7 +111,6 @@ router.post('/preview-payslip', async (c) => {
     const calculations = calculatePayslip({
       baseSalary: data.basePay || Number(employee.baseSalary),
       overtimeHours: data.overtimeHours,
-      hourlyRate: data.hourlyRate || Number(employee.hourlyRate),
       bonus: data.bonus, thr: data.thr, allowances: data.allowances,
       pph21Status: employee.pph21Status, monthCount,
     })

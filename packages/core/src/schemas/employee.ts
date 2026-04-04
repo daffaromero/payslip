@@ -32,7 +32,6 @@ export const EmployeeSchema = z.object({
   bankAccount: z.string().nullable().optional(),
   bankName: z.string().nullable().optional(),
   baseSalary: z.number().positive(),
-  hourlyRate: z.number().nonnegative().nullable().optional(),
   pph21Status: z.enum(PPH21_STATUSES).default('TK/0'),
   isActive: z.boolean().optional(),
   salaryComponents: SalaryComponentsSchema.optional().nullable(),

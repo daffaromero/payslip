@@ -37,7 +37,7 @@ const SAMPLE_EMPLOYEE = {
   name: 'Budi Santoso', email: 'budi@contoh.co.id',
   department: 'Engineering', position: 'Senior Developer',
   npwp: '09.234.567.8-012.000', bankAccount: '1234567890',
-  bankName: 'BCA', baseSalary: 12000000, hourlyRate: 75000,
+  bankName: 'BCA', baseSalary: 12000000,
   pph21Status: 'K/1', isActive: true,
   joinedAt: new Date('2020-01-01'), createdAt: new Date(), updatedAt: new Date(),
 }

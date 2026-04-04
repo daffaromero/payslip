@@ -114,7 +114,6 @@ router.post('/commit', async (c) => {
             bankAccount: row.bankAccount ? String(row.bankAccount) : null,
             bankName: row.bankName ? String(row.bankName) : null,
             baseSalary: Number(row.baseSalary ?? 0),
-            hourlyRate: row.hourlyRate != null ? Number(row.hourlyRate) : null,
             pph21Status: (row.pph21Status as Pph21Status) ?? 'TK/0',
             isActive: true,
           },

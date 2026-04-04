@@ -12,7 +12,7 @@ import { useRole } from '@/lib/hooks/use-role'
 
 interface Employee {
   id: string; employeeId: string; name: string; email: string | null; whatsappNumber: string | null
-  department: string | null; position: string | null; site: string | null; baseSalary: number; hourlyRate: number | null
+  department: string | null; position: string | null; site: string | null; baseSalary: number
   bankName: string | null; bankAccount: string | null; npwp: string | null; pph21Status: string
   joinedAt: string; isActive: boolean
   salaryComponents?: SalaryComponents | null
@@ -69,7 +69,7 @@ function F({ label, children }: { label: string; children: React.ReactNode }) {
 type FormState = {
   employeeId: string; name: string; email: string; whatsappNumber: string
   department: string; position: string; site: string; npwp: string; bankAccount: string; bankName: string
-  baseSalary: string; hourlyRate: string; pph21Status: string
+  baseSalary: string; pph21Status: string
   salaryComponents: SalaryComponents
 }
 
@@ -86,8 +86,7 @@ function toForm(e: Employee): FormState {
     employeeId: e.employeeId, name: e.name, email: e.email ?? '', whatsappNumber: e.whatsappNumber ?? '',
     department: e.department ?? '', position: e.position ?? '', site: e.site ?? '', npwp: e.npwp ?? '',
     bankAccount: e.bankAccount ?? '', bankName: e.bankName ?? '',
-    baseSalary: String(e.baseSalary), hourlyRate: e.hourlyRate ? String(e.hourlyRate) : '',
-    pph21Status: e.pph21Status,
+    baseSalary: String(e.baseSalary), pph21Status: e.pph21Status,
     salaryComponents: e.salaryComponents ?? defaultComponents,
   }
 }
@@ -169,7 +168,6 @@ export default function EmployeeDetailPage() {
           bankAccount: form.bankAccount || null,
           bankName: form.bankName || null,
           baseSalary: Number(form.baseSalary),
-          hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null,
           pph21Status: form.pph21Status,
           salaryComponents: form.salaryComponents,
         }),
@@ -340,9 +338,6 @@ export default function EmployeeDetailPage() {
                 <F label="Gaji Pokok">
                   <div className="input-prefix"><span className="prefix">Rp</span><input type="number" className="input" style={{ fontSize: 13 }} value={form.baseSalary} onChange={e => set('baseSalary', e.target.value)} /></div>
                 </F>
-                <F label="Tarif Lembur / Jam">
-                  <div className="input-prefix"><span className="prefix">Rp</span><input type="number" className="input" style={{ fontSize: 13 }} value={form.hourlyRate} onChange={e => set('hourlyRate', e.target.value)} /></div>
-                </F>
                 <F label="Status PTKP">
                   <select className="input" style={{ fontSize: 13 }} value={form.pph21Status} onChange={e => set('pph21Status', e.target.value)}>
                     {PPH21.map(o => <option key={o} value={o}>{o}</option>)}
@@ -352,7 +347,6 @@ export default function EmployeeDetailPage() {
             ) : (
               <>
                 <InfoRow label="Gaji Pokok" value={formatCurrency(employee.baseSalary)} />
-                <InfoRow label="Tarif Lembur" value={employee.hourlyRate ? `${formatCurrency(employee.hourlyRate)}/jam` : null} />
                 <InfoRow label="Status PTKP" value={employee.pph21Status} />
                 <InfoRow label="NPWP" value={employee.npwp} />
               </>

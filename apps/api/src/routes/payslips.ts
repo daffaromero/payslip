@@ -101,7 +101,7 @@ router.post('/', async (c) => {
     const monthCount = getPeriodMonths(data.periodType || 'monthly')
     const calculations = calculatePayslip({
       baseSalary: data.basePay || Number(employee.baseSalary),
-      overtimeHours: data.overtimeHours, hourlyRate: data.hourlyRate || Number(employee.hourlyRate),
+      overtimeHours: data.overtimeHours,
       bonus: data.bonus, thr: data.thr, allowances, otherDeductions: data.otherDeductions,
       pph21Status: employee.pph21Status, monthCount,
     })
@@ -194,19 +194,16 @@ router.post('/bulk', async (c) => {
     await prisma.$transaction(async tx => {
       for (const employee of employees) {
         const basePay = Number(employee.baseSalary)
-        const hourlyRate = Number(employee.hourlyRate ?? 0)
 
         const calculations = calculatePayslip({
-          baseSalary: basePay, overtimeHours: overtimeHours ?? 0, hourlyRate,
+          baseSalary: basePay, overtimeHours: overtimeHours ?? 0,
           bonus: bonus ?? 0, thr: 0, allowances: [], otherDeductions: [],
           pph21Status: employee.pph21Status as Parameters<typeof calculatePayslip>[0]['pph21Status'],
           monthCount,
         })
 
         const ytd = ytdMap.get(employee.id) ?? { ytdGross: 0, ytdPph21: 0 }
-        const ovPay = overtimeHours && hourlyRate
-          ? overtimeHours <= 1 ? overtimeHours * hourlyRate * 1.5 : hourlyRate * 1.5 + (overtimeHours - 1) * hourlyRate * 2
-          : 0
+        const ovPay = 0
 
         const payslip = await tx.payslip.create({
           data: {
@@ -324,17 +321,14 @@ router.patch('/:id', async (c) => {
       const allowances = patch.allowances ?? JSON.parse(existing.allowances as string)
       const otherDeductions = patch.otherDeductions ?? JSON.parse(existing.otherDeductions as string)
       const monthCount = getPeriodMonths(existing.periodType)
-      const hourlyRate = Number(employee.hourlyRate ?? 0)
 
       const calculations = calculatePayslip({
-        baseSalary: basePay, overtimeHours, hourlyRate, bonus, thr, allowances, otherDeductions,
+        baseSalary: basePay, overtimeHours, bonus, thr, allowances, otherDeductions,
         pph21Status: employee.pph21Status as Parameters<typeof calculatePayslip>[0]['pph21Status'],
         monthCount,
       })
 
-      const overtimePay = overtimeHours && hourlyRate
-        ? overtimeHours <= 1 ? overtimeHours * hourlyRate * 1.5 : hourlyRate * 1.5 + (overtimeHours - 1) * hourlyRate * 2
-        : 0
+      const overtimePay = 0
 
       computedFields = {
         overtimePay, pph21: calculations.pph21,

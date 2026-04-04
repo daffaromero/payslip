@@ -28,7 +28,7 @@ export default function NewEmployeePage() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     employeeId: '', name: '', email: '', whatsappNumber: '', department: '', position: '', site: '',
-    npwp: '', bankAccount: '', bankName: '', baseSalary: '', hourlyRate: '', pph21Status: 'TK/0',
+    npwp: '', bankAccount: '', bankName: '', baseSalary: '', pph21Status: 'TK/0',
   })
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
@@ -37,7 +37,7 @@ export default function NewEmployeePage() {
     try {
       const res = await fetch('/api/employees', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), hourlyRate: form.hourlyRate ? Number(form.hourlyRate) : null, email: form.email || null, whatsappNumber: form.whatsappNumber || null, department: form.department || null, position: form.position || null, site: form.site || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
+        body: JSON.stringify({ ...form, baseSalary: Number(form.baseSalary), email: form.email || null, whatsappNumber: form.whatsappNumber || null, department: form.department || null, position: form.position || null, site: form.site || null, npwp: form.npwp || null, bankAccount: form.bankAccount || null, bankName: form.bankName || null }),
       })
       if (!res.ok) throw new Error((await res.json()).error || 'Gagal menyimpan')
       router.push('/employees')
@@ -110,12 +110,6 @@ export default function NewEmployeePage() {
                   <div className="input-prefix">
                     <span className="prefix">Rp</span>
                     <input required type="number" className="input" placeholder="8.000.000" value={form.baseSalary} onChange={e => set('baseSalary', e.target.value)} />
-                  </div>
-                </F>
-                <F label="Tarif Lembur / Jam" hint="Opsional, untuk kalkulasi lembur">
-                  <div className="input-prefix">
-                    <span className="prefix">Rp</span>
-                    <input type="number" className="input" placeholder="50.000" value={form.hourlyRate} onChange={e => set('hourlyRate', e.target.value)} />
                   </div>
                 </F>
                 <F label="Status PTKP" required hint="TK = Tidak Kawin, K = Kawin, angka = jumlah tanggungan">

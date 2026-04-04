@@ -232,7 +232,7 @@ export default function BulkGeneratePage() {
               employeeId: emp.id, templateId, periodType: 'monthly',
               startDate: period.startDate, endDate: period.endDate,
               basePay: Number(emp.baseSalary), overtimeHours: 0,
-              hourlyRate: 0, bonus: 0, thr: 0,
+              bonus: 0, thr: 0,
               salaryComponents,
               allowances: [], otherDeductions: [],
               pph21: manualPph21, bpjsKesehatan: manualBpjsKesehatan,

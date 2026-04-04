@@ -17,7 +17,6 @@ export function calculatePayslip(input: PayslipCalculationInput): CalculationRes
   const {
     baseSalary,
     overtimeHours = 0,
-    hourlyRate = 0,
     bonus = 0,
     thr = 0,
     allowances = [],
@@ -26,17 +25,8 @@ export function calculatePayslip(input: PayslipCalculationInput): CalculationRes
     monthCount = 1,
   } = input
 
-  let overtimePay = 0
-  if (overtimeHours > 0 && hourlyRate > 0) {
-    if (overtimeHours <= 1) {
-      overtimePay = overtimeHours * hourlyRate * 1.5
-    } else {
-      overtimePay = hourlyRate * 1.5 + (overtimeHours - 1) * hourlyRate * 2
-    }
-  }
-
   const totalAllowances = (allowances as Allowance[]).reduce((sum, a) => sum + a.amount, 0)
-  const grossPay = baseSalary + overtimePay + bonus + thr + totalAllowances
+  const grossPay = baseSalary + bonus + thr + totalAllowances
 
   const bpjsKesehatan = calculateBpjsKesehatan(baseSalary).employee
   const ketena = calculateBpjsKetenagakerjaan(baseSalary)

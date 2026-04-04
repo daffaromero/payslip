@@ -49,7 +49,6 @@ router.post('/', async (c) => {
         bankAccount: data.bankAccount || null,
         bankName: data.bankName || null,
         baseSalary: data.baseSalary,
-        hourlyRate: data.hourlyRate || null,
         pph21Status: data.pph21Status || 'TK/0',
         salaryComponents: data.salaryComponents ? JSON.stringify(data.salaryComponents) : null,
         isActive: true,
@@ -66,11 +65,11 @@ router.post('/', async (c) => {
 router.get('/import-template', async () => {
   const headers = [
     'ID Karyawan', 'Nama', 'Email', 'WhatsApp', 'Divisi', 'Jabatan', 'Site',
-    'Gaji Pokok', 'Tarif Lembur / Jam', 'Status PPh21', 'NPWP', 'Nama Bank', 'No Rekening',
+    'Gaji Pokok', 'Status PPh21', 'NPWP', 'Nama Bank', 'No Rekening',
   ]
   const sample = [
     'EMP001', 'Budi Santoso', 'budi@company.com', '628123456789', 'Engineering', 'Staff', 'Yogyakarta',
-    8000000, 50000, 'TK/0', '09.123.456.7-123.000', 'BCA', '1234567890',
+    8000000, 'TK/0', '09.123.456.7-123.000', 'BCA', '1234567890',
   ]
   const ws = XLSX.utils.aoa_to_sheet([headers, sample])
   ws['!cols'] = headers.map(() => ({ wch: 20 }))
@@ -102,7 +101,6 @@ router.get('/export', async (c) => {
     'Jabatan': e.position ?? '',
     'Site': e.site ?? '',
     'Gaji Pokok': e.baseSalary,
-    'Tarif Lembur / Jam': e.hourlyRate ?? '',
     'Status PPh21': e.pph21Status,
     'NPWP': e.npwp ?? '',
     'Nama Bank': e.bankName ?? '',

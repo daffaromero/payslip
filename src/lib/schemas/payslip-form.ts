@@ -18,7 +18,6 @@ export const PayslipFormSchema = z.object({
   endDate: z.string().min(1, 'Masukkan tanggal selesai'),
   basePay: z.number().min(0),
   overtimeHours: z.number().min(0).optional().default(0),
-  hourlyRate: z.number().min(0).optional().default(0),
   bonus: z.number().min(0).optional().default(0),
   thr: z.number().min(0).optional().default(0),
   allowances: z.array(AllowanceSchema).optional().default([]),

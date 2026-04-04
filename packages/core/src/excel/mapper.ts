@@ -28,7 +28,7 @@ export function mapRowToEmployee(row: ParsedExcelRow, config: MappingConfig): Pa
           ? parseFloat(value.replace(/[^\d.-]/g, ''))
           : Number(value)
         transformedValue = isNaN(parsed) ? 0 : parsed
-      } else if (['overtimeHours', 'hourlyRate'].includes(mapping.employeeField)) {
+      } else if (['overtimeHours'].includes(mapping.employeeField)) {
         const parsed = Number(value)
         transformedValue = isNaN(parsed) ? 0 : parsed
       }
