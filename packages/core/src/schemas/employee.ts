@@ -17,6 +17,7 @@ export const SalaryComponentsSchema = z.object({
   tunjangan_makan: SalaryComponentSchema,
   tunjangan_transport: SalaryComponentSchema,
   tunjangan_lama_bekerja: SalaryComponentSchema,
+  insentif: SalaryComponentSchema,
   tunjangan_pph21: SalaryComponentSchema,
 })
 

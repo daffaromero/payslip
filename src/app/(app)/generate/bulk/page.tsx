@@ -19,6 +19,7 @@ interface SalaryComponents {
   tunjangan_makan: { amount: number; enabled: boolean }
   tunjangan_transport: { amount: number; enabled: boolean }
   tunjangan_lama_bekerja: { amount: number; enabled: boolean }
+  insentif: { amount: number; enabled: boolean }
   tunjangan_pph21: { amount: number; enabled: boolean }
 }
 
@@ -28,6 +29,7 @@ interface SalaryComponentsOverride {
   tunjangan_makan: { amount: number; enabled: boolean; override: boolean }
   tunjangan_transport: { amount: number; enabled: boolean; override: boolean }
   tunjangan_lama_bekerja: { amount: number; enabled: boolean; override: boolean }
+  insentif: { amount: number; enabled: boolean; override: boolean }
   tunjangan_pph21: { amount: number; enabled: boolean; override: boolean }
 }
 
@@ -45,6 +47,7 @@ const SALARY_COMPONENT_LABELS: Record<keyof Omit<SalaryComponents, ''>, string> 
   tunjangan_makan: 'Tunjangan Makan',
   tunjangan_transport: 'Tunjangan Transport',
   tunjangan_lama_bekerja: 'Tunjangan Lama Kerja',
+  insentif: 'Insentif',
   tunjangan_pph21: 'Tunjangan PPh 21',
 }
 
@@ -55,6 +58,7 @@ function defaultOverride(sc?: SalaryComponents | null): SalaryComponentsOverride
     tunjangan_makan: { amount: sc?.tunjangan_makan?.amount ?? 0, enabled: sc?.tunjangan_makan?.enabled ?? false, override: false },
     tunjangan_transport: { amount: sc?.tunjangan_transport?.amount ?? 0, enabled: sc?.tunjangan_transport?.enabled ?? false, override: false },
     tunjangan_lama_bekerja: { amount: sc?.tunjangan_lama_bekerja?.amount ?? 0, enabled: sc?.tunjangan_lama_bekerja?.enabled ?? false, override: false },
+    insentif: { amount: sc?.insentif?.amount ?? 0, enabled: sc?.insentif?.enabled ?? false, override: false },
     tunjangan_pph21: { amount: sc?.tunjangan_pph21?.amount ?? 0, enabled: sc?.tunjangan_pph21?.enabled ?? false, override: false },
   }
   return defaults

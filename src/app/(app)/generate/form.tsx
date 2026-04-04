@@ -22,6 +22,7 @@ interface SalaryComponents {
   tunjangan_makan: { amount: number; enabled: boolean }
   tunjangan_transport: { amount: number; enabled: boolean }
   tunjangan_lama_bekerja: { amount: number; enabled: boolean }
+  insentif: { amount: number; enabled: boolean }
   tunjangan_pph21: { amount: number; enabled: boolean }
 }
 
@@ -31,6 +32,7 @@ const SALARY_COMPONENT_LABELS: Record<keyof SalaryComponents, string> = {
   tunjangan_makan: 'Tunjangan Makan',
   tunjangan_transport: 'Tunjangan Transport',
   tunjangan_lama_bekerja: 'Tunjangan Lama Kerja',
+  insentif: 'Insentif',
   tunjangan_pph21: 'Tunjangan PPh 21',
 }
 
@@ -108,6 +110,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     tunjangan_makan: { amount: 0, enabled: false },
     tunjangan_transport: { amount: 0, enabled: false },
     tunjangan_lama_bekerja: { amount: 0, enabled: false },
+    insentif: { amount: 0, enabled: false },
     tunjangan_pph21: { amount: 0, enabled: false },
   })
 

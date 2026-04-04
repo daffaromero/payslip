@@ -53,6 +53,7 @@ export type SalaryComponentKey =
   | 'tunjangan_makan' 
   | 'tunjangan_transport' 
   | 'tunjangan_lama_bekerja'
+  | 'insentif'
   | 'tunjangan_pph21'
 
 export interface SalaryComponent {
@@ -68,6 +69,7 @@ export interface SalaryComponents {
   tunjangan_makan: { amount: number; enabled: boolean }
   tunjangan_transport: { amount: number; enabled: boolean }
   tunjangan_lama_bekerja: { amount: number; enabled: boolean }
+  insentif: { amount: number; enabled: boolean }
   tunjangan_pph21: { amount: number; enabled: boolean }
 }
 
@@ -77,5 +79,6 @@ export const SALARY_COMPONENT_LABELS: Record<SalaryComponentKey, string> = {
   tunjangan_makan: 'Tunjangan Makan',
   tunjangan_transport: 'Tunjangan Transport',
   tunjangan_lama_bekerja: 'Tunjangan Lama Kerja',
+  insentif: 'Insentif',
   tunjangan_pph21: 'Tunjangan PPh 21',
 }

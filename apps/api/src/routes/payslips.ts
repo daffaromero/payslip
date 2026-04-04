@@ -76,7 +76,7 @@ router.post('/', async (c) => {
     
     const allowances: { name: string; amount: number; component?: string }[] = []
     
-    const componentKeys = ['tunjangan_jabatan', 'tunjangan_luar_kota', 'tunjangan_makan', 'tunjangan_transport', 'tunjangan_lama_bekerja', 'tunjangan_pph21'] as const
+    const componentKeys = ['tunjangan_jabatan', 'tunjangan_luar_kota', 'tunjangan_makan', 'tunjangan_transport', 'tunjangan_lama_bekerja', 'insentif', 'tunjangan_pph21'] as const
     for (const key of componentKeys) {
       const enabled = overrides[key]?.enabled ?? defaultComponents?.[key]?.enabled ?? false
       const amount = overrides[key]?.amount ?? defaultComponents?.[key]?.amount ?? 0
@@ -87,6 +87,7 @@ router.post('/', async (c) => {
           tunjangan_makan: 'Tunjangan Makan',
           tunjangan_transport: 'Tunjangan Transport',
           tunjangan_lama_bekerja: 'Tunjangan Lama Kerja',
+          insentif: 'Insentif',
           tunjangan_pph21: 'Tunjangan PPh 21',
         }
         allowances.push({ name: labels[key], amount, component: key })
