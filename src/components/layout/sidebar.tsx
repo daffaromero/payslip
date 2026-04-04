@@ -23,15 +23,14 @@ const EXPANDED_W  = '260px'
 export function Sidebar({ companyName, role }: { companyName: string; role: 'admin' | 'viewer' }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [collapsed, setCollapsed] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('sidebar-collapsed') === 'true'
+  })
 
   useEffect(() => {
-    const stored = localStorage.getItem('sidebar-collapsed') === 'true'
-    setCollapsed(stored)
-    document.documentElement.style.setProperty('--sidebar-width', stored ? COLLAPSED_W : EXPANDED_W)
-    setMounted(true)
-  }, [])
+    document.documentElement.style.setProperty('--sidebar-width', collapsed ? COLLAPSED_W : EXPANDED_W)
+  }, [collapsed])
 
   const toggle = () => {
     const next = !collapsed
@@ -44,9 +43,6 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
   }, [router])
-
-  // Avoid flash: render nothing until we've read localStorage
-  if (!mounted) return null
 
   return (
     <aside className="desktop-only" style={{
@@ -81,7 +77,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
           background: 'var(--accent)',
           flexShrink: 0,
         }}>
-          <FileText style={{ width: 16, height: 16, color: '#fff' }} />
+          <FileText style={{ width: 18, height: 18, color: '#fff' }} />
         </div>
         {!collapsed && (
           <span style={{
@@ -201,8 +197,9 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
-        padding: '9px 12px',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        gap: collapsed ? 0 : 10,
+        padding: collapsed ? '9px 0' : '9px 12px',
         borderRadius: 6,
         fontSize: 14,
         fontWeight: 500,
@@ -226,8 +223,8 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
       }}
     >
       <Icon style={{
-        width: 17,
-        height: 17,
+        width: 20,
+        height: 20,
         flexShrink: 0,
         color: active ? 'var(--accent)' : 'var(--text-tertiary)',
       }} />
