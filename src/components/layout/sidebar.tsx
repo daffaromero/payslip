@@ -65,13 +65,11 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
         gap: 12,
         height: 56,
-        padding: collapsed ? '0' : '0 20px',
+        padding: '0 20px',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
-        transition: 'padding 200ms ease',
       }}>
         <div style={{
           display: 'flex',
@@ -101,12 +99,11 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       {/* Nav */}
       <nav style={{
         flex: 1,
-        padding: collapsed ? '12px 6px' : '12px 10px',
+        padding: '12px 10px',
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
         overflowY: 'auto',
-        transition: 'padding 200ms ease',
       }}>
         {nav.filter(item => !item.adminOnly || role === 'admin').map(({ href, label, icon: Icon, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href)
@@ -129,8 +126,8 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             width: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-end',
-            padding: collapsed ? '10px 0' : '10px 16px',
+            justifyContent: 'flex-end',
+            padding: '10px 16px',
             background: 'none',
             border: 'none',
             borderBottom: '1px solid var(--border)',
@@ -153,7 +150,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         </button>
 
         {/* Logout */}
-        <div style={{ padding: collapsed ? '10px 0' : '10px 20px', display: 'flex', justifyContent: collapsed ? 'center' : 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {!collapsed && (
             <div style={{ minWidth: 0 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -202,9 +199,8 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        gap: collapsed ? 0 : 10,
-        padding: collapsed ? '9px 0' : '9px 12px',
+        gap: 10,
+        padding: '9px 12px',
         borderRadius: 6,
         fontSize: 14,
         fontWeight: 500,
