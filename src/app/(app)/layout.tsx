@@ -46,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-[--bg-app]">
       <Sidebar companyName={companyName} role={userRole} />
-      <main className="flex flex-col flex-1 min-h-screen" style={{ paddingLeft: 'var(--sidebar-width)' }}>
+      <main className="flex flex-col flex-1 min-h-screen" style={{ paddingLeft: 'var(--sidebar-width)', transition: 'padding-left 200ms ease' }}>
         <TopBar companyName={companyName} userInitials={userInitials} companyLogoUrl={companyLogoUrl} userName={userName} userEmail={userEmail} role={userRole} />
         <div className="flex-1">{children}</div>
       </main>
