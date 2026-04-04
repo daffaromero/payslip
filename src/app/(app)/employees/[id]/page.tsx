@@ -255,7 +255,7 @@ export default function EmployeeDetailPage() {
   )
 
   return (
-    <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
+    <div style={{ background: 'var(--bg-app)', height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       {previewSrc && <PreviewModal open src={previewSrc} filename={previewFilename} onClose={closePreview} />}
 
@@ -287,10 +287,10 @@ export default function EmployeeDetailPage() {
         )}
       </PageHeader>
 
-      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '280px 1fr', gap: 12, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 12, padding: 12, height: 'calc(100vh - 68px)', overflow: 'hidden' }}>
 
         {/* Left — profile */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 12, maxHeight: 'calc(100vh - 80px)', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', paddingBottom: 12 }}>
 
           {/* Identity card */}
           <div className="card" style={{ padding: 20 }}>
@@ -419,7 +419,7 @@ export default function EmployeeDetailPage() {
         </div>
 
         {/* Right — payslip history */}
-        <div className="card overflow-hidden">
+        <div className="card overflow-hidden" style={{ overflowY: 'auto', alignSelf: 'start', maxHeight: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Riwayat Slip Gaji</p>
             <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{total} slip gaji</span>

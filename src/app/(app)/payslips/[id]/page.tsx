@@ -16,7 +16,7 @@ interface Payslip {
   id: string; employeeId: string; templateId: string; periodType: string
   startDate: string; endDate: string; generatedAt: string
   basePay: number; overtimeHours: number; overtimePay: number; bonus: number; thr: number
-  allowances: Allowance[]; pph21: number; bpjsKesehatan: number; bpjsKetenagakerjaan: number
+  allowances: Allowance[]; pph21: number; bpjsKesehatan: number; bpjsTkJht: number; bpjsTkJp: number
   otherDeductions: Deduction[]; grossPay: number; totalDeductions: number; netPay: number
   ytdGross: number; ytdPph21: number; notes: string | null
   employee: { id: string; name: string; employeeId: string; email: string | null; whatsappNumber: string | null; department: string | null; position: string | null; npwp: string | null; bankName: string | null; bankAccount: string | null }
@@ -144,7 +144,7 @@ export default function PayslipDetailPage() {
   )
 
   const totalEarnings = payslip.basePay + payslip.overtimePay + payslip.bonus + payslip.thr + payslip.allowances.reduce((a, al) => a + al.amount, 0)
-  const totalDeductions = payslip.pph21 + payslip.bpjsKesehatan + payslip.bpjsKetenagakerjaan + payslip.otherDeductions.reduce((a, d) => a + d.amount, 0)
+  const totalDeductions = payslip.pph21 + payslip.bpjsKesehatan + payslip.bpjsTkJht + payslip.bpjsTkJp + payslip.otherDeductions.reduce((a, d) => a + d.amount, 0)
 
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: 'calc(100vh - 56px)' }}>
@@ -236,7 +236,8 @@ export default function PayslipDetailPage() {
           <Section title="Potongan">
             <Row label="PPh 21" value={formatCurrency(payslip.pph21)} />
             <Row label="BPJS Kesehatan" value={formatCurrency(payslip.bpjsKesehatan)} />
-            <Row label="BPJS TK JHT" value={formatCurrency(payslip.bpjsKetenagakerjaan)} />
+            <Row label="BPJS TK JHT" value={formatCurrency(payslip.bpjsTkJht)} />
+            <Row label="BPJS TK JP" value={formatCurrency(payslip.bpjsTkJp)} />
             {payslip.otherDeductions.length > 0 && payslip.otherDeductions.map((d, i) => (
               <Row key={i} label={d.name} value={formatCurrency(d.amount)} />
             ))}
