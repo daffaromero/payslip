@@ -60,18 +60,6 @@ export function PayrollChart({ data }: { data: ChartPoint[] }) {
 
           return (
             <g key={d.month}>
-              {/* Hover hit area */}
-              <rect
-                x={pl + i * barSlot}
-                y={pt}
-                width={barSlot}
-                height={ch}
-                fill="transparent"
-                onMouseEnter={() => setHovered(i)}
-                onMouseLeave={() => setHovered(null)}
-                style={{ cursor: isEmpty ? 'default' : 'pointer' }}
-              />
-
               {/* Bar */}
               {!isEmpty && (
                 <rect
@@ -84,6 +72,18 @@ export function PayrollChart({ data }: { data: ChartPoint[] }) {
                   style={{ transition: 'fill 0.1s' }}
                 />
               )}
+
+              {/* Hover hit area — rendered last so it sits on top of the bar */}
+              <rect
+                x={pl + i * barSlot}
+                y={pt}
+                width={barSlot}
+                height={ch}
+                fill="transparent"
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+                style={{ cursor: isEmpty ? 'default' : 'pointer' }}
+              />
 
               {/* Value label above bar on hover */}
               {isHovered && !isEmpty && (
