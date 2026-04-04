@@ -315,8 +315,7 @@ function ImportSection({ toast }: { toast: ToastHandle }) {
                       <select
                         value={wizard.mappings[header] ?? ''}
                         onChange={e => wizard.setMappings({ ...wizard.mappings, [header]: e.target.value })}
-                        className="input"
-                        style={{ fontSize: 13, height: 32, width: '100%' }}
+                        style={{ fontSize: 12, height: 28, width: '100%', padding: '0 6px', border: '1px solid var(--border)', borderRadius: 4, background: 'var(--bg-input, #fff)', color: 'var(--text-primary)', outline: 'none' }}
                       >
                         {EMPLOYEE_FIELDS.map(f => (
                           <option key={f.value} value={f.value}>{f.label}</option>
