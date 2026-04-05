@@ -47,6 +47,14 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
 
   if (!mounted) return null
 
+  const labelStyle: React.CSSProperties = {
+    opacity: collapsed ? 0 : 1,
+    width: collapsed ? 0 : undefined,
+    overflow: 'hidden',
+    transition: 'opacity 150ms ease, width 200ms ease',
+    pointerEvents: 'none',
+  }
+
   return (
     <aside className="desktop-only" style={{
       position: 'fixed',
@@ -60,7 +68,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       overflow: 'hidden',
     }}>
 
-      {/* Logo — padding stays 0 20px always */}
+      {/* Logo */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -82,22 +90,19 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         }}>
           <FileText style={{ width: 16, height: 16, color: '#fff' }} />
         </div>
-        {!collapsed && (
-          <span style={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.02em',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            Payslip
-          </span>
-        )}
+        <span style={{
+          ...labelStyle,
+          fontSize: 15,
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.02em',
+          whiteSpace: 'nowrap',
+        }}>
+          Payslip
+        </span>
       </div>
 
-      {/* Nav — padding stays 12px 10px always */}
+      {/* Nav */}
       <nav style={{
         flex: 1,
         padding: '12px 10px',
@@ -109,7 +114,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         {nav.filter(item => !item.adminOnly || role === 'admin').map(({ href, label, icon: Icon, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href)
           return (
-            <NavItem key={href} href={href} label={label} icon={Icon} active={active} collapsed={collapsed} />
+            <NavItem key={href} href={href} label={label} icon={Icon} active={active} collapsed={collapsed} labelStyle={labelStyle} />
           )
         })}
       </nav>
@@ -117,7 +122,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       {/* Footer */}
       <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>
 
-        {/* Toggle — padding stays 10px 16px always */}
+        {/* Toggle */}
         <button
           onClick={toggle}
           title={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
@@ -125,7 +130,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             width: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-end',
+            justifyContent: 'center',
             padding: '10px 16px',
             background: 'none',
             border: 'none',
@@ -148,28 +153,34 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             : <PanelLeftClose style={{ width: 15, height: 15 }} />}
         </button>
 
-        {/* Logout — padding stays 10px 20px always */}
+        {/* Logout */}
         <div style={{
           padding: '10px 20px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}>
-          {!collapsed && (
-            <div style={{ minWidth: 0, marginRight: 8 }}>
-              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {companyName}
-              </p>
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '2px 0 0' }}>v0.1.0</p>
-            </div>
-          )}
+          <div style={{
+            minWidth: 0,
+            marginRight: 8,
+            maxWidth: collapsed ? 0 : '100%',
+            overflow: 'hidden',
+            opacity: collapsed ? 0 : 1,
+            transition: 'opacity 150ms ease, max-width 200ms ease',
+            flexShrink: 1,
+          }}>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {companyName}
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '2px 0 0' }}>v0.1.0</p>
+          </div>
           <button
             onClick={logout}
             title="Keluar"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: collapsed ? 0 : 6,
+              gap: 6,
               background: 'none',
               border: 'none',
               cursor: 'pointer',
@@ -181,7 +192,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             }}
           >
             <LogOut style={{ width: 14, height: 14 }} />
-            {!collapsed && 'Keluar'}
+            <span style={labelStyle}>Keluar</span>
           </button>
         </div>
       </div>
@@ -189,20 +200,22 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
   )
 }
 
-function NavItem({ href, label, icon: Icon, active, collapsed }: {
+function NavItem({ href, label, icon: Icon, active, collapsed, labelStyle }: {
   href: string
   label: string
   icon: React.ElementType
   active: boolean
   collapsed: boolean
+  labelStyle: React.CSSProperties
 }) {
   return (
     <Link
       href={href}
-      title={collapsed ? label : undefined}
+      title={label}
       style={{
         display: 'flex',
         alignItems: 'center',
+        justifyContent: collapsed ? 'center' : undefined,
         gap: 10,
         padding: '9px 12px',
         borderRadius: 6,
@@ -233,7 +246,7 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
         flexShrink: 0,
         color: active ? 'var(--accent)' : 'var(--text-tertiary)',
       }} />
-      {!collapsed && label}
+      <span style={labelStyle}>{label}</span>
     </Link>
   )
 }
