@@ -17,26 +17,27 @@ const nav = [
   { href: '/settings',      label: 'Pengaturan',      icon: Settings,                      adminOnly: false },
 ]
 
-const COLLAPSED_W = '64px'
+const COLLAPSED_W = '72px'
 const EXPANDED_W  = '260px'
-
-function getInitialCollapsed(): boolean {
-  if (typeof window === 'undefined') return false
-  return localStorage.getItem('sidebar-collapsed') === 'true'
-}
 
 export function Sidebar({ companyName, role }: { companyName: string; role: 'admin' | 'viewer' }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [collapsed, setCollapsed] = useState(getInitialCollapsed)
+  const [collapsed, setCollapsed] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--sidebar-width', collapsed ? COLLAPSED_W : EXPANDED_W)
-    localStorage.setItem('sidebar-collapsed', String(collapsed))
-  }, [collapsed])
+    const stored = localStorage.getItem('sidebar-collapsed') === 'true'
+    setCollapsed(stored)
+    document.documentElement.style.setProperty('--sidebar-width', stored ? COLLAPSED_W : EXPANDED_W)
+    setMounted(true)
+  }, [])
 
   const toggle = () => {
-    setCollapsed(!collapsed)
+    const next = !collapsed
+    setCollapsed(next)
+    localStorage.setItem('sidebar-collapsed', String(next))
+    document.documentElement.style.setProperty('--sidebar-width', next ? COLLAPSED_W : EXPANDED_W)
   }
 
   const logout = useCallback(async () => {
@@ -44,13 +45,13 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
     router.push('/login')
   }, [router])
 
-  const width = collapsed ? COLLAPSED_W : EXPANDED_W
+  if (!mounted) return null
 
   return (
     <aside className="desktop-only" style={{
       position: 'fixed',
       inset: '0 auto 0 0',
-      width,
+      width: collapsed ? COLLAPSED_W : EXPANDED_W,
       zIndex: 50,
       flexDirection: 'column',
       background: 'var(--bg-surface)',
@@ -59,14 +60,13 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
       overflow: 'hidden',
     }}>
 
-      {/* Logo */}
+      {/* Logo — padding stays 0 20px always */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
         gap: 12,
         height: 56,
-        padding: collapsed ? '0' : '0 16px',
+        padding: '0 20px',
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
@@ -80,7 +80,7 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
           background: 'var(--accent)',
           flexShrink: 0,
         }}>
-          <FileText style={{ width: 18, height: 18, color: '#fff' }} />
+          <FileText style={{ width: 16, height: 16, color: '#fff' }} />
         </div>
         {!collapsed && (
           <span style={{
@@ -97,10 +97,10 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         )}
       </div>
 
-      {/* Nav */}
+      {/* Nav — padding stays 12px 10px always */}
       <nav style={{
         flex: 1,
-        padding: '12px 0',
+        padding: '12px 10px',
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
@@ -114,12 +114,10 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
         })}
       </nav>
 
-      {/* Toggle + Footer */}
-      <div style={{
-        borderTop: '1px solid var(--border)',
-        flexShrink: 0,
-      }}>
-        {/* Collapse toggle */}
+      {/* Footer */}
+      <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+
+        {/* Toggle — padding stays 10px 16px always */}
         <button
           onClick={toggle}
           title={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
@@ -127,8 +125,8 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             width: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-end',
-            padding: collapsed ? '10px 0' : '10px 12px',
+            justifyContent: 'flex-end',
+            padding: '10px 16px',
             background: 'none',
             border: 'none',
             borderBottom: '1px solid var(--border)',
@@ -150,15 +148,15 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             : <PanelLeftClose style={{ width: 15, height: 15 }} />}
         </button>
 
-        {/* Logout */}
-        <div style={{ 
-          padding: collapsed ? '10px 0' : '10px 12px', 
-          display: 'flex', 
-          justifyContent: collapsed ? 'center' : 'space-between', 
-          alignItems: 'center' 
+        {/* Logout — padding stays 10px 20px always */}
+        <div style={{
+          padding: '10px 20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}>
           {!collapsed && (
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, marginRight: 8 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {companyName}
               </p>
@@ -171,7 +169,6 @@ export function Sidebar({ companyName, role }: { companyName: string; role: 'adm
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
               gap: collapsed ? 0 : 6,
               background: 'none',
               border: 'none',
@@ -206,9 +203,8 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
         gap: 10,
-        padding: collapsed ? '9px 0' : '9px 12px',
+        padding: '9px 12px',
         borderRadius: 6,
         fontSize: 14,
         fontWeight: 500,
@@ -232,8 +228,8 @@ function NavItem({ href, label, icon: Icon, active, collapsed }: {
       }}
     >
       <Icon style={{
-        width: 20,
-        height: 20,
+        width: 17,
+        height: 17,
         flexShrink: 0,
         color: active ? 'var(--accent)' : 'var(--text-tertiary)',
       }} />
