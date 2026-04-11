@@ -50,12 +50,12 @@ function resolveRowMeta(
   row: Record<string, string | number | null>,
   defaults: { templateId: string; periodType: string; startDate: string; endDate: string },
 ) {
-  const rawPeriod = String(row['Periode'] ?? row['periode'] ?? '').trim().toLowerCase()
+  const rawPeriod = String(row['Periode (Opsional)'] ?? row['Periode'] ?? row['periode'] ?? '').trim().toLowerCase()
   const periodType = rawPeriod ? (PERIOD_TYPE_MAP[rawPeriod] ?? rawPeriod) : defaults.periodType
 
-  const startDate   = String(row['Tanggal Mulai']   ?? row['tanggal mulai']   ?? '').trim() || defaults.startDate
-  const endDate     = String(row['Tanggal Selesai'] ?? row['tanggal selesai'] ?? '').trim() || defaults.endDate
-  const templateName = String(row['Template'] ?? row['template'] ?? '').trim() || null
+  const startDate    = String(row['Tanggal Mulai (Opsional)']   ?? row['Tanggal Mulai']   ?? row['tanggal mulai']   ?? '').trim() || defaults.startDate
+  const endDate      = String(row['Tanggal Selesai (Opsional)'] ?? row['Tanggal Selesai'] ?? row['tanggal selesai'] ?? '').trim() || defaults.endDate
+  const templateName = String(row['Template (Opsional)'] ?? row['Template'] ?? row['template'] ?? '').trim() || null
 
   return { periodType, startDate, endDate, templateName }
 }
@@ -276,7 +276,7 @@ router.post('/commit', async (c) => {
 // GET /api/payslips/import/template — download Excel template
 router.get('/template', () => {
   const headers = [
-    'ID Karyawan', 'Periode', 'Tanggal Mulai', 'Tanggal Selesai', 'Template',
+    'ID Karyawan', 'Periode (Opsional)', 'Tanggal Mulai (Opsional)', 'Tanggal Selesai (Opsional)', 'Template (Opsional)',
     'Gaji Pokok',
     'Tunjangan Jabatan', 'Tunjangan Luar Kota', 'Tunjangan Makan', 'Tunjangan Transport',
     'Tunjangan Lama Kerja', 'Insentif', 'Tunjangan PPh 21',
