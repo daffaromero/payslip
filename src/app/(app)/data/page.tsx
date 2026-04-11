@@ -501,6 +501,16 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
     }
   }, [periodType])
 
+  const rowHasAllMeta = (row: Record<string, string | number | null>) => {
+    const get = (keys: string[]) => keys.reduce<string>((acc, k) => acc || String(row[k] ?? '').trim(), '')
+    return (
+      get(['Periode (Opsional)', 'Periode', 'periode']) &&
+      get(['Tanggal Mulai (Opsional)', 'Tanggal Mulai', 'tanggal mulai']) &&
+      get(['Tanggal Selesai (Opsional)', 'Tanggal Selesai', 'tanggal selesai']) &&
+      get(['Template (Opsional)', 'Template', 'template'])
+    )
+  }
+
   const processFile = useCallback(async (file: File) => {
     if (!file.name.match(/\.(xlsx|xls|csv)$/i)) { toast.error('Format file harus .xlsx, .xls, atau .csv'); return }
     setLoading(true)
@@ -512,7 +522,23 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
       if (!res.ok) { toast.error(data.error || 'Gagal memproses file'); return }
       setRows(data.rows)
       setTotalRows(data.totalRows)
-      setStep('configure')
+
+      // If every row already has period/dates/template, skip configure and go straight to preview
+      if (data.rows.length > 0 && data.rows.every(rowHasAllMeta)) {
+        const previewRes = await fetch('/api/payslips/import/preview', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rows: data.rows, templateId: '', periodType: '', startDate: '', endDate: '' }),
+        })
+        const previewData = await previewRes.json()
+        if (!previewRes.ok) { toast.error(previewData.error || 'Gagal membuat preview'); return }
+        setPreview(previewData.preview)
+        setTotalValid(previewData.totalValid)
+        setTotalInvalid(previewData.totalInvalid)
+        setTotalWarnings(previewData.totalWarnings)
+        setStep('preview')
+      } else {
+        setStep('configure')
+      }
     } finally { setLoading(false) }
   }, [toast])
 
