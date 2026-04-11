@@ -99,25 +99,28 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       border-bottom: 2px solid ${template.theme.primaryColor};
       margin-bottom: 14px;
       display: grid;
-      grid-template-columns: 120px 1fr 120px;
+      grid-template-columns: 140px 1fr 140px;
       align-items: center;
     }
     .header-logo {
-      width: 120px;
+      width: 140px;
     }
     .header-logo img {
-      max-height: 72px;
-      max-width: 120px;
+      max-height: 100px;
+      max-width: 140px;
+      width: 100%;
+      object-fit: contain;
       display: block;
+      margin: 0 auto;
     }
     .header-info {
       text-align: center;
     }
     .header-spacer {
-      width: 120px;
+      width: 140px;
     }
     .company-name {
-      font-size: 17px;
+      font-size: 22px;
       font-weight: 700;
       color: ${template.theme.primaryColor};
       letter-spacing: 0.02em;
@@ -295,7 +298,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
   <div class="section">
     <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
       <span>${t('Informasi Karyawan', 'Employee Information')}</span>
-      ${employee.site ? `<span style="font-weight:500;letter-spacing:0;">${t('Site', 'Site')}: ${escapeHtml(employee.site)}</span>` : ''}
+      ${employee.site ? `<span style="font-weight:700;letter-spacing:0;">${t('Site', 'Site')}: ${escapeHtml(employee.site)}</span>` : ''}
     </div>
     <div class="info-grid">
       <div class="info-row"><span class="info-label">${t('Nama', 'Name')}</span><span class="info-value">${escapeHtml(employee.name)}</span></div>
