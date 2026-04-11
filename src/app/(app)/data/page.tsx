@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Download, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, Users, Receipt, FileInput } from 'lucide-react'
+import { Download, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2, Users, Receipt, FileInput, Pencil, X } from 'lucide-react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
@@ -482,7 +482,49 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
   const [totalInvalid, setTotalInvalid] = useState(0)
   const [totalWarnings, setTotalWarnings] = useState(0)
   const [result, setResult] = useState<{ created: number; skipped: number; errors: { row: number; error: string }[] } | null>(null)
+  const [editingRowIdx, setEditingRowIdx] = useState<number | null>(null)
+  const [editRowData, setEditRowData] = useState<Record<string, string>>({})
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const NUMERIC_KEY = (k: string) => /gaji|tunjangan|bonus|thr|pph21|bpjs|potongan|insentif/i.test(k)
+  const DATE_KEY    = (k: string) => /tanggal/i.test(k)
+  const PERIOD_KEY  = (k: string) => /^periode/i.test(k)
+  const TMPL_KEY    = (k: string) => /^template/i.test(k)
+
+  const META_OPTIONAL = ['Periode (Opsional)', 'Tanggal Mulai (Opsional)', 'Tanggal Selesai (Opsional)', 'Template (Opsional)']
+
+  const startEdit = (i: number) => {
+    const base: Record<string, string> = {}
+    for (const [k, v] of Object.entries(rows[i])) base[k] = v != null ? String(v) : ''
+    for (const col of META_OPTIONAL) if (!(col in base)) base[col] = ''
+    setEditRowData(base)
+    setEditingRowIdx(i)
+  }
+
+  const saveEdit = useCallback(async () => {
+    if (editingRowIdx == null) return
+    const updatedRow: Record<string, string | number | null> = {}
+    for (const [k, v] of Object.entries(editRowData)) {
+      if (NUMERIC_KEY(k)) updatedRow[k] = v === '' ? null : Number(v)
+      else updatedRow[k] = v === '' ? null : v
+    }
+    const newRows = rows.map((r, i) => i === editingRowIdx ? updatedRow : r)
+    setRows(newRows)
+    setEditingRowIdx(null)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/payslips/import/preview', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: newRows, templateId, periodType, startDate, endDate }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Gagal membuat preview'); return }
+      setPreview(data.preview)
+      setTotalValid(data.totalValid)
+      setTotalInvalid(data.totalInvalid)
+      setTotalWarnings(data.totalWarnings)
+    } finally { setLoading(false) }
+  }, [editingRowIdx, editRowData, rows, templateId, periodType, startDate, endDate, toast])
 
   useEffect(() => {
     fetch('/api/templates').then(r => r.json()).then(d => {
@@ -687,8 +729,8 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--bg-subtle)' }}>
-              {['', 'ID', 'Nama', 'Gaji Pokok', 'Gaji Kotor', 'Gaji Bersih', 'Keterangan'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Gaji Pokok' || h === 'Gaji Kotor' || h === 'Gaji Bersih' ? 'right' : 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+              {['', 'ID', 'Nama', 'Gaji Pokok', 'Gaji Kotor', 'Gaji Bersih', 'Keterangan', ''].map((h, hi) => (
+                <th key={hi} style={{ padding: '10px 12px', textAlign: h === 'Gaji Pokok' || h === 'Gaji Kotor' || h === 'Gaji Bersih' ? 'right' : 'left', fontWeight: 500, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -711,11 +753,74 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
                     : p.warnings?.length ? <span style={{ color: '#d97706' }}>{p.warnings.join(', ')}</span>
                     : null}
                 </td>
+                <td style={{ padding: '10px 12px' }}>
+                  {(p.errors?.length > 0 || p.warnings?.length > 0) && (
+                    <button
+                      onClick={() => editingRowIdx === i ? setEditingRowIdx(null) : startEdit(i)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: editingRowIdx === i ? 'var(--text-secondary)' : 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', borderRadius: 4, whiteSpace: 'nowrap' }}
+                    >
+                      {editingRowIdx === i ? <X style={{ width: 12, height: 12 }} /> : <Pencil style={{ width: 12, height: 12 }} />}
+                      {editingRowIdx === i ? 'Tutup' : 'Edit'}
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {editingRowIdx != null && (
+        <div style={{ marginBottom: 16, padding: 16, background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 8 }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Edit Baris {editingRowIdx + 1}
+            {preview[editingRowIdx]?.errors?.length > 0 && (
+              <span style={{ marginLeft: 8, fontWeight: 400, color: '#dc2626', textTransform: 'none', letterSpacing: 0 }}>
+                — {preview[editingRowIdx].errors.join(', ')}
+              </span>
+            )}
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px 16px' }}>
+            {Object.entries(editRowData).map(([k, v]) => {
+              const isId = /^id karyawan$/i.test(k)
+              return (
+                <div key={k}>
+                  <label style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-tertiary)', display: 'block', marginBottom: 3 }}>{k}</label>
+                  {isId ? (
+                    <input className="input" value={v} readOnly style={{ fontSize: 12, height: 32, background: 'var(--bg-subtle)', color: 'var(--text-tertiary)', cursor: 'not-allowed' }} />
+                  ) : TMPL_KEY(k) ? (
+                    <select className="input" value={v} onChange={e => setEditRowData(d => ({ ...d, [k]: e.target.value }))} style={{ fontSize: 12, height: 32 }}>
+                      <option value="">— Dari konfigurasi —</option>
+                      {templates.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                    </select>
+                  ) : PERIOD_KEY(k) ? (
+                    <select className="input" value={v} onChange={e => setEditRowData(d => ({ ...d, [k]: e.target.value }))} style={{ fontSize: 12, height: 32 }}>
+                      <option value="">— Dari konfigurasi —</option>
+                      <option value="Mingguan">Mingguan</option>
+                      <option value="Bulanan">Bulanan</option>
+                      <option value="3 Bulanan">3 Bulanan</option>
+                      <option value="6 Bulanan">6 Bulanan</option>
+                      <option value="Tahunan">Tahunan</option>
+                    </select>
+                  ) : DATE_KEY(k) ? (
+                    <input type="date" className="input" value={v} onChange={e => setEditRowData(d => ({ ...d, [k]: e.target.value }))} style={{ fontSize: 12, height: 32 }} />
+                  ) : NUMERIC_KEY(k) ? (
+                    <input type="number" className="input" value={v} onChange={e => setEditRowData(d => ({ ...d, [k]: e.target.value }))} style={{ fontSize: 12, height: 32 }} min={0} />
+                  ) : (
+                    <input className="input" value={v} onChange={e => setEditRowData(d => ({ ...d, [k]: e.target.value }))} style={{ fontSize: 12, height: 32 }} />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setEditingRowIdx(null)}>Batal</button>
+            <button className="btn btn-primary btn-sm" onClick={saveEdit} disabled={loading}>
+              {loading && <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />}
+              Simpan &amp; Cek Ulang
+            </button>
+          </div>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button className="btn btn-secondary" onClick={() => setStep('configure')}>Kembali</button>
         <button className="btn btn-primary" onClick={commit} disabled={loading || totalValid === 0}>
