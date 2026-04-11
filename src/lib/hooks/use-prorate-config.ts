@@ -13,6 +13,9 @@ export interface ProrateConfig {
   prorateUseCount: boolean
   prorateCount: number
   prorateDayBasis: 'calendar' | 'working'
+  useWorkingDays: boolean
+  workingDaysActual: number
+  workingDaysTotal: number
 }
 
 const DEFAULT_CONFIG: ProrateConfig = {
@@ -23,6 +26,9 @@ const DEFAULT_CONFIG: ProrateConfig = {
   prorateUseCount: false,
   prorateCount: 1,
   prorateDayBasis: 'calendar',
+  useWorkingDays: false,
+  workingDaysActual: 0,
+  workingDaysTotal: 0,
 }
 
 export function useProrateConfig() {
@@ -60,6 +66,18 @@ export function useProrateConfig() {
     setConfig(prev => ({ ...prev, prorateDate: date }))
   }, [])
 
+  const setUseWorkingDays = useCallback((val: boolean) => {
+    setConfig(prev => ({ ...prev, useWorkingDays: val }))
+  }, [])
+
+  const setWorkingDaysActual = useCallback((val: number) => {
+    setConfig(prev => ({ ...prev, workingDaysActual: val }))
+  }, [])
+
+  const setWorkingDaysTotal = useCallback((val: number) => {
+    setConfig(prev => ({ ...prev, workingDaysTotal: val }))
+  }, [])
+
   const reset = useCallback(() => {
     setConfig(DEFAULT_CONFIG)
   }, [])
@@ -73,6 +91,9 @@ export function useProrateConfig() {
     setCount,
     setDayBasis,
     setDate,
+    setUseWorkingDays,
+    setWorkingDaysActual,
+    setWorkingDaysTotal,
     reset,
   }
 }

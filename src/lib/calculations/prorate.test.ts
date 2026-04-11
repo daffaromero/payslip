@@ -177,3 +177,44 @@ describe('calcProrate — edge cases', () => {
     expect(r.prorateFactor).toBe(1)
   })
 })
+
+
+describe('calcProrate — Hari Kerja mode', () => {
+  const base = { prorateType: 'join' as const, prorateCalcMode: 'period' as const, prorateUseCount: false, prorateCount: 1, periodCount: 1, prorateDayBasis: 'calendar' as const, startDate: d('2026-03-01'), endDate: d('2026-03-31') }
+
+  it('18/22 days → factor 18/22', () => {
+    const r = calcProrate({ ...base, workingDaysActual: 18, workingDaysTotal: 22 })
+    expect(r.prorateFactor).toBeCloseTo(18 / 22, 10)
+  })
+
+  it('full month (22/22) → factor 1', () => {
+    const r = calcProrate({ ...base, workingDaysActual: 22, workingDaysTotal: 22 })
+    expect(r.prorateFactor).toBe(1)
+  })
+
+  it('clamps factor to 1 when actual > total', () => {
+    const r = calcProrate({ ...base, workingDaysActual: 25, workingDaysTotal: 22 })
+    expect(r.prorateFactor).toBe(1)
+  })
+
+  it('0 actual days → factor 0', () => {
+    const r = calcProrate({ ...base, workingDaysActual: 0, workingDaysTotal: 22 })
+    expect(r.prorateFactor).toBe(0)
+  })
+
+  it('breakdown note contains actual/total', () => {
+    const r = calcProrate({ ...base, workingDaysActual: 18, workingDaysTotal: 22 })
+    expect(r.prorateBreakdown?.[0].note).toBe('18/22 hari kerja')
+  })
+
+  it('takes priority over date-based calc when both supplied', () => {
+    const r = calcProrate({ ...base, workingDaysActual: 18, workingDaysTotal: 22, prorateDate: d('2026-03-15') })
+    expect(r.prorateFactor).toBeCloseTo(18 / 22, 10)
+  })
+
+  it('falls through to date mode when only one hari kerja param supplied', () => {
+    const r = calcProrate({ ...base, workingDaysActual: 18, workingDaysTotal: undefined, prorateDate: d('2026-03-15') })
+    expect(r.prorateFactor).not.toBeCloseTo(18 / 22, 10) // date-based result
+    expect(r.prorateFactor).not.toBeNull()
+  })
+})

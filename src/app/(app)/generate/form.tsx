@@ -83,6 +83,9 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     prorateUseCount,
     prorateCount,
     prorateDayBasis,
+    useWorkingDays,
+    workingDaysActual,
+    workingDaysTotal,
     toggle: toggleProrate,
     setType: setProrateType,
     setCalcMode: setProrateCalcMode,
@@ -90,6 +93,9 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
     setCount: setProrateCount,
     setDayBasis: setProrateDayBasis,
     setDate: setProrateDate,
+    setUseWorkingDays,
+    setWorkingDaysActual,
+    setWorkingDaysTotal,
   } = useProrateConfig()
 
   const toast = useToast()
@@ -145,6 +151,8 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
         prorateCount,
         periodCount,
         prorateDayBasis,
+        workingDaysActual: useWorkingDays ? workingDaysActual : undefined,
+        workingDaysTotal:  useWorkingDays ? workingDaysTotal  : undefined,
       })
 
   const generateOp = useAsyncOperation(async () => {
@@ -485,58 +493,85 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
 
           {prorateEnabled && (
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Type + method toggle */}
-              <div className="form-grid-2" style={{ gap: 16 }}>
-                <F label="Tipe">
-                  <select className="input" value={prorateType} onChange={e => setProrateType(e.target.value as 'join' | 'resign')}>
-                    <option value="join">Bergabung (mulai kerja)</option>
-                    <option value="resign">Keluar (hari terakhir)</option>
-                  </select>
-                </F>
-                {periodCount > 1 && (
-                  <F label="Metode hitung">
-                    <select className="input" value={prorateUseCount ? 'count' : prorateCalcMode}
-                      onChange={e => {
-                        const v = e.target.value
-                        if (v === 'count') { setProrateUseCount(true) }
-                        else { setProrateUseCount(false); setProrateCalcMode(v as 'period' | 'span') }
-                      }}>
-                      <option value="period">Per sub-periode</option>
-                      <option value="span">Seluruh rentang</option>
-                      <option value="count">Jumlah periode</option>
-                    </select>
-                  </F>
-                )}
-                {!prorateUseCount && (
-                  <F label="Basis hari">
-                    <select className="input" value={prorateDayBasis} onChange={e => setProrateDayBasis(e.target.value as 'calendar' | 'working')}>
-                      <option value="calendar">Hari kalender</option>
-                      <option value="working">Hari kerja (Senin–Jumat)</option>
-                    </select>
-                  </F>
-                )}
-              </div>
+              {/* Mode selector */}
+              <F label="Metode prorate">
+                <select className="input" value={useWorkingDays ? 'workingDays' : 'date'}
+                  onChange={e => setUseWorkingDays(e.target.value === 'workingDays')}>
+                  <option value="date">Tanggal bergabung / keluar</option>
+                  <option value="workingDays">Hari Kerja Karyawan</option>
+                </select>
+              </F>
 
-              {/* Date input or count input */}
-              {prorateUseCount ? (
-                <F label={`Periode bekerja (dari ${periodCount})`} hint={`Karyawan bekerja selama berapa periode dari total ${periodCount} periode`}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input type="range" min={0} max={periodCount} step={0.5} value={prorateCount}
-                      onChange={e => setProrateCount(Number(e.target.value))}
-                      style={{ flex: 1 }} />
-                    <input type="number" className="input" min={0} max={periodCount} step={0.5} value={prorateCount}
-                      onChange={e => setProrateCount(Math.min(periodCount, Math.max(0, Number(e.target.value))))}
-                      style={{ width: 70 }} />
-                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>/ {periodCount}</span>
-                  </div>
-                </F>
+              {useWorkingDays ? (
+                /* Hari Kerja mode */
+                <div className="form-grid-2" style={{ gap: 16 }}>
+                  <F label="Hari Kerja Karyawan" hint="Jumlah hari karyawan benar-benar hadir">
+                    <input type="number" className="input" min={0} value={workingDaysActual || ''}
+                      onChange={e => setWorkingDaysActual(Math.max(0, Number(e.target.value)))}
+                      placeholder="cth. 18" />
+                  </F>
+                  <F label="Hari Kerja Per Bulan" hint="Total hari kerja dalam periode">
+                    <input type="number" className="input" min={1} value={workingDaysTotal || ''}
+                      onChange={e => setWorkingDaysTotal(Math.max(1, Number(e.target.value)))}
+                      placeholder="cth. 22" />
+                  </F>
+                </div>
               ) : (
-                <F label={prorateType === 'join' ? 'Tanggal Bergabung' : 'Tanggal Terakhir Kerja'}>
-                  <input type="date" className="input"
-                    value={prorateDate ?? ''}
-                    onChange={e => setProrateDate(e.target.value)}
-                    min={startDate} max={endDate} />
-                </F>
+                <>
+                  {/* Type + method toggle */}
+                  <div className="form-grid-2" style={{ gap: 16 }}>
+                    <F label="Tipe">
+                      <select className="input" value={prorateType} onChange={e => setProrateType(e.target.value as 'join' | 'resign')}>
+                        <option value="join">Bergabung (mulai kerja)</option>
+                        <option value="resign">Keluar (hari terakhir)</option>
+                      </select>
+                    </F>
+                    {periodCount > 1 && (
+                      <F label="Metode hitung">
+                        <select className="input" value={prorateUseCount ? 'count' : prorateCalcMode}
+                          onChange={e => {
+                            const v = e.target.value
+                            if (v === 'count') { setProrateUseCount(true) }
+                            else { setProrateUseCount(false); setProrateCalcMode(v as 'period' | 'span') }
+                          }}>
+                          <option value="period">Per sub-periode</option>
+                          <option value="span">Seluruh rentang</option>
+                          <option value="count">Jumlah periode</option>
+                        </select>
+                      </F>
+                    )}
+                    {!prorateUseCount && (
+                      <F label="Basis hari">
+                        <select className="input" value={prorateDayBasis} onChange={e => setProrateDayBasis(e.target.value as 'calendar' | 'working')}>
+                          <option value="calendar">Hari kalender</option>
+                          <option value="working">Hari kerja (Senin–Jumat)</option>
+                        </select>
+                      </F>
+                    )}
+                  </div>
+
+                  {/* Date input or count input */}
+                  {prorateUseCount ? (
+                    <F label={`Periode bekerja (dari ${periodCount})`} hint={`Karyawan bekerja selama berapa periode dari total ${periodCount} periode`}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <input type="range" min={0} max={periodCount} step={0.5} value={prorateCount}
+                          onChange={e => setProrateCount(Number(e.target.value))}
+                          style={{ flex: 1 }} />
+                        <input type="number" className="input" min={0} max={periodCount} step={0.5} value={prorateCount}
+                          onChange={e => setProrateCount(Math.min(periodCount, Math.max(0, Number(e.target.value))))}
+                          style={{ width: 70 }} />
+                        <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>/ {periodCount}</span>
+                      </div>
+                    </F>
+                  ) : (
+                    <F label={prorateType === 'join' ? 'Tanggal Bergabung' : 'Tanggal Terakhir Kerja'}>
+                      <input type="date" className="input"
+                        value={prorateDate ?? ''}
+                        onChange={e => setProrateDate(e.target.value)}
+                        min={startDate} max={endDate} />
+                    </F>
+                  )}
+                </>
               )}
 
               {/* Result */}

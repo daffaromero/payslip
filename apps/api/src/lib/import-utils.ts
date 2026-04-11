@@ -63,5 +63,13 @@ export function parseImportRow(row: Row, empBaseSalary: number) {
   const otherDeductionAmt = Number(row['Potongan Lain'] ?? row['potongan lain'] ?? 0)
   const otherDeductions = otherDeductionAmt > 0 ? [{ name: 'Potongan Lain', amount: otherDeductionAmt }] : []
 
-  return { basePay, bonus, thr, notes, allowances, otherDeductions }
+  const workingDaysActual = row['Hari Kerja Karyawan'] != null ? Number(row['Hari Kerja Karyawan']) : null
+  const workingDaysTotal  = row['Hari Kerja Per Bulan'] != null ? Number(row['Hari Kerja Per Bulan']) : null
+
+  // Apply hari kerja prorate to basePay if both columns are present and valid
+  const effectiveBasePay = (workingDaysActual != null && workingDaysTotal != null && workingDaysTotal > 0)
+    ? Math.round(basePay * Math.min(1, Math.max(0, workingDaysActual / workingDaysTotal)))
+    : basePay
+
+  return { basePay: effectiveBasePay, bonus, thr, notes, allowances, otherDeductions, workingDaysActual, workingDaysTotal }
 }

@@ -310,4 +310,35 @@ describe('parseImportRow', () => {
     expect(result.otherDeductions).toHaveLength(0)
     expect(result.notes).toBeNull()
   })
+
+  it('applies hari kerja prorate to basePay: 18/22 days', () => {
+    const { basePay } = parseImportRow({ 'Gaji Pokok': 8800000, 'Hari Kerja Karyawan': 18, 'Hari Kerja Per Bulan': 22 }, 0)
+    expect(basePay).toBe(Math.round(8800000 * 18 / 22)) // 7200000
+  })
+
+  it('clamps hari kerja factor to 1 when actual > total', () => {
+    const { basePay } = parseImportRow({ 'Gaji Pokok': 8000000, 'Hari Kerja Karyawan': 25, 'Hari Kerja Per Bulan': 22 }, 0)
+    expect(basePay).toBe(8000000) // factor capped at 1
+  })
+
+  it('returns 0 basePay when actual days is 0', () => {
+    const { basePay } = parseImportRow({ 'Gaji Pokok': 8000000, 'Hari Kerja Karyawan': 0, 'Hari Kerja Per Bulan': 22 }, 0)
+    expect(basePay).toBe(0)
+  })
+
+  it('skips prorate when only one hari kerja column is present', () => {
+    const { basePay } = parseImportRow({ 'Gaji Pokok': 8000000, 'Hari Kerja Karyawan': 18 }, 0)
+    expect(basePay).toBe(8000000) // no total → no prorate
+  })
+
+  it('skips prorate when hari kerja columns are absent', () => {
+    const { basePay } = parseImportRow({ 'Gaji Pokok': 8000000 }, 0)
+    expect(basePay).toBe(8000000)
+  })
+
+  it('exposes workingDaysActual and workingDaysTotal in return value', () => {
+    const result = parseImportRow({ 'Gaji Pokok': 8000000, 'Hari Kerja Karyawan': 18, 'Hari Kerja Per Bulan': 22 }, 0)
+    expect(result.workingDaysActual).toBe(18)
+    expect(result.workingDaysTotal).toBe(22)
+  })
 })

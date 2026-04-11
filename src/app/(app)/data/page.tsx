@@ -708,7 +708,7 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
         <div>
           <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', margin: '0 0 4px' }}>Kolom yang didukung:</p>
           <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
-            ID Karyawan (wajib), Periode, Tanggal Mulai, Tanggal Selesai, Template, Gaji Pokok, Tunjangan Jabatan, Tunjangan Luar Kota, Tunjangan Makan, Tunjangan Transport, Tunjangan Lama Kerja, Insentif, Tunjangan PPh 21, Bonus, THR, PPh21, BPJS Kesehatan, BPJS TK JHT, BPJS TK JP, Potongan Lain, Catatan
+            ID Karyawan (wajib), Periode, Tanggal Mulai, Tanggal Selesai, Template, Gaji Pokok, Tunjangan Jabatan, Tunjangan Luar Kota, Tunjangan Makan, Tunjangan Transport, Tunjangan Lama Kerja, Insentif, Tunjangan PPh 21, Bonus, THR, PPh21, BPJS Kesehatan, BPJS TK JHT, BPJS TK JP, Potongan Lain, Hari Kerja Karyawan, Hari Kerja Per Bulan, Catatan
           </p>
         </div>
         <a href="/api/payslips/import/template" download="template-import-slip-gaji.xlsx" className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>

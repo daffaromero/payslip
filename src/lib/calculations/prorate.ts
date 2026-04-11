@@ -47,6 +47,8 @@ export function calcProrate({
   prorateCount,
   periodCount,
   prorateDayBasis,
+  workingDaysActual,
+  workingDaysTotal,
 }: {
   startDate: Date
   endDate: Date
@@ -57,7 +59,17 @@ export function calcProrate({
   prorateCount: number
   periodCount: number
   prorateDayBasis: ProrateDayBasis
+  workingDaysActual?: number
+  workingDaysTotal?: number
 }): ProrateResult {
+  // Hari Kerja mode: explicit actual/total working day counts
+  if (workingDaysActual != null && workingDaysTotal != null && workingDaysTotal > 0) {
+    const factor = Math.min(1, Math.max(0, workingDaysActual / workingDaysTotal))
+    return {
+      prorateFactor: factor,
+      prorateBreakdown: [{ label: 'Hari Kerja', pct: factor, note: `${workingDaysActual}/${workingDaysTotal} hari kerja` }],
+    }
+  }
   const s = startDate
   const e = endDate
 

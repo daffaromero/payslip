@@ -232,9 +232,10 @@ router.get('/template', () => {
     'Tunjangan Lama Kerja', 'Insentif', 'Tunjangan PPh 21',
     'Bonus', 'THR',
     'PPh21', 'BPJS Kesehatan', 'BPJS TK JHT', 'BPJS TK JP', 'Potongan Lain',
+    'Hari Kerja Karyawan', 'Hari Kerja Per Bulan',
     'Catatan',
   ]
-  const sample = ['EMP001', 'monthly', '2026-05-01', '2026-05-31', 'Template Name', 8000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', '', '', '', 0, '']
+  const sample = ['EMP001', 'monthly', '2026-05-01', '2026-05-31', 'Template Name', 8000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', '', '', '', 0, '', '', '']
   const ws = XLSX.utils.aoa_to_sheet([headers, sample])
   ws['!cols'] = headers.map((_, i) => ({ wch: i < 5 ? 16 : i === headers.length - 1 ? 20 : 18 }))
   const wb = XLSX.utils.book_new()
