@@ -66,7 +66,7 @@ export function autoMapColumns(headers: string[]): Map<string, string> {
   const mappings = new Map<string, string>()
   
   const fieldPatterns: Record<string, RegExp[]> = {
-    'name': [/nama/i, /name/i, /employee name/i, /nama karyawan/i],
+    'name': [/^nama$/i, /^name$/i, /employee name/i, /nama karyawan/i],
     'employeeId': [/id karyawan/i, /employee id/i, /nik/i, /nomor induk/i, /id$/i],
     'email': [/email/i, /e-mail/i, /surel/i],
     'department': [/department/i, /departemen/i, /divisi/i, /division/i],
