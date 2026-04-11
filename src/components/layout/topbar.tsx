@@ -34,7 +34,7 @@ export function TopBar({ companyName, userInitials, companyLogoUrl, userName, us
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <MobileMenu companyName={companyName} role={role} />
-        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+        <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-secondary)' }}>
           {companyName}
         </span>
       </div>

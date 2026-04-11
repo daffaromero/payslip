@@ -120,7 +120,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       width: 140px;
     }
     .company-name {
-      font-size: 26px;
+      font-size: 17px;
       font-weight: 700;
       color: ${template.theme.primaryColor};
       letter-spacing: 0.02em;
@@ -280,8 +280,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
     <div class="header-info">
       <div class="company-name">${escapeHtml(company.name)}</div>
       ${company.address ? `<div class="company-info company-address">${escapeHtml(company.address)}</div>` : ''}
-      ${company.phone ? `<div class="company-info">Telp: ${escapeHtml(company.phone)}</div>` : ''}
-      ${company.email ? `<div class="company-info">Email: ${escapeHtml(company.email)}</div>` : ''}
+      ${(company.phone || company.email) ? `<div class="company-info company-contact" style="display:flex; flex-wrap:nowrap; white-space:nowrap;">${company.phone ? `<span>Telp: ${escapeHtml(company.phone)}</span>` : ''}${company.phone && company.email ? `<span class="contact-sep">&nbsp;|&nbsp;</span>` : ''}${company.email ? `<span>Email: ${escapeHtml(company.email)}</span>` : ''}</div>` : ''}
       ${company.taxId ? `<div class="company-info">NPWP: ${escapeHtml(company.taxId)}</div>` : ''}
       <div class="payslip-title">${t('Slip Gaji Karyawan', 'Employee Payslip')}</div>
       <div class="payslip-period">${t('Periode', 'Period')}: ${formatMonth(payslip.startDate)}</div>
@@ -392,6 +391,26 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
   ` : ''}
 
 </div>
+<script>
+  document.querySelectorAll('.company-contact').forEach(function(el) {
+    var MIN_SIZE = 8;
+    var ORIG_SIZE = 11;
+    var sep = el.querySelector('.contact-sep');
+    // Try shrinking until it fits or hits the minimum
+    var size = ORIG_SIZE;
+    while (el.scrollWidth > el.offsetWidth && size > MIN_SIZE) {
+      size -= 0.5;
+      el.style.fontSize = size + 'px';
+    }
+    // Still overflowing at minimum — revert to original size and allow wrapping
+    if (el.scrollWidth > el.offsetWidth) {
+      el.style.fontSize = ORIG_SIZE + 'px';
+      el.style.flexWrap = 'wrap';
+      el.style.whiteSpace = 'normal';
+      if (sep) sep.style.display = 'none';
+    }
+  });
+</script>
 </body>
 </html>`
 }
