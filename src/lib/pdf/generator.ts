@@ -120,7 +120,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       width: 140px;
     }
     .company-name {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
       color: ${template.theme.primaryColor};
       letter-spacing: 0.02em;
@@ -280,12 +280,8 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
     <div class="header-info">
       <div class="company-name">${escapeHtml(company.name)}</div>
       ${company.address ? `<div class="company-info company-address">${escapeHtml(company.address)}</div>` : ''}
-      ${(company.phone || company.email) ? `
-      <div class="company-info">
-        ${company.phone ? `Telp: ${escapeHtml(company.phone)}` : ''}
-        ${company.phone && company.email ? ' &nbsp;|&nbsp; ' : ''}
-        ${company.email ? `Email: ${escapeHtml(company.email)}` : ''}
-      </div>` : ''}
+      ${company.phone ? `<div class="company-info">Telp: ${escapeHtml(company.phone)}</div>` : ''}
+      ${company.email ? `<div class="company-info">Email: ${escapeHtml(company.email)}</div>` : ''}
       ${company.taxId ? `<div class="company-info">NPWP: ${escapeHtml(company.taxId)}</div>` : ''}
       <div class="payslip-title">${t('Slip Gaji Karyawan', 'Employee Payslip')}</div>
       <div class="payslip-period">${t('Periode', 'Period')}: ${formatMonth(payslip.startDate)}</div>
