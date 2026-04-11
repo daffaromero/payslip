@@ -551,12 +551,27 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
     tahunan: 'annual', annual: 'annual',
   }
 
+  const parseDateCell = (val: string | number | null | undefined): string => {
+    if (val == null || val === '') return ''
+    if (typeof val === 'number') {
+      const d = new Date(Date.UTC(1899, 11, 30) + val * 86400 * 1000)
+      return d.toISOString().split('T')[0]
+    }
+    const s = String(val).trim()
+    if (/^\d{4,6}$/.test(s)) {
+      const d = new Date(Date.UTC(1899, 11, 30) + Number(s) * 86400 * 1000)
+      return d.toISOString().split('T')[0]
+    }
+    return s
+  }
+
   const getRowMeta = (row: Record<string, string | number | null>) => {
     const g = (keys: string[]) => keys.reduce<string>((acc, k) => acc || String(row[k] ?? '').trim(), '')
+    const gDate = (keys: string[]) => keys.reduce<string>((acc, k) => acc || parseDateCell(row[k]), '')
     return {
       periode:  g(['Periode (Opsional)', 'Periode', 'periode']),
-      mulai:    g(['Tanggal Mulai (Opsional)', 'Tanggal Mulai', 'tanggal mulai']),
-      selesai:  g(['Tanggal Selesai (Opsional)', 'Tanggal Selesai', 'tanggal selesai']),
+      mulai:    gDate(['Tanggal Mulai (Opsional)', 'Tanggal Mulai', 'tanggal mulai']),
+      selesai:  gDate(['Tanggal Selesai (Opsional)', 'Tanggal Selesai', 'tanggal selesai']),
       template: g(['Template (Opsional)', 'Template', 'template']),
     }
   }
