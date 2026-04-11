@@ -182,16 +182,29 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
 
   useEffect(() => {
     const now = new Date()
-    let s: Date, en: Date
+    let s: Date
     switch (periodType) {
-      case 'weekly': s = new Date(now.setDate(now.getDate() - 7)); en = new Date(); break
-      case 'quarterly': { const q = Math.floor(new Date().getMonth() / 3); s = new Date(new Date().getFullYear(), q * 3, 1); en = new Date(new Date().getFullYear(), (q + 1) * 3, 0); break }
-      default: s = new Date(new Date().getFullYear(), new Date().getMonth(), 1); en = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+      case 'weekly': s = new Date(now.setDate(now.getDate() - 7)); break
+      case 'quarterly': { const q = Math.floor(new Date().getMonth() / 3); s = new Date(new Date().getFullYear(), q * 3, 1); break }
+      default: s = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     }
     setValue('startDate', s.toISOString().split('T')[0])
-    setValue('endDate', en.toISOString().split('T')[0])
     if (periodType !== 'monthly') setMonths(1)
   }, [periodType, setValue])
+
+  useEffect(() => {
+    if (!startDate || periodMode !== 'auto') return
+    const s = new Date(startDate + 'T00:00:00')
+    let en: Date
+    switch (periodType) {
+      case 'weekly': en = new Date(s); en.setDate(en.getDate() + 6); break
+      case 'quarterly': en = new Date(s.getFullYear(), s.getMonth() + 3, 0); break
+      case 'semi-annual': en = new Date(s.getFullYear(), s.getMonth() + 6, 0); break
+      case 'annual': en = new Date(s.getFullYear() + 1, s.getMonth(), 0); break
+      default: en = new Date(s.getFullYear(), s.getMonth() + months, 0)
+    }
+    setValue('endDate', en.toISOString().split('T')[0])
+  }, [startDate, months, periodType, periodMode, setValue])
 
   useEffect(() => {
     if (emp) {
