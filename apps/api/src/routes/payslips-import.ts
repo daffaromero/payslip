@@ -19,11 +19,21 @@ const TUNJANGAN_COLS = [
   { col: 'Tunjangan PPh 21',     name: 'Tunjangan PPh 21',     component: 'tunjangan_pph21' },
 ] as const
 
+// Maps Indonesian and English period names → internal value
+const PERIOD_TYPE_MAP: Record<string, string> = {
+  bulanan: 'monthly',      monthly: 'monthly',
+  mingguan: 'weekly',      weekly: 'weekly',
+  triwulan: 'quarterly',   quarterly: 'quarterly',
+  '3 bulanan': 'quarterly',
+  'semi tahunan': 'semi-annual', 'semi-annual': 'semi-annual',
+  tahunan: 'annual',       annual: 'annual',
+}
+
 function parseImportRow(row: Record<string, string | number | null>, empBaseSalary: number) {
-  const basePay = Number(row['Gaji Pokok'] ?? row['gaji pokok'] ?? empBaseSalary)
-  const bonus   = Number(row['Bonus']      ?? row['bonus']      ?? 0)
-  const thr     = Number(row['THR']        ?? row['thr']        ?? 0)
-  const notes   = String(row['Catatan']    ?? row['catatan']    ?? '') || null
+  const basePay = Number(row['Gaji Pokok']   ?? row['gaji pokok']   ?? empBaseSalary)
+  const bonus   = Number(row['Bonus']        ?? row['bonus']        ?? 0)
+  const thr     = Number(row['THR']          ?? row['thr']          ?? 0)
+  const notes   = String(row['Catatan']      ?? row['catatan']      ?? '') || null
 
   const allowances = TUNJANGAN_COLS
     .map(t => ({ name: t.name, amount: Number(row[t.col] ?? 0), component: t.component }))
@@ -35,7 +45,22 @@ function parseImportRow(row: Record<string, string | number | null>, empBaseSala
   return { basePay, bonus, thr, notes, allowances, otherDeductions }
 }
 
-// POST /api/payslips/import — parse Excel, match employees, return preview
+/** Resolve per-row period/date/template overrides against form-level defaults. */
+function resolveRowMeta(
+  row: Record<string, string | number | null>,
+  defaults: { templateId: string; periodType: string; startDate: string; endDate: string },
+) {
+  const rawPeriod = String(row['Periode'] ?? row['periode'] ?? '').trim().toLowerCase()
+  const periodType = rawPeriod ? (PERIOD_TYPE_MAP[rawPeriod] ?? rawPeriod) : defaults.periodType
+
+  const startDate   = String(row['Tanggal Mulai']   ?? row['tanggal mulai']   ?? '').trim() || defaults.startDate
+  const endDate     = String(row['Tanggal Selesai'] ?? row['tanggal selesai'] ?? '').trim() || defaults.endDate
+  const templateName = String(row['Template'] ?? row['template'] ?? '').trim() || null
+
+  return { periodType, startDate, endDate, templateName }
+}
+
+// POST /api/payslips/import — parse Excel, return rows
 router.post('/', async (c) => {
   const cid = c.get('companyId')
   try {
@@ -58,28 +83,28 @@ router.post('/', async (c) => {
   }
 })
 
-// POST /api/payslips/import/preview — match employees and calculate payslips
+// POST /api/payslips/import/preview
 router.post('/preview', async (c) => {
   const cid = c.get('companyId')
   try {
-    const { rows, templateId, periodType, startDate, endDate } = await c.req.json()
-    if (!templateId || !startDate || !endDate) {
-      return c.json({ error: 'templateId, startDate, endDate wajib diisi' }, 400)
-    }
+    const { rows, templateId = '', periodType = 'monthly', startDate = '', endDate = '' } = await c.req.json()
 
-    const employees = await prisma.employee.findMany({ where: { companyId: cid, isActive: true } })
-    const empByEmployeeId = new Map(employees.map(e => [e.employeeId.toLowerCase(), e]))
+    const [employees, templates, existingPayslips] = await Promise.all([
+      prisma.employee.findMany({ where: { companyId: cid, isActive: true } }),
+      prisma.template.findMany({ where: { companyId: cid }, select: { id: true, name: true } }),
+      prisma.payslip.findMany({ where: { companyId: cid }, select: { employeeId: true, startDate: true } }),
+    ])
 
-    const monthCount = getPeriodMonths(periodType || 'monthly')
-    const startDateObj = new Date(startDate)
-    const year = startDateObj.getFullYear()
-    const startOfYear = new Date(year, 0, 1)
+    const empByEmployeeId  = new Map(employees.map(e => [e.employeeId.toLowerCase(), e]))
+    const templateById     = new Map(templates.map(t => [t.id, t.name]))
+    const templateByName   = new Map(templates.map(t => [t.name.toLowerCase(), t.id]))
+    // fallback: resolve default templateId to name for per-row comparison
+    const defaultTemplateName = templateId ? (templateById.get(templateId) ?? null) : null
 
-    const existingPayslips = await prisma.payslip.findMany({
-      where: { companyId: cid, startDate: { gte: startDateObj, lt: new Date(startDateObj.getTime() + 86400000) } },
-      select: { employeeId: true },
-    })
-    const existingSet = new Set(existingPayslips.map(p => p.employeeId))
+    // existing set: "employeeId:YYYY-MM-DD"
+    const existingSet = new Set(
+      existingPayslips.map(p => `${p.employeeId}:${p.startDate.toISOString().split('T')[0]}`)
+    )
 
     const preview = await Promise.all(rows.map(async (row: Record<string, string | number | null>) => {
       const rawId = String(row['ID Karyawan'] ?? row['id karyawan'] ?? row['employeeId'] ?? '').trim()
@@ -88,16 +113,30 @@ router.post('/preview', async (c) => {
       const emp = empByEmployeeId.get(rawId.toLowerCase())
       if (!emp) return { valid: false, errors: [`Karyawan ID "${rawId}" tidak ditemukan`], row, employee: null, payslip: null }
 
-      const warnings: string[] = []
-      if (existingSet.has(emp.id)) warnings.push('Slip gaji sudah ada untuk periode ini')
+      const meta = resolveRowMeta(row, { templateId, periodType, startDate, endDate })
+      if (!meta.startDate || !meta.endDate) return { valid: false, errors: ['Tanggal Mulai dan Tanggal Selesai wajib diisi'], row, employee: null, payslip: null }
 
+      // Resolve templateId for this row
+      let rowTemplateId = templateId
+      if (meta.templateName) {
+        const resolved = templateByName.get(meta.templateName.toLowerCase())
+        if (!resolved) return { valid: false, errors: [`Template "${meta.templateName}" tidak ditemukan`], row, employee: null, payslip: null }
+        rowTemplateId = resolved
+      }
+      if (!rowTemplateId) return { valid: false, errors: ['Template wajib diisi'], row, employee: null, payslip: null }
+
+      const warnings: string[] = []
+      const startKey = `${emp.id}:${meta.startDate}`
+      if (existingSet.has(startKey)) warnings.push('Slip gaji sudah ada untuk periode ini')
+
+      const monthCount = getPeriodMonths(meta.periodType)
       const { basePay, bonus, thr, notes, allowances, otherDeductions } = parseImportRow(row, Number(emp.baseSalary))
       const calc = calculatePayslip({ baseSalary: basePay, bonus, thr, allowances, otherDeductions, pph21Status: emp.pph21Status, monthCount })
 
-      const pph21 = row['PPh21'] != null ? Number(row['PPh21']) : calc.pph21
+      const pph21         = row['PPh21']          != null ? Number(row['PPh21'])          : calc.pph21
       const bpjsKesehatan = row['BPJS Kesehatan'] != null ? Number(row['BPJS Kesehatan']) : calc.bpjsKesehatan
-      const bpjsTkJht = row['BPJS TK JHT'] != null ? Number(row['BPJS TK JHT']) : calc.bpjsTkJht
-      const bpjsTkJp = row['BPJS TK JP'] != null ? Number(row['BPJS TK JP']) : calc.bpjsTkJp
+      const bpjsTkJht     = row['BPJS TK JHT']    != null ? Number(row['BPJS TK JHT'])    : calc.bpjsTkJht
+      const bpjsTkJp      = row['BPJS TK JP']     != null ? Number(row['BPJS TK JP'])     : calc.bpjsTkJp
       const otherDeductionsTotal = otherDeductions.reduce((s, d) => s + d.amount, 0)
       const totalDeductions = pph21 + bpjsKesehatan + bpjsTkJht + bpjsTkJp + otherDeductionsTotal
       const netPay = calc.grossPay - totalDeductions
@@ -107,13 +146,19 @@ router.post('/preview', async (c) => {
         warnings,
         row,
         employee: { id: emp.id, employeeId: emp.employeeId, name: emp.name },
-        payslip: { basePay, bonus, thr, allowances, otherDeductions, pph21, bpjsKesehatan, bpjsTkJht, bpjsTkJp, grossPay: calc.grossPay, totalDeductions, netPay, notes },
+        payslip: {
+          templateId: rowTemplateId, periodType: meta.periodType,
+          startDate: meta.startDate, endDate: meta.endDate,
+          basePay, bonus, thr, allowances, otherDeductions,
+          pph21, bpjsKesehatan, bpjsTkJht, bpjsTkJp,
+          grossPay: calc.grossPay, totalDeductions, netPay, notes,
+        },
       }
     }))
 
-    const totalValid = preview.filter(p => p.valid).length
-    const totalInvalid = preview.filter(p => !p.valid).length
-    const totalWarnings = preview.filter(p => p.valid && p.warnings.length > 0).length
+    const totalValid    = preview.filter(p => p.valid).length
+    const totalInvalid  = preview.filter(p => !p.valid).length
+    const totalWarnings = preview.filter(p => p.valid && (p as { warnings?: string[] }).warnings?.length).length
 
     return c.json({ success: true, preview, totalValid, totalInvalid, totalWarnings })
   } catch (e) {
@@ -122,38 +167,25 @@ router.post('/preview', async (c) => {
   }
 })
 
-// POST /api/payslips/import/commit — create payslips for all valid rows
+// POST /api/payslips/import/commit
 router.post('/commit', async (c) => {
   const cid = c.get('companyId')
   try {
-    const { rows, templateId, periodType, startDate, endDate, skipDuplicates } = await c.req.json()
-    if (!templateId || !startDate || !endDate) {
-      return c.json({ error: 'templateId, startDate, endDate wajib diisi' }, 400)
-    }
+    const { rows, templateId = '', periodType = 'monthly', startDate = '', endDate = '', skipDuplicates = false } = await c.req.json()
 
-    const template = await prisma.template.findFirst({ where: { id: templateId, companyId: cid } })
-    if (!template) return c.json({ error: 'Template tidak ditemukan' }, 404)
+    const [employees, templates, existingPayslips] = await Promise.all([
+      prisma.employee.findMany({ where: { companyId: cid, isActive: true } }),
+      prisma.template.findMany({ where: { companyId: cid }, select: { id: true, name: true } }),
+      prisma.payslip.findMany({ where: { companyId: cid }, select: { employeeId: true, startDate: true } }),
+    ])
 
-    const employees = await prisma.employee.findMany({ where: { companyId: cid, isActive: true } })
     const empByEmployeeId = new Map(employees.map(e => [e.employeeId.toLowerCase(), e]))
+    const templateByName  = new Map(templates.map(t => [t.name.toLowerCase(), t.id]))
+    const templateIds     = new Set(templates.map(t => t.id))
 
-    const monthCount = getPeriodMonths(periodType || 'monthly')
-    const startDateObj = new Date(startDate)
-    const year = startDateObj.getFullYear()
-    const startOfYear = new Date(year, 0, 1)
-
-    const existingPayslips = await prisma.payslip.findMany({
-      where: { companyId: cid, startDate: { gte: startDateObj, lt: new Date(startDateObj.getTime() + 86400000) } },
-      select: { employeeId: true },
-    })
-    const existingSet = new Set(existingPayslips.map(p => p.employeeId))
-
-    const ytdGroups = await prisma.payslip.groupBy({
-      by: ['employeeId'],
-      where: { companyId: cid, startDate: { gte: startOfYear, lt: startDateObj } },
-      _sum: { ytdGross: true, ytdPph21: true },
-    })
-    const ytdMap = new Map(ytdGroups.map(g => [g.employeeId, { ytdGross: Number(g._sum.ytdGross) || 0, ytdPph21: Number(g._sum.ytdPph21) || 0 }]))
+    const existingSet = new Set(
+      existingPayslips.map(p => `${p.employeeId}:${p.startDate.toISOString().split('T')[0]}`)
+    )
 
     let created = 0
     let skipped = 0
@@ -168,38 +200,68 @@ router.post('/commit', async (c) => {
         const emp = empByEmployeeId.get(rawId.toLowerCase())
         if (!emp) { errors.push({ row: i + 1, error: `Karyawan ID "${rawId}" tidak ditemukan` }); continue }
 
-        if (existingSet.has(emp.id)) {
-          if (skipDuplicates) { skipped++; continue }
-          errors.push({ row: i + 1, error: `${emp.name}: slip gaji sudah ada untuk periode ini` })
-          continue
+        const meta = resolveRowMeta(row, { templateId, periodType, startDate, endDate })
+        if (!meta.startDate || !meta.endDate) {
+          errors.push({ row: i + 1, error: 'Tanggal Mulai dan Tanggal Selesai wajib diisi' }); continue
         }
+
+        let rowTemplateId = templateId
+        if (meta.templateName) {
+          const resolved = templateByName.get(meta.templateName.toLowerCase())
+          if (!resolved) { errors.push({ row: i + 1, error: `Template "${meta.templateName}" tidak ditemukan` }); continue }
+          rowTemplateId = resolved
+        }
+        if (!rowTemplateId || !templateIds.has(rowTemplateId)) {
+          errors.push({ row: i + 1, error: 'Template wajib diisi' }); continue
+        }
+
+        const startKey = `${emp.id}:${meta.startDate}`
+        if (existingSet.has(startKey)) {
+          if (skipDuplicates) { skipped++; continue }
+          errors.push({ row: i + 1, error: `${emp.name}: slip gaji sudah ada untuk periode ini` }); continue
+        }
+
+        const monthCount   = getPeriodMonths(meta.periodType)
+        const startDateObj = new Date(meta.startDate)
+        const startOfYear  = new Date(startDateObj.getFullYear(), 0, 1)
 
         const { basePay, bonus, thr, notes, allowances, otherDeductions } = parseImportRow(row, Number(emp.baseSalary))
         const calc = calculatePayslip({ baseSalary: basePay, bonus, thr, allowances, otherDeductions, pph21Status: emp.pph21Status, monthCount })
-        const pph21 = row['PPh21'] != null ? Number(row['PPh21']) : calc.pph21
+
+        const pph21         = row['PPh21']          != null ? Number(row['PPh21'])          : calc.pph21
         const bpjsKesehatan = row['BPJS Kesehatan'] != null ? Number(row['BPJS Kesehatan']) : calc.bpjsKesehatan
-        const bpjsTkJht = row['BPJS TK JHT'] != null ? Number(row['BPJS TK JHT']) : calc.bpjsTkJht
-        const bpjsTkJp = row['BPJS TK JP'] != null ? Number(row['BPJS TK JP']) : calc.bpjsTkJp
+        const bpjsTkJht     = row['BPJS TK JHT']    != null ? Number(row['BPJS TK JHT'])    : calc.bpjsTkJht
+        const bpjsTkJp      = row['BPJS TK JP']     != null ? Number(row['BPJS TK JP'])     : calc.bpjsTkJp
         const otherDeductionsTotal = otherDeductions.reduce((s, d) => s + d.amount, 0)
         const totalDeductions = pph21 + bpjsKesehatan + bpjsTkJht + bpjsTkJp + otherDeductionsTotal
         const netPay = calc.grossPay - totalDeductions
 
-        const ytd = ytdMap.get(emp.id) ?? { ytdGross: 0, ytdPph21: 0 }
+        // YTD: sum payslips before this row's startDate within the same year
+        const ytdAgg = await tx.payslip.aggregate({
+          where: { companyId: cid, employeeId: emp.id, startDate: { gte: startOfYear, lt: startDateObj } },
+          _sum: { ytdGross: true, ytdPph21: true },
+        })
+        const ytdGross = Number(ytdAgg._sum.ytdGross) || 0
+        const ytdPph21Acc = Number(ytdAgg._sum.ytdPph21) || 0
 
         await tx.payslip.create({
           data: {
-            companyId: cid, employeeId: emp.id, templateId, periodType: periodType || 'monthly',
-            startDate: startDateObj, endDate: new Date(endDate),
+            companyId: cid, employeeId: emp.id,
+            templateId: rowTemplateId, periodType: meta.periodType,
+            startDate: startDateObj, endDate: new Date(meta.endDate),
             basePay, overtimeHours: 0, overtimePay: 0,
             bonus, thr, allowances: JSON.stringify(allowances),
             pph21, bpjsKesehatan, bpjsTkJht, bpjsTkJp,
             otherDeductions: JSON.stringify(otherDeductions),
             grossPay: calc.grossPay, totalDeductions, netPay,
-            ytdGross: ytd.ytdGross + calc.grossPay,
-            ytdPph21: ytd.ytdPph21 + pph21,
+            ytdGross: ytdGross + calc.grossPay,
+            ytdPph21: ytdPph21Acc + pph21,
             notes,
           },
         })
+
+        // Track in-batch to prevent same-batch duplicates
+        existingSet.add(startKey)
         created++
       }
     })
@@ -214,16 +276,17 @@ router.post('/commit', async (c) => {
 // GET /api/payslips/import/template — download Excel template
 router.get('/template', () => {
   const headers = [
-    'ID Karyawan', 'Gaji Pokok',
+    'ID Karyawan', 'Periode', 'Tanggal Mulai', 'Tanggal Selesai', 'Template',
+    'Gaji Pokok',
     'Tunjangan Jabatan', 'Tunjangan Luar Kota', 'Tunjangan Makan', 'Tunjangan Transport',
     'Tunjangan Lama Kerja', 'Insentif', 'Tunjangan PPh 21',
     'Bonus', 'THR',
     'PPh21', 'BPJS Kesehatan', 'BPJS TK JHT', 'BPJS TK JP', 'Potongan Lain',
     'Catatan',
   ]
-  const sample = ['EMP001', 8000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', '', '', '', 0, '']
+  const sample = ['EMP001', 'monthly', '2026-05-01', '2026-05-31', 'Template Name', 8000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', '', '', '', 0, '']
   const ws = XLSX.utils.aoa_to_sheet([headers, sample])
-  ws['!cols'] = headers.map((h, i) => ({ wch: i === 0 ? 14 : i === headers.length - 1 ? 20 : 18 }))
+  ws['!cols'] = headers.map((_, i) => ({ wch: i < 5 ? 16 : i === headers.length - 1 ? 20 : 18 }))
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Import Slip Gaji')
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
