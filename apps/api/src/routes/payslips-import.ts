@@ -9,6 +9,32 @@ import type { Env } from '../types'
 const router = new Hono<Env>()
 router.use('*', requireAdmin)
 
+const TUNJANGAN_COLS = [
+  { col: 'Tunjangan Jabatan',    name: 'Tunjangan Jabatan',    component: 'tunjangan_jabatan' },
+  { col: 'Tunjangan Luar Kota',  name: 'Tunjangan Luar Kota',  component: 'tunjangan_luar_kota' },
+  { col: 'Tunjangan Makan',      name: 'Tunjangan Makan',      component: 'tunjangan_makan' },
+  { col: 'Tunjangan Transport',  name: 'Tunjangan Transport',  component: 'tunjangan_transport' },
+  { col: 'Tunjangan Lama Kerja', name: 'Tunjangan Lama Kerja', component: 'tunjangan_lama_bekerja' },
+  { col: 'Insentif',             name: 'Insentif',             component: 'insentif' },
+  { col: 'Tunjangan PPh 21',     name: 'Tunjangan PPh 21',     component: 'tunjangan_pph21' },
+] as const
+
+function parseImportRow(row: Record<string, string | number | null>, empBaseSalary: number) {
+  const basePay = Number(row['Gaji Pokok'] ?? row['gaji pokok'] ?? empBaseSalary)
+  const bonus   = Number(row['Bonus']      ?? row['bonus']      ?? 0)
+  const thr     = Number(row['THR']        ?? row['thr']        ?? 0)
+  const notes   = String(row['Catatan']    ?? row['catatan']    ?? '') || null
+
+  const allowances = TUNJANGAN_COLS
+    .map(t => ({ name: t.name, amount: Number(row[t.col] ?? 0), component: t.component }))
+    .filter(a => a.amount > 0)
+
+  const otherDeductionAmt = Number(row['Potongan Lain'] ?? row['potongan lain'] ?? 0)
+  const otherDeductions = otherDeductionAmt > 0 ? [{ name: 'Potongan Lain', amount: otherDeductionAmt }] : []
+
+  return { basePay, bonus, thr, notes, allowances, otherDeductions }
+}
+
 // POST /api/payslips/import — parse Excel, match employees, return preview
 router.post('/', async (c) => {
   const cid = c.get('companyId')
@@ -65,19 +91,15 @@ router.post('/preview', async (c) => {
       const warnings: string[] = []
       if (existingSet.has(emp.id)) warnings.push('Slip gaji sudah ada untuk periode ini')
 
-      const basePay = Number(row['Gaji Pokok'] ?? row['gaji pokok'] ?? emp.baseSalary)
-      const bonus = Number(row['Bonus'] ?? row['bonus'] ?? 0)
-      const thr = Number(row['THR'] ?? row['thr'] ?? 0)
-      const notes = String(row['Catatan'] ?? row['catatan'] ?? '')
-
-      const calc = calculatePayslip({ baseSalary: basePay, bonus, thr, allowances: [], pph21Status: emp.pph21Status, monthCount })
+      const { basePay, bonus, thr, notes, allowances, otherDeductions } = parseImportRow(row, Number(emp.baseSalary))
+      const calc = calculatePayslip({ baseSalary: basePay, bonus, thr, allowances, otherDeductions, pph21Status: emp.pph21Status, monthCount })
 
       const pph21 = row['PPh21'] != null ? Number(row['PPh21']) : calc.pph21
       const bpjsKesehatan = row['BPJS Kesehatan'] != null ? Number(row['BPJS Kesehatan']) : calc.bpjsKesehatan
       const bpjsTkJht = row['BPJS TK JHT'] != null ? Number(row['BPJS TK JHT']) : calc.bpjsTkJht
       const bpjsTkJp = row['BPJS TK JP'] != null ? Number(row['BPJS TK JP']) : calc.bpjsTkJp
-
-      const totalDeductions = pph21 + bpjsKesehatan + bpjsTkJht + bpjsTkJp
+      const otherDeductionsTotal = otherDeductions.reduce((s, d) => s + d.amount, 0)
+      const totalDeductions = pph21 + bpjsKesehatan + bpjsTkJht + bpjsTkJp + otherDeductionsTotal
       const netPay = calc.grossPay - totalDeductions
 
       return {
@@ -85,7 +107,7 @@ router.post('/preview', async (c) => {
         warnings,
         row,
         employee: { id: emp.id, employeeId: emp.employeeId, name: emp.name },
-        payslip: { basePay, bonus, thr, pph21, bpjsKesehatan, bpjsTkJht, bpjsTkJp, grossPay: calc.grossPay, totalDeductions, netPay, notes: notes || null },
+        payslip: { basePay, bonus, thr, allowances, otherDeductions, pph21, bpjsKesehatan, bpjsTkJht, bpjsTkJp, grossPay: calc.grossPay, totalDeductions, netPay, notes },
       }
     }))
 
@@ -152,17 +174,14 @@ router.post('/commit', async (c) => {
           continue
         }
 
-        const basePay = Number(row['Gaji Pokok'] ?? row['gaji pokok'] ?? emp.baseSalary)
-        const bonus = Number(row['Bonus'] ?? row['bonus'] ?? 0)
-        const thr = Number(row['THR'] ?? row['thr'] ?? 0)
-        const notes = String(row['Catatan'] ?? row['catatan'] ?? '') || null
-
-        const calc = calculatePayslip({ baseSalary: basePay, bonus, thr, allowances: [], pph21Status: emp.pph21Status, monthCount })
+        const { basePay, bonus, thr, notes, allowances, otherDeductions } = parseImportRow(row, Number(emp.baseSalary))
+        const calc = calculatePayslip({ baseSalary: basePay, bonus, thr, allowances, otherDeductions, pph21Status: emp.pph21Status, monthCount })
         const pph21 = row['PPh21'] != null ? Number(row['PPh21']) : calc.pph21
         const bpjsKesehatan = row['BPJS Kesehatan'] != null ? Number(row['BPJS Kesehatan']) : calc.bpjsKesehatan
         const bpjsTkJht = row['BPJS TK JHT'] != null ? Number(row['BPJS TK JHT']) : calc.bpjsTkJht
         const bpjsTkJp = row['BPJS TK JP'] != null ? Number(row['BPJS TK JP']) : calc.bpjsTkJp
-        const totalDeductions = pph21 + bpjsKesehatan + bpjsTkJht + bpjsTkJp
+        const otherDeductionsTotal = otherDeductions.reduce((s, d) => s + d.amount, 0)
+        const totalDeductions = pph21 + bpjsKesehatan + bpjsTkJht + bpjsTkJp + otherDeductionsTotal
         const netPay = calc.grossPay - totalDeductions
 
         const ytd = ytdMap.get(emp.id) ?? { ytdGross: 0, ytdPph21: 0 }
@@ -172,9 +191,9 @@ router.post('/commit', async (c) => {
             companyId: cid, employeeId: emp.id, templateId, periodType: periodType || 'monthly',
             startDate: startDateObj, endDate: new Date(endDate),
             basePay, overtimeHours: 0, overtimePay: 0,
-            bonus, thr, allowances: '[]',
+            bonus, thr, allowances: JSON.stringify(allowances),
             pph21, bpjsKesehatan, bpjsTkJht, bpjsTkJp,
-            otherDeductions: '[]',
+            otherDeductions: JSON.stringify(otherDeductions),
             grossPay: calc.grossPay, totalDeductions, netPay,
             ytdGross: ytd.ytdGross + calc.grossPay,
             ytdPph21: ytd.ytdPph21 + pph21,
@@ -194,10 +213,17 @@ router.post('/commit', async (c) => {
 
 // GET /api/payslips/import/template — download Excel template
 router.get('/template', () => {
-  const headers = ['ID Karyawan', 'Gaji Pokok', 'Bonus', 'THR', 'PPh21', 'BPJS Kesehatan', 'BPJS TK JHT', 'BPJS TK JP', 'Catatan']
-  const sample = ['EMP001', 8000000, 0, 0, '', '', '', '', '']
+  const headers = [
+    'ID Karyawan', 'Gaji Pokok',
+    'Tunjangan Jabatan', 'Tunjangan Luar Kota', 'Tunjangan Makan', 'Tunjangan Transport',
+    'Tunjangan Lama Kerja', 'Insentif', 'Tunjangan PPh 21',
+    'Bonus', 'THR',
+    'PPh21', 'BPJS Kesehatan', 'BPJS TK JHT', 'BPJS TK JP', 'Potongan Lain',
+    'Catatan',
+  ]
+  const sample = ['EMP001', 8000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', '', '', '', 0, '']
   const ws = XLSX.utils.aoa_to_sheet([headers, sample])
-  ws['!cols'] = headers.map((h, i) => ({ wch: i === 0 ? 14 : i === headers.length - 1 ? 20 : 16 }))
+  ws['!cols'] = headers.map((h, i) => ({ wch: i === 0 ? 14 : i === headers.length - 1 ? 20 : 18 }))
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Import Slip Gaji')
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
