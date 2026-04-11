@@ -45,6 +45,22 @@ function parseImportRow(row: Record<string, string | number | null>, empBaseSala
   return { basePay, bonus, thr, notes, allowances, otherDeductions }
 }
 
+/** Convert an Excel date serial (days since 1899-12-30) to YYYY-MM-DD. */
+function excelSerialToDateStr(serial: number): string {
+  const d = new Date(Date.UTC(1899, 11, 30) + serial * 86400 * 1000)
+  return d.toISOString().split('T')[0]
+}
+
+/** Parse a raw cell value to a YYYY-MM-DD string, handling Excel serials. */
+function parseDateCell(val: string | number | null | undefined): string {
+  if (val == null || val === '') return ''
+  if (typeof val === 'number') return excelSerialToDateStr(val)
+  const s = String(val).trim()
+  // Pure integer string → Excel serial
+  if (/^\d{4,6}$/.test(s)) return excelSerialToDateStr(Number(s))
+  return s
+}
+
 /** Resolve per-row period/date/template overrides against form-level defaults. */
 function resolveRowMeta(
   row: Record<string, string | number | null>,
@@ -53,8 +69,10 @@ function resolveRowMeta(
   const rawPeriod = String(row['Periode (Opsional)'] ?? row['Periode'] ?? row['periode'] ?? '').trim().toLowerCase()
   const periodType = rawPeriod ? (PERIOD_TYPE_MAP[rawPeriod] ?? rawPeriod) : defaults.periodType
 
-  const startDate    = String(row['Tanggal Mulai (Opsional)']   ?? row['Tanggal Mulai']   ?? row['tanggal mulai']   ?? '').trim() || defaults.startDate
-  const endDate      = String(row['Tanggal Selesai (Opsional)'] ?? row['Tanggal Selesai'] ?? row['tanggal selesai'] ?? '').trim() || defaults.endDate
+  const rawStart = row['Tanggal Mulai (Opsional)'] ?? row['Tanggal Mulai'] ?? row['tanggal mulai'] ?? null
+  const rawEnd   = row['Tanggal Selesai (Opsional)'] ?? row['Tanggal Selesai'] ?? row['tanggal selesai'] ?? null
+  const startDate    = parseDateCell(rawStart) || defaults.startDate
+  const endDate      = parseDateCell(rawEnd)   || defaults.endDate
   const templateName = String(row['Template (Opsional)'] ?? row['Template'] ?? row['template'] ?? '').trim() || null
 
   return { periodType, startDate, endDate, templateName }
