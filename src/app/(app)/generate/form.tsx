@@ -11,6 +11,7 @@ import { calculateBpjsKesehatan, calculateBpjsKetenagakerjaan } from '@/lib/calc
 import { getTaxBreakdown } from '@/lib/calculations/indonesian-tax'
 import { Download, Loader2, Plus, X, Eye, CheckCircle2, XCircle, ChevronDown, ChevronRight } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
+import { NumberInput } from '@/components/ui/number-input'
 import { PreviewModal } from '@/components/ui/preview-modal'
 import { useAsyncOperation } from '@/lib/hooks/use-async-operation'
 import { useProrateConfig } from '@/lib/hooks/use-prorate-config'
@@ -381,7 +382,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
               <div className="form-grid-2" style={{ gap: 12 }}>
                 <F label="Mulai"><input type="date" className="input" value={startDate || ''} onChange={e => form.setValue('startDate', e.target.value)} /></F>
                 {periodType === 'monthly'
-                  ? <F label="Jumlah Bulan"><input type="number" className="input" min={1} max={12} value={months} onChange={e => setMonths(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))} /></F>
+                  ? <F label="Jumlah Bulan"><NumberInput className="input" min={1} max={12} value={months} onChange={setMonths} /></F>
                   : <F label="Selesai"><input type="date" className="input" value={endDate || ''} onChange={e => form.setValue('endDate', e.target.value)} /></F>
                 }
               </div>
@@ -457,7 +458,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
               {allowances.map((a, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input className="input" style={{ flex: 1 }} placeholder="Nama tunjangan" value={a.name} onChange={e => updateAllowance(i, 'name', e.target.value)} />
-                  <div className="input-prefix" style={{ flex: 1 }}><span className="prefix">Rp</span><input type="number" className="input" value={a.amount} onChange={e => updateAllowance(i, 'amount', Number(e.target.value))} /></div>
+                  <div className="input-prefix" style={{ flex: 1 }}><span className="prefix">Rp</span><NumberInput className="input" value={a.amount} onChange={v => updateAllowance(i, 'amount', v)} /></div>
                   <button type="button" onClick={() => removeAllowance(i)} className="btn btn-ghost btn-icon btn-sm" style={{ flexShrink: 0, color: 'var(--danger)' }}><X style={{ width: 14, height: 14 }} /></button>
                 </div>
               ))}
@@ -506,14 +507,10 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
                 /* Hari Kerja mode */
                 <div className="form-grid-2" style={{ gap: 16 }}>
                   <F label="Hari Kerja Karyawan" hint="Jumlah hari karyawan benar-benar hadir">
-                    <input type="number" className="input" min={0} value={workingDaysActual || ''}
-                      onChange={e => setWorkingDaysActual(Math.max(0, Number(e.target.value)))}
-                      placeholder="cth. 18" />
+                    <NumberInput className="input" min={0} value={workingDaysActual} onChange={setWorkingDaysActual} placeholder="cth. 18" />
                   </F>
                   <F label="Hari Kerja Per Bulan" hint="Total hari kerja dalam periode">
-                    <input type="number" className="input" min={1} value={workingDaysTotal || ''}
-                      onChange={e => setWorkingDaysTotal(Math.max(1, Number(e.target.value)))}
-                      placeholder="cth. 22" />
+                    <NumberInput className="input" min={0} value={workingDaysTotal} onChange={setWorkingDaysTotal} placeholder="cth. 22" />
                   </F>
                 </div>
               ) : (
@@ -557,8 +554,8 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
                         <input type="range" min={0} max={periodCount} step={0.5} value={prorateCount}
                           onChange={e => setProrateCount(Number(e.target.value))}
                           style={{ flex: 1 }} />
-                        <input type="number" className="input" min={0} max={periodCount} step={0.5} value={prorateCount}
-                          onChange={e => setProrateCount(Math.min(periodCount, Math.max(0, Number(e.target.value))))}
+                        <NumberInput className="input" min={0} max={periodCount} step={0.5} value={prorateCount}
+                          onChange={setProrateCount}
                           style={{ width: 70 }} />
                         <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>/ {periodCount}</span>
                       </div>
@@ -624,7 +621,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
               {deductions.map((d, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input className="input" style={{ flex: 1 }} placeholder="Nama potongan" value={d.name} onChange={e => updateDeduction(i, 'name', e.target.value)} />
-                  <div className="input-prefix" style={{ flex: 1 }}><span className="prefix">Rp</span><input type="number" className="input" value={d.amount} onChange={e => updateDeduction(i, 'amount', Number(e.target.value))} /></div>
+                  <div className="input-prefix" style={{ flex: 1 }}><span className="prefix">Rp</span><NumberInput className="input" value={d.amount} onChange={v => updateDeduction(i, 'amount', v)} /></div>
                   <button type="button" onClick={() => removeDeduction(i)} className="btn btn-ghost btn-icon btn-sm" style={{ flexShrink: 0, color: 'var(--danger)' }}><X style={{ width: 14, height: 14 }} /></button>
                 </div>
               ))}

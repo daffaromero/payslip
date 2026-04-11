@@ -3,6 +3,7 @@
 import { useState, useEffect, Fragment } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ToastContainer, useToast } from '@/components/ui/toast'
+import { NumberInput } from '@/components/ui/number-input'
 import { Loader2, CheckCircle2, XCircle, Mail, MessageCircle, Users, Plus, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useAdminGuard } from '@/lib/hooks/use-role'
@@ -338,7 +339,7 @@ export default function BulkGeneratePage() {
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>Jumlah Bulan</label>
-                    <input type="number" className="input" min={1} max={12} value={months} onChange={e => setMonths(Math.min(12, Math.max(1, parseInt(e.target.value) || 1)))} />
+                    <NumberInput className="input" min={1} max={12} value={months} onChange={setMonths} />
                   </div>
                 </div>
               ) : (
