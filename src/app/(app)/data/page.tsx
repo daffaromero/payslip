@@ -543,14 +543,27 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
     }
   }, [periodType])
 
+  const PERIOD_MAP: Record<string, string> = {
+    bulanan: 'monthly', monthly: 'monthly',
+    mingguan: 'weekly', weekly: 'weekly',
+    '3 bulanan': 'quarterly', quarterly: 'quarterly',
+    '6 bulanan': 'semi-annual', 'semi-annual': 'semi-annual',
+    tahunan: 'annual', annual: 'annual',
+  }
+
+  const getRowMeta = (row: Record<string, string | number | null>) => {
+    const g = (keys: string[]) => keys.reduce<string>((acc, k) => acc || String(row[k] ?? '').trim(), '')
+    return {
+      periode:  g(['Periode (Opsional)', 'Periode', 'periode']),
+      mulai:    g(['Tanggal Mulai (Opsional)', 'Tanggal Mulai', 'tanggal mulai']),
+      selesai:  g(['Tanggal Selesai (Opsional)', 'Tanggal Selesai', 'tanggal selesai']),
+      template: g(['Template (Opsional)', 'Template', 'template']),
+    }
+  }
+
   const rowHasAllMeta = (row: Record<string, string | number | null>) => {
-    const get = (keys: string[]) => keys.reduce<string>((acc, k) => acc || String(row[k] ?? '').trim(), '')
-    return (
-      get(['Periode (Opsional)', 'Periode', 'periode']) &&
-      get(['Tanggal Mulai (Opsional)', 'Tanggal Mulai', 'tanggal mulai']) &&
-      get(['Tanggal Selesai (Opsional)', 'Tanggal Selesai', 'tanggal selesai']) &&
-      get(['Template (Opsional)', 'Template', 'template'])
-    )
+    const m = getRowMeta(row)
+    return m.periode && m.mulai && m.selesai && m.template
   }
 
   const processFile = useCallback(async (file: File) => {
@@ -579,6 +592,31 @@ function PayslipImportSection({ toast }: { toast: ToastHandle }) {
         setTotalWarnings(previewData.totalWarnings)
         setStep('preview')
       } else {
+        // Pre-populate configure form from whatever the rows do contain
+        // Pick the most common non-empty value for each field
+        const mostCommon = (vals: string[]) => {
+          const counts = new Map<string, number>()
+          for (const v of vals) if (v) counts.set(v, (counts.get(v) ?? 0) + 1)
+          if (!counts.size) return ''
+          return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+        }
+        const metas = data.rows.map(getRowMeta)
+        const dominantPeriod   = mostCommon(metas.map((m: ReturnType<typeof getRowMeta>) => m.periode.toLowerCase()))
+        const dominantMulai    = mostCommon(metas.map((m: ReturnType<typeof getRowMeta>) => m.mulai))
+        const dominantSelesai  = mostCommon(metas.map((m: ReturnType<typeof getRowMeta>) => m.selesai))
+        const dominantTemplate = mostCommon(metas.map((m: ReturnType<typeof getRowMeta>) => m.template.toLowerCase()))
+
+        if (dominantPeriod && PERIOD_MAP[dominantPeriod]) setPeriodType(PERIOD_MAP[dominantPeriod])
+        if (dominantMulai)   setStartDate(dominantMulai)
+        if (dominantSelesai) setEndDate(dominantSelesai)
+        if (dominantTemplate) {
+          // templates state should already be loaded; match case-insensitively
+          setTemplates(prev => {
+            const match = prev.find(t => t.name.toLowerCase() === dominantTemplate)
+            if (match) setTemplateId(match.id)
+            return prev
+          })
+        }
         setStep('configure')
       }
     } finally { setLoading(false) }
