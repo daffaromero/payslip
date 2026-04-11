@@ -234,10 +234,33 @@ describe('autoMapColumns', () => {
   it('maps bonus and allowance columns', () => {
     const headers = ['Bonus', 'Tunjangan', 'Insentif', 'Allowance']
     const mappings = autoMapColumns(headers)
-    
+
     expect(mappings.get('Bonus')).toBe('bonus')
     expect(mappings.get('Tunjangan')).toBe('bonus')
     expect(mappings.get('Insentif')).toBe('bonus')
     expect(mappings.get('Allowance')).toBe('bonus')
+  })
+
+  it('does not map "Nama Bank" to name — it must map to bankName', () => {
+    const headers = ['Nama', 'Nama Bank', 'No Rekening']
+    const mappings = autoMapColumns(headers)
+
+    expect(mappings.get('Nama')).toBe('name')
+    expect(mappings.get('Nama Bank')).toBe('bankName')
+    expect(mappings.get('No Rekening')).toBe('bankAccount')
+  })
+
+  it('maps full employee import template headers without name/bank swap', () => {
+    const headers = [
+      'ID Karyawan', 'Nama', 'Email', 'WhatsApp', 'Divisi', 'Jabatan', 'Site',
+      'Gaji Pokok', 'Status PPh21', 'NPWP', 'Nama Bank', 'No Rekening',
+    ]
+    const mappings = autoMapColumns(headers)
+
+    expect(mappings.get('Nama')).toBe('name')
+    expect(mappings.get('Nama Bank')).toBe('bankName')
+    expect(mappings.get('No Rekening')).toBe('bankAccount')
+    expect(mappings.get('ID Karyawan')).toBe('employeeId')
+    expect(mappings.get('Gaji Pokok')).toBe('baseSalary')
   })
 })

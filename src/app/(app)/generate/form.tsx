@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Employee, Template } from '@/types'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, calcPeriodEndDate } from '@/lib/utils'
 import { calculatePayslip } from '@/lib/calculations/payslip'
 import { calcProrate } from '@/lib/calculations/prorate'
 import { calculateBpjsKesehatan, calculateBpjsKetenagakerjaan } from '@/lib/calculations/bpjs'
@@ -194,16 +194,7 @@ export function PayslipGeneratorForm({ employees, templates, defaultEmployeeId }
 
   useEffect(() => {
     if (!startDate || periodMode !== 'auto') return
-    const s = new Date(startDate + 'T00:00:00')
-    let en: Date
-    switch (periodType) {
-      case 'weekly': en = new Date(s); en.setDate(en.getDate() + 6); break
-      case 'quarterly': en = new Date(s.getFullYear(), s.getMonth() + 3, 0); break
-      case 'semi-annual': en = new Date(s.getFullYear(), s.getMonth() + 6, 0); break
-      case 'annual': en = new Date(s.getFullYear() + 1, s.getMonth(), 0); break
-      default: en = new Date(s.getFullYear(), s.getMonth() + months, 0)
-    }
-    setValue('endDate', en.toISOString().split('T')[0])
+    setValue('endDate', calcPeriodEndDate(startDate, periodType, months))
   }, [startDate, months, periodType, periodMode, setValue])
 
   useEffect(() => {

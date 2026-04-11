@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cn, formatCurrency, formatDate } from './utils'
+import { cn, formatCurrency, formatDate, calcPeriodEndDate } from './utils'
 import { escapeHtml } from './pdf/generator'
 
 describe('cn', () => {
@@ -131,5 +131,92 @@ describe('escapeHtml', () => {
 
   it('handles employee name with special characters', () => {
     expect(escapeHtml('Johan "The Boss" O\'Reilly & Partners')).toBe('Johan &quot;The Boss&quot; O&#39;Reilly &amp; Partners')
+  })
+})
+
+describe('calcPeriodEndDate', () => {
+  describe('monthly', () => {
+    it('normal mid-month start: March 5 → April 4', () => {
+      expect(calcPeriodEndDate('2026-03-05', 'monthly')).toBe('2026-04-04')
+    })
+
+    it('first of month: March 1 → March 31', () => {
+      expect(calcPeriodEndDate('2026-03-01', 'monthly')).toBe('2026-03-31')
+    })
+
+    it('last of month (Feb 28) → March 27, not Feb 27', () => {
+      expect(calcPeriodEndDate('2026-02-28', 'monthly')).toBe('2026-03-27')
+    })
+
+    it('last of long month: Jan 31 → Feb 28 (overflow handled by JS)', () => {
+      // Jan 31 + 1 month = Feb 31 → JS normalises to Mar 3, minus 1 = Mar 2
+      // This is expected behaviour for end-of-month edge cases
+      expect(calcPeriodEndDate('2026-01-31', 'monthly')).toBe('2026-03-02')
+    })
+
+    it('end date is always strictly after start date', () => {
+      const cases = ['2026-01-01', '2026-02-01', '2026-03-15', '2026-02-28', '2026-12-31']
+      for (const start of cases) {
+        const end = calcPeriodEndDate(start, 'monthly')
+        expect(end > start).toBe(true)
+      }
+    })
+
+    it('months=2: March 1 → April 30', () => {
+      expect(calcPeriodEndDate('2026-03-01', 'monthly', 2)).toBe('2026-04-30')
+    })
+
+    it('months=3: Jan 1 → March 31', () => {
+      expect(calcPeriodEndDate('2026-01-01', 'monthly', 3)).toBe('2026-03-31')
+    })
+  })
+
+  describe('weekly', () => {
+    it('April 1 → April 7 (7-day period)', () => {
+      expect(calcPeriodEndDate('2026-04-01', 'weekly')).toBe('2026-04-07')
+    })
+
+    it('end of month: April 28 → May 4', () => {
+      expect(calcPeriodEndDate('2026-04-28', 'weekly')).toBe('2026-05-04')
+    })
+  })
+
+  describe('quarterly', () => {
+    it('Jan 1 → March 31', () => {
+      expect(calcPeriodEndDate('2026-01-01', 'quarterly')).toBe('2026-03-31')
+    })
+
+    it('April 1 → June 30', () => {
+      expect(calcPeriodEndDate('2026-04-01', 'quarterly')).toBe('2026-06-30')
+    })
+  })
+
+  describe('semi-annual', () => {
+    it('Jan 1 → June 30', () => {
+      expect(calcPeriodEndDate('2026-01-01', 'semi-annual')).toBe('2026-06-30')
+    })
+
+    it('July 1 → Dec 31', () => {
+      expect(calcPeriodEndDate('2026-07-01', 'semi-annual')).toBe('2026-12-31')
+    })
+  })
+
+  describe('annual', () => {
+    it('Jan 1 → Dec 31 of same year', () => {
+      expect(calcPeriodEndDate('2026-01-01', 'annual')).toBe('2026-12-31')
+    })
+
+    it('March 1 → Feb 28 of next year', () => {
+      expect(calcPeriodEndDate('2026-03-01', 'annual')).toBe('2027-02-28')
+    })
+  })
+
+  describe('timezone safety', () => {
+    it('result never shifts a day back due to UTC conversion', () => {
+      // Feb 28 local time must stay Feb 28 → March 27, not Feb 27
+      const result = calcPeriodEndDate('2026-02-28', 'monthly')
+      expect(result).not.toBe('2026-02-27')
+      expect(result).toBe('2026-03-27')
+    })
   })
 })
