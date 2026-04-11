@@ -369,6 +369,21 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
   </div>
   ` : ''}
 
+  ${(() => {
+    const insentif = (payslip.allowances || []).find(a => a.component === 'insentif')
+    const tunai = insentif?.amount ?? 0
+    const transfer = payslip.netPay - tunai
+    return `
+  <div class="footer-row" style="font-weight:600;">
+    <span>${t('Total Transfer', 'Bank Transfer')}</span>
+    <span>${formatCurrency(transfer)}</span>
+  </div>
+  <div class="footer-row" style="font-weight:600;">
+    <span>${t('Total Tunai', 'Cash Payment')}</span>
+    <span>${formatCurrency(tunai)}</span>
+  </div>`
+  })()}
+
   ${template.sections.notes && payslip.notes ? `
   <div class="section" style="margin-top:14px;">
     <div class="section-title">${t('Catatan', 'Notes')}</div>
