@@ -247,6 +247,17 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       display: flex;
       justify-content: space-between;
     }
+    .footer-row-accent {
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      background: ${template.theme.primaryColor};
+      opacity: 0.82;
+      padding: 6px 8px;
+      border-bottom: none;
+      display: flex;
+      justify-content: space-between;
+    }
 
     /* ── Signature ── */
     .signature-row {
@@ -374,11 +385,11 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
     const tunai = insentif?.amount ?? 0
     const transfer = payslip.netPay - tunai
     return `
-  <div class="footer-row" style="font-weight:600;">
+  <div class="footer-row-accent">
     <span>${t('Total Transfer', 'Bank Transfer')}</span>
     <span>${formatCurrency(transfer)}</span>
   </div>
-  <div class="footer-row" style="font-weight:600;">
+  <div class="footer-row-accent" style="margin-top:2px;">
     <span>${t('Total Tunai', 'Cash Payment')}</span>
     <span>${formatCurrency(tunai)}</span>
   </div>`

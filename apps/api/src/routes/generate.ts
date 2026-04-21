@@ -6,33 +6,7 @@ import { calculatePayslip, getPeriodMonths } from '@/lib/calculations/payslip'
 import { deserializeTemplate, type RawTemplate } from '@/lib/api/template-serializer'
 import { requireAdmin } from '../middleware/admin'
 import type { Env } from '../types'
-import { readFileSync } from 'fs'
-import path from 'path'
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'uploads/logos')
-
-const CONTENT_TYPES: Record<string, string> = {
-  jpg: 'image/jpeg', jpeg: 'image/jpeg',
-  png: 'image/png', webp: 'image/webp', svg: 'image/svg+xml',
-}
-
-function resolveLogoUrl(logoUrl: string | null | undefined): string | null {
-  if (!logoUrl) return null
-  // If it's already a data URI or absolute URL, use as-is
-  if (logoUrl.startsWith('data:') || logoUrl.startsWith('http')) return logoUrl
-  // Extract filename from /api/uploads/logos/<filename>
-  const filename = logoUrl.split('/').pop()
-  if (!filename || /[^a-zA-Z0-9._-]/.test(filename)) return null
-  try {
-    const filepath = path.join(UPLOAD_DIR, filename)
-    const buffer = readFileSync(filepath)
-    const ext = filename.split('.').pop()?.toLowerCase() ?? ''
-    const mime = CONTENT_TYPES[ext] ?? 'image/png'
-    return `data:${mime};base64,${buffer.toString('base64')}`
-  } catch {
-    return logoUrl // fallback to original if file not found
-  }
-}
+import { resolveLogoUrl } from '@/lib/pdf/resolve-logo'
 
 const router = new Hono<Env>()
 router.on(['POST', 'PATCH', 'PUT', 'DELETE'], '*', requireAdmin)

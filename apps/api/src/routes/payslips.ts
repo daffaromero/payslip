@@ -5,6 +5,7 @@ import { calculatePayslip, getPeriodMonths } from '../../../../packages/core/src
 import { PayslipPatchSchema, BulkPayslipSchema } from '../../../../packages/core/src/schemas/payslip'
 import { deserializeTemplate, type RawTemplate } from '../../../../src/lib/api/template-serializer'
 import { generatePayslipPDF } from '../../../../src/lib/pdf/generator'
+import { resolveLogoUrl } from '../../../../src/lib/pdf/resolve-logo'
 import { sendPayslipEmail } from '../../../../src/lib/email/sender'
 import { sendDocument } from '../../../../src/lib/whatsapp/client'
 import { parse } from '../lib/validate'
@@ -270,7 +271,7 @@ router.post('/bulk-send', async (c) => {
 
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pdfBuffer = await generatePayslipPDF({ payslip: payslipData as any, employee: payslip.employee as any, template: template as any, company: payslip.company })
+        const pdfBuffer = await generatePayslipPDF({ payslip: payslipData as any, employee: payslip.employee as any, template: template as any, company: { ...payslip.company, logoUrl: resolveLogoUrl(payslip.company.logoUrl) } })
 
         if (wantsEmail && hasEmail) {
           await sendPayslipEmail({
@@ -458,7 +459,7 @@ router.post('/:id/send-email', async (c) => {
     const template = deserializeTemplate(payslip.template as unknown as RawTemplate)
     const payslipData = { ...payslip, allowances: JSON.parse(payslip.allowances as string), otherDeductions: JSON.parse(payslip.otherDeductions as string) }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfBuffer = await generatePayslipPDF({ payslip: payslipData as any, employee: payslip.employee as any, template: template as any, company: payslip.company })
+    const pdfBuffer = await generatePayslipPDF({ payslip: payslipData as any, employee: payslip.employee as any, template: template as any, company: { ...payslip.company, logoUrl: resolveLogoUrl(payslip.company.logoUrl) } })
 
     const periodLabel = new Intl.DateTimeFormat('id-ID', { year: 'numeric', month: 'long' }).format(new Date(payslip.startDate))
     const safeName = payslip.employee.name.toLowerCase().replace(/\s+/g, '-')
@@ -497,7 +498,7 @@ router.post('/:id/send-whatsapp', async (c) => {
     const template = deserializeTemplate(payslip.template as unknown as RawTemplate)
     const payslipData = { ...payslip, allowances: JSON.parse(payslip.allowances as string), otherDeductions: JSON.parse(payslip.otherDeductions as string) }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfBuffer = await generatePayslipPDF({ payslip: payslipData as any, employee: payslip.employee as any, template: template as any, company: payslip.company })
+    const pdfBuffer = await generatePayslipPDF({ payslip: payslipData as any, employee: payslip.employee as any, template: template as any, company: { ...payslip.company, logoUrl: resolveLogoUrl(payslip.company.logoUrl) } })
 
     const periodLabel = new Intl.DateTimeFormat('id-ID', { year: 'numeric', month: 'long' }).format(new Date(payslip.startDate))
     const safeName = payslip.employee.name.toLowerCase().replace(/\s+/g, '-')
