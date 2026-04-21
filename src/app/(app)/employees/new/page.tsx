@@ -73,8 +73,8 @@ export default function NewEmployeePage() {
                 <F label="WhatsApp" hint="Format: 628xxx (tanpa +)">
                   <input className="input" placeholder="628123456789" value={form.whatsappNumber} onChange={e => set('whatsappNumber', e.target.value)} />
                 </F>
-                <F label="NPWP">
-                  <input className="input" placeholder="09.123.456.7-123.000" value={form.npwp} onChange={e => set('npwp', e.target.value)} />
+                <F label="NIK">
+                  <input className="input" placeholder="3271234567890001" value={form.npwp} onChange={e => set('npwp', e.target.value)} />
                 </F>
                 <F label="Divisi">
                   <input className="input" placeholder="Engineering, Finance..." value={form.department} onChange={e => set('department', e.target.value)} />

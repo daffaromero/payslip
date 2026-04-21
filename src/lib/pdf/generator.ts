@@ -300,7 +300,7 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
       <div class="info-row"><span class="info-label">${t('ID Karyawan', 'Employee ID')}</span><span class="info-value">${escapeHtml(employee.employeeId)}</span></div>
       <div class="info-row"><span class="info-label">${t('Divisi', 'Division')}</span><span class="info-value">${escapeHtml(employee.department) || '—'}</span></div>
       <div class="info-row"><span class="info-label">${t('Jabatan', 'Position')}</span><span class="info-value">${escapeHtml(employee.position) || '—'}</span></div>
-      <div class="info-row"><span class="info-label">NPWP</span><span class="info-value">${escapeHtml(employee.npwp) || '—'}</span></div>
+      <div class="info-row"><span class="info-label">NIK</span><span class="info-value">${escapeHtml(employee.npwp) || '—'}</span></div>
       <div class="info-row"><span class="info-label">${t('Status PTKP', 'Tax Status')}</span><span class="info-value">${escapeHtml(employee.pph21Status)}</span></div>
     </div>
   </div>
@@ -360,12 +360,12 @@ export function generatePayslipHTML(options: GeneratePdfOptions): string {
 
   ${template.sections.ytdSummary ? `
   <div class="footer-row">
-    <span>${t('YTD Penerimaan Kotor', 'YTD Gross')}</span>
-    <span>${formatCurrency(payslip.ytdGross)}</span>
+    <span>${t('YTD Penerimaan Bersih', 'YTD Net Pay')}</span>
+    <span>${formatCurrency(payslip.ytdGross - payslip.ytdPph21)}</span>
   </div>
   <div class="footer-row">
-    <span>${t('YTD PPh 21', 'YTD Income Tax')}</span>
-    <span>${formatCurrency(payslip.ytdPph21)}</span>
+    <span>&nbsp;</span>
+    <span>&nbsp;</span>
   </div>
   ` : ''}
 

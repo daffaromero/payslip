@@ -319,7 +319,7 @@ export default function EmployeeDetailPage() {
                 <F label="Site"><input className="input" style={{ fontSize: 13 }} placeholder="Yogyakarta" value={form.site} onChange={e => set('site', e.target.value)} /></F>
                 <F label="Email"><input type="email" className="input" style={{ fontSize: 13 }} value={form.email} onChange={e => set('email', e.target.value)} /></F>
                 <F label="WhatsApp"><input className="input" style={{ fontSize: 13 }} placeholder="628xxx" value={form.whatsappNumber} onChange={e => set('whatsappNumber', e.target.value)} /></F>
-                <F label="NPWP"><input className="input" style={{ fontSize: 13 }} value={form.npwp} onChange={e => set('npwp', e.target.value)} /></F>
+                <F label="NIK"><input className="input" style={{ fontSize: 13 }} placeholder="3271234567890001" value={form.npwp} onChange={e => set('npwp', e.target.value)} /></F>
               </>
             ) : (
               <>
@@ -351,7 +351,7 @@ export default function EmployeeDetailPage() {
               <>
                 <InfoRow label="Gaji Pokok" value={formatCurrency(employee.baseSalary)} />
                 <InfoRow label="Status PTKP" value={employee.pph21Status} />
-                <InfoRow label="NPWP" value={employee.npwp} />
+                <InfoRow label="NIK" value={employee.npwp} />
               </>
             )}
           </div>

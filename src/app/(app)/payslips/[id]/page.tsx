@@ -289,7 +289,7 @@ export default function PayslipDetailPage() {
             <Row label="Divisi" value={payslip.employee.department ?? '-'} />
             <Row label="Email" value={payslip.employee.email ?? '-'} />
             <Row label="WhatsApp" value={payslip.employee.whatsappNumber ?? '-'} />
-            <Row label="NPWP" value={payslip.employee.npwp ?? '-'} />
+            <Row label="NIK" value={payslip.employee.npwp ?? '-'} />
           </Section>
 
           <Section title="Bank">

@@ -84,7 +84,7 @@ export default function EditEmployeePage() {
                 <F label="Nama Lengkap" required><input required className="input" value={form.name} onChange={e => set('name', e.target.value)} /></F>
                 <F label="Email"><input type="email" className="input" value={form.email} onChange={e => set('email', e.target.value)} /></F>
                 <F label="WhatsApp" hint="Format: 628xxx (tanpa +)"><input className="input" placeholder="628123456789" value={form.whatsappNumber} onChange={e => set('whatsappNumber', e.target.value)} /></F>
-                <F label="NPWP"><input className="input" value={form.npwp} onChange={e => set('npwp', e.target.value)} /></F>
+                <F label="NIK"><input className="input" placeholder="3271234567890001" value={form.npwp} onChange={e => set('npwp', e.target.value)} /></F>
                 <F label="Divisi"><input className="input" value={form.department} onChange={e => set('department', e.target.value)} /></F>
                 <F label="Jabatan"><input className="input" value={form.position} onChange={e => set('position', e.target.value)} /></F>
                 <F label="Site"><input className="input" placeholder="Yogyakarta" value={form.site} onChange={e => set('site', e.target.value)} /></F>
